@@ -23,6 +23,10 @@ class CountingQuotientFilter
 
  private:
   gqf::quotient_filter _quotient_filter;
+  uint64_t _quotient_bits;
+  uint64_t _remainder_bits;
+  uint64_t _number_of_slots;
+  uint64_t _hash_bits;
   uint64_t _hash(ElementType value);
 
 };

@@ -9,17 +9,18 @@ namespace opossum {
 
 template <typename ElementType>
 CountingQuotientFilter<ElementType>::CountingQuotientFilter() {
-  uint64_t quotient_bits = 16;
-  uint64_t remainder_bits = 8;
-  uint64_t number_of_slots = std::pow(2, quotient_bits);
-  uint64_t hash_bits = quotient_bits + remainder_bits;
+  _quotient_bits = 16;
+  _remainder_bits = 8;
+  _number_of_slots = std::pow(2, _quotient_bits);
+  _hash_bits = _quotient_bits + _remainder_bits;
 
-  gqf::qf_init(&_quotient_filter, number_of_slots, hash_bits, 0);
+  gqf::qf_init(&_quotient_filter, _number_of_slots, _hash_bits, 0);
 }
 
 template <typename ElementType>
 void CountingQuotientFilter<ElementType>::insert(ElementType element, uint64_t count) {
-  uint16_t hash = static_cast<uint16_t>(_hash(element));
+  uint64_t bitmask = static_cast<uint64_t>(std::pow(2, _hash_bits)) - 1;
+  uint16_t hash = bitmask & _hash(element);
   gqf::qf_insert(&_quotient_filter, hash, 0, count);
 }
 
