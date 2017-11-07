@@ -8,22 +8,33 @@ template <typename T>
 void analyze_value_interval(std::string table_name, std::string column_name) {
   auto table = opossum::StorageManager::get().get_table(table_name);
   auto column_id = table->column_id_by_name(column_name);
-  for (auto chunk_id = ChunkID{0}; chunk_id < table->chunk_count(); chunk_id++) {
-    T min_value = get_value<T>(column_id, 0);
-    T max_value = get_value<T>(column_id, 0);
-    for() {
-      get_value<T>(ColumnID column_id, const size_t row_number)
+
+  size_t row_number_prefix = 0;
+  for (auto chunk_id = opossum::ChunkID{0}; chunk_id < table->chunk_count(); chunk_id++) {
+    uint32_t chunk_size = table->get_chunk(chunk_id).size();
+    auto min_value = table->get_value<T>(column_id, 0);
+    auto max_value = table->get_value<T>(column_id, 0);
+    // Find the min and max values
+    for (auto chunk_offset = opossum::ChunkOffset{0}; chunk_offset < chunk_size; chunk_offset++) {
+      auto value = table->get_value<T>(column_id, row_number_prefix + chunk_offset);
+      //std::cout << value << std::endl;
+      if (value < min_value) {
+        min_value = value;
+      }
+      if (value > max_value) {
+        max_value = value;
+      }
     }
+    row_number_prefix += chunk_size;
     std::cout << "Chunk " << chunk_id << ": [" << min_value << ", " << max_value << "]" << std::endl;
   }
-
 }
 
 int main() {
   std::cout << "TPCC" << std::endl;
   std::cout << " > Generating tables" << std::endl;
-  opossum::ChunkOffset chunk_size = 10000;
-  size_t warehouse_size = 2;
+  opossum::ChunkOffset chunk_size = 1000;
+  size_t warehouse_size = 1;
   auto tables = tpcc::TpccTableGenerator(chunk_size, warehouse_size).generate_all_tables();
 
   // Add tables
@@ -43,7 +54,7 @@ int main() {
   }
 
   // Analyze value interval
-  analyze_value_interval<int>("ORDER", "O_ENTRY_D");
+  analyze_value_interval<float>("ITEM", "I_PRICE");
 
   return 0;
 }
