@@ -45,4 +45,11 @@ uint64_t CountingQuotientFilter<ElementType>::_hash(ElementType value) {
   return static_cast<uint64_t>(hash);
 }
 
+template <typename ElementType>
+uint64_t CountingQuotientFilter<ElementType>::memory_consumption() {
+  // TODO
+  uint64_t consumption = sizeof(CountingQuotientFilter<ElementType>);
+  return consumption;
+}
+
 } // namespace opossum

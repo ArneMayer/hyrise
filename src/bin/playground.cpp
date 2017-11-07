@@ -6,6 +6,7 @@
 
 template <typename T>
 void analyze_value_interval(std::string table_name, std::string column_name) {
+  std::cout << " > Analyzing " << table_name << "::" << column_name << std::endl;
   auto table = opossum::StorageManager::get().get_table(table_name);
   auto column_id = table->column_id_by_name(column_name);
 
@@ -33,7 +34,7 @@ void analyze_value_interval(std::string table_name, std::string column_name) {
 int main() {
   std::cout << "TPCC" << std::endl;
   std::cout << " > Generating tables" << std::endl;
-  opossum::ChunkOffset chunk_size = 1000;
+  opossum::ChunkOffset chunk_size = 10000;
   size_t warehouse_size = 1;
   auto tables = tpcc::TpccTableGenerator(chunk_size, warehouse_size).generate_all_tables();
 
@@ -54,7 +55,7 @@ int main() {
   }
 
   // Analyze value interval
-  analyze_value_interval<float>("ITEM", "I_PRICE");
+  analyze_value_interval<int>("ORDER", "O_ID");
 
   return 0;
 }

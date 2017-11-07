@@ -20,6 +20,7 @@ class CountingQuotientFilter
   void insert(ElementType value, uint64_t count);
   void insert(ElementType value);
   uint64_t count(ElementType value);
+  uint64_t memory_consumption();
 
  private:
   gqf::quotient_filter _quotient_filter;
