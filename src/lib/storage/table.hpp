@@ -15,6 +15,7 @@
 #include "utils/performance_warning.hpp"
 #include "index/base_filter.hpp"
 #include "index/counting_quotient_filter/counting_quotient_filter.hpp"
+#include "storage/table.hpp"
 
 namespace opossum {
 
