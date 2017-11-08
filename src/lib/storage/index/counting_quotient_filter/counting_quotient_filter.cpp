@@ -1,6 +1,8 @@
 #include "counting_quotient_filter.hpp"
 #include "cqf.hpp"
 #include "utils/xxhash.hpp"
+#include "resolve_type.hpp"
+#include "storage/iterables/create_iterable_from_column.hpp"
 
 #include <cmath>
 #include <iostream>
@@ -50,6 +52,18 @@ uint64_t CountingQuotientFilter<ElementType>::memory_consumption() {
   // TODO
   uint64_t consumption = sizeof(CountingQuotientFilter<ElementType>);
   return consumption;
+}
+
+template <typename ElementType>
+void CountingQuotientFilter<ElementType>::populate(const Table& table, ChunkID chunk_id, ColumnID column_id) {
+  auto column = table->get_chunk(chunk_id).get_column(column_id);
+  resolve_column_type<ElementType>(*column, [&](const auto& typed_column) {
+    auto iterable_left = create_iterable_from_column<ElementType>(typed_column);
+    iterable_left.for_each([&](const auto& left_value) {
+      if (value.is_null()) return;
+      insert(value.value());
+    }
+  }
 }
 
 } // namespace opossum

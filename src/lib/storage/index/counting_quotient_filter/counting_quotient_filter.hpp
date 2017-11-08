@@ -13,12 +13,13 @@ Paper: A General-Purpose Counting Filter: Making Every Bit Count
 Repository: https://github.com/splatlab/cqf
 **/
 template <typename ElementType>
-class CountingQuotientFilter
+class CountingQuotientFilter : BaseFilter
 {
  public:
   CountingQuotientFilter();
   void insert(ElementType value, uint64_t count);
   void insert(ElementType value);
+  void populate(const Table& table, ChunkID chunk_id, ColumnID column_id);
   uint64_t count(ElementType value);
   uint64_t memory_consumption();
 

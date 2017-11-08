@@ -5,6 +5,7 @@
 #include <string>
 #include <utility>
 #include <vector>
+#include <map>
 
 #include "base_column.hpp"
 #include "chunk.hpp"
@@ -12,6 +13,8 @@
 #include "types.hpp"
 #include "utils/assert.hpp"
 #include "utils/performance_warning.hpp"
+#include "index/base_filter.hpp"
+#include "index/counting_quotient_filter/counting_quotient_filter.hpp"
 
 namespace opossum {
 
@@ -137,6 +140,8 @@ class Table : private Noncopyable {
    */
   TableType get_type() const;
 
+  void populate_quotient_filters(ColumnID column_id);
+
  protected:
   // 0 means that the chunk has an unlimited size.
   const uint32_t _chunk_size;
@@ -152,6 +157,7 @@ class Table : private Noncopyable {
   std::vector<std::string> _column_names;
   std::vector<std::string> _column_types;
   std::vector<bool> _column_nullable;
+  std::map<ColumnID, std::vector<std::shared_ptr<BaseFilter>>> _quotient_filters;
 
   std::shared_ptr<TableStatistics> _table_statistics;
 
