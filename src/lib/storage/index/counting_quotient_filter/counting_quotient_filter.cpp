@@ -8,6 +8,7 @@
 
 #include <cmath>
 #include <iostream>
+#include <string>
 
 namespace opossum {
 
@@ -51,6 +52,16 @@ template <typename ElementType>
 uint64_t CountingQuotientFilter<ElementType>::_hash(ElementType value) {
   uint32_t seed = 384812094;
   auto hash = xxh::xxhash<64, ElementType>(&value, 1, seed);
+  return static_cast<uint64_t>(hash);
+}
+
+/**
+* Computes the hash for a string.
+**/
+template <>
+uint64_t CountingQuotientFilter<std::string>::_hash(std::string value) {
+  uint32_t seed = 384812094;
+  auto hash = xxh::xxhash<64, char>(value.data(), value.length(), seed);
   return static_cast<uint64_t>(hash);
 }
 
