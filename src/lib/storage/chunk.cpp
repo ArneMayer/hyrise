@@ -9,8 +9,11 @@
 #include "base_column.hpp"
 #include "chunk.hpp"
 #include "index/base_index.hpp"
+#include "index/counting_quotient_filter/counting_quotient_filter.hpp"
+#include "resolve_type.hpp"
 #include "reference_column.hpp"
 #include "utils/assert.hpp"
+#include "scheduler/job_task.hpp"
 
 namespace opossum {
 
@@ -133,6 +136,13 @@ bool Chunk::references_exactly_one_table() const {
   }
 
   return true;
+}
+
+std::shared_ptr<AbstractTask> Chunk::populate_quotient_filter(ColumnID column_id, std::string column_type) {
+  return std::make_shared<JobTask>([this, column_id, column_type]() {
+    _quotient_filters[column_id] = make_shared_by_column_type<BaseFilter, CountingQuotientFilter>(column_type, 16, 8);
+    _quotient_filters[column_id]->populate(get_column(column_id));
+  });
 }
 
 }  // namespace opossum

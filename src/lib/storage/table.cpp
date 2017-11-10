@@ -195,14 +195,13 @@ TableType Table::get_type() const {
   }
 }
 
-void Table::populate_quotient_filters(ColumnID column_id) {
-  auto column_type = column_type(column_id);
-  _quotient_filters[column_id] = std::vector<std::shared_ptr<BaseFilter>();
+std::vector<std::shared_ptr<AbstractTask>> Table::populate_quotient_filters(ColumnID column_id) {
+  auto type = column_type(column_id);
+  auto jobs = std::vector<std::shared_ptr<AbstractTask>>();
   for (auto chunk_id = ChunkID{0}; chunk_id < chunk_count(); ++chunk_id) {
-    auto filter = make_shared_by_column_type<BaseFilter, CountingQuotientFilter>(column_type);
-    filter->populate(*this, chunk_id, column_id);
-    _quotient_filters[column_id].push_back(filter);
+    jobs.push_back(get_chunk(chunk_id).populate_quotient_filter(column_id, type));
   }
+  return jobs;
 }
 
 }  // namespace opossum

@@ -7,11 +7,14 @@
 #include <memory>
 #include <string>
 #include <vector>
+#include <map>
 
 #include "all_type_variant.hpp"
 #include "copyable_atomic.hpp"
 #include "scoped_locking_ptr.hpp"
+#include "scheduler/abstract_task.hpp"
 #include "types.hpp"
+#include "index/base_filter.hpp"
 
 namespace opossum {
 
@@ -145,10 +148,14 @@ class Chunk : private Noncopyable {
 
   bool references_exactly_one_table() const;
 
+  std::shared_ptr<AbstractTask> populate_quotient_filter(ColumnID column_id, std::string column_type);
+
  protected:
   pmr_concurrent_vector<std::shared_ptr<BaseColumn>> _columns;
   std::shared_ptr<MvccColumns> _mvcc_columns;
   pmr_vector<std::shared_ptr<BaseIndex>> _indices;
+  std::map<ColumnID, std::shared_ptr<BaseFilter>> _quotient_filters;
+
 };
 
 }  // namespace opossum
