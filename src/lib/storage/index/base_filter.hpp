@@ -8,7 +8,12 @@ namespace opossum {
 
 class BaseFilter : private Noncopyable {
  public:
-  void populate(std::shared_ptr<const BaseColumn> column);
+  BaseFilter() = default;
+  virtual ~BaseFilter() = default;
+  BaseFilter(BaseFilter&&) = default;
+  BaseFilter& operator=(BaseFilter&&) = default;
+  
+  virtual void populate(std::shared_ptr<const BaseColumn> column) = 0;
 };
 
 } // namespace opossum

@@ -10,10 +10,10 @@
 #include "chunk.hpp"
 #include "index/base_index.hpp"
 #include "index/counting_quotient_filter/counting_quotient_filter.hpp"
-#include "resolve_type.hpp"
 #include "reference_column.hpp"
 #include "utils/assert.hpp"
 #include "scheduler/job_task.hpp"
+#include "resolve_type.hpp"
 
 namespace opossum {
 

@@ -17,7 +17,7 @@ Paper: A General-Purpose Counting Filter: Making Every Bit Count
 Repository: https://github.com/splatlab/cqf
 **/
 template <typename ElementType>
-class CountingQuotientFilter : BaseFilter {
+class CountingQuotientFilter : public BaseFilter {
  public:
   CountingQuotientFilter(uint8_t quotient_bits, uint8_t remainder_bits);
   void insert(ElementType value, uint64_t count);

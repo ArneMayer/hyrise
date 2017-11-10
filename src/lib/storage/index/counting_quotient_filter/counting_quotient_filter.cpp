@@ -72,4 +72,6 @@ void CountingQuotientFilter<ElementType>::populate(std::shared_ptr<const BaseCol
   });
 }
 
+EXPLICITLY_INSTANTIATE_COLUMN_TYPES(CountingQuotientFilter);
+
 } // namespace opossum

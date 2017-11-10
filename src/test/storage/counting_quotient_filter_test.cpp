@@ -22,13 +22,13 @@ class CountingQuotientFilterTest : public BaseTest {
 };
 
 TEST_F(CountingQuotientFilterTest, Membership) {
-  auto filter = CountingQuotientFilter<int>();
+  auto filter = CountingQuotientFilter<int>(16, 8);
   filter.insert(12345);
   EXPECT_TRUE(filter.count(12345) >= 1);
 }
 
 TEST_F(CountingQuotientFilterTest, MultipleMembership) {
-  auto filter = CountingQuotientFilter<int>();
+  auto filter = CountingQuotientFilter<int>(16, 8);
   filter.insert(10);
   filter.insert(20);
   filter.insert(30);
