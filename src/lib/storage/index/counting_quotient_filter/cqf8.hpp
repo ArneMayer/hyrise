@@ -21,9 +21,9 @@
 
 #include <inttypes.h>
 
-namespace gqf {
+namespace gqf8 {
 
-#define BITS_PER_SLOT 8
+#define BITS_PER_SLOT8 8
 
 	struct __attribute__ ((__packed__)) qfblock;
 	typedef struct qfblock qfblock;

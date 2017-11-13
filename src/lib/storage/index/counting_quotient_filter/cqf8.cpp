@@ -31,9 +31,9 @@
 
 #include <vector>
 
-#include "cqf.hpp"
+#include "cqf8.hpp"
 
-namespace gqf {
+namespace gqf8 {
 
 /* Can be
 	 0 (choose size at run-time),
@@ -61,16 +61,16 @@ typedef struct __attribute__ ((__packed__)) qfblock {
 	uint64_t occupieds[METADATA_WORDS_PER_BLOCK];
 	uint64_t runends[METADATA_WORDS_PER_BLOCK];
 
-#if BITS_PER_SLOT == 8
+#if BITS_PER_SLOT8 == 8
 	uint8_t  slots[SLOTS_PER_BLOCK];
-#elif BITS_PER_SLOT == 16
+#elif BITS_PER_SLOT8 == 16
 	uint16_t  slots[SLOTS_PER_BLOCK];
-#elif BITS_PER_SLOT == 32
+#elif BITS_PER_SLOT8 == 32
 	uint32_t  slots[SLOTS_PER_BLOCK];
-#elif BITS_PER_SLOT == 64
+#elif BITS_PER_SLOT8 == 64
 	uint64_t  slots[SLOTS_PER_BLOCK];
-#elif BITS_PER_SLOT != 0
-	uint8_t   slots[SLOTS_PER_BLOCK * BITS_PER_SLOT / 8];
+#elif BITS_PER_SLOT8 != 0
+	uint8_t   slots[SLOTS_PER_BLOCK * BITS_PER_SLOT8 / 8];
 #else
 	uint8_t   slots[];
 #endif
@@ -259,7 +259,7 @@ static inline uint64_t bitselectv(const uint64_t val, int ignore, int rank)
 	return bitselect(val & ~BITMASK(ignore % 64), rank);
 }
 
-#if BITS_PER_SLOT > 0
+#if BITS_PER_SLOT8 > 0
 static inline qfblock * get_block(const QF *qf, uint64_t block_index)
 {
 	return &qf->blocks[block_index];
@@ -281,7 +281,7 @@ static inline int is_occupied(const QF *qf, uint64_t index)
 	return (METADATA_WORD(qf, occupieds, index) >> ((index % SLOTS_PER_BLOCK) % 64)) & 1ULL;
 }
 
-#if BITS_PER_SLOT == 8 || BITS_PER_SLOT == 16 || BITS_PER_SLOT == 32 || BITS_PER_SLOT == 64
+#if BITS_PER_SLOT8 == 8 || BITS_PER_SLOT8 == 16 || BITS_PER_SLOT8 == 32 || BITS_PER_SLOT8 == 64
 
 static inline uint64_t get_slot(const QF *qf, uint64_t index)
 {
@@ -295,7 +295,7 @@ static inline void set_slot(const QF *qf, uint64_t index, uint64_t value)
 	get_block(qf, index / SLOTS_PER_BLOCK)->slots[index % SLOTS_PER_BLOCK] = value & BITMASK(qf->bits_per_slot);
 }
 
-#elif BITS_PER_SLOT > 0
+#elif BITS_PER_SLOT8 > 0
 
 /* Little-endian code ....  Big-endian is TODO */
 
@@ -303,19 +303,19 @@ static inline uint64_t get_slot(const QF *qf, uint64_t index)
 {
 	/* Should use __uint128_t to support up to 64-bit remainders, but gcc seems to generate buggy code.  :/  */
 	assert(index < qf->xnslots);
-	uint64_t *p = (uint64_t *)&get_block(qf, index / SLOTS_PER_BLOCK)->slots[(index % SLOTS_PER_BLOCK) * BITS_PER_SLOT / 8];
-	return (uint64_t)(((*p) >> (((index % SLOTS_PER_BLOCK) * BITS_PER_SLOT) % 8)) & BITMASK(BITS_PER_SLOT));
+	uint64_t *p = (uint64_t *)&get_block(qf, index / SLOTS_PER_BLOCK)->slots[(index % SLOTS_PER_BLOCK) * BITS_PER_SLOT8 / 8];
+	return (uint64_t)(((*p) >> (((index % SLOTS_PER_BLOCK) * BITS_PER_SLOT8) % 8)) & BITMASK(BITS_PER_SLOT8));
 }
 
 static inline void set_slot(const QF *qf, uint64_t index, uint64_t value)
 {
 	/* Should use __uint128_t to support up to 64-bit remainders, but gcc seems to generate buggy code.  :/  */
 	assert(index < qf->xnslots);
-	uint64_t *p = (uint64_t *)&get_block(qf, index / SLOTS_PER_BLOCK)->slots[(index % SLOTS_PER_BLOCK) * BITS_PER_SLOT / 8];
+	uint64_t *p = (uint64_t *)&get_block(qf, index / SLOTS_PER_BLOCK)->slots[(index % SLOTS_PER_BLOCK) * BITS_PER_SLOT8 / 8];
 	uint64_t t = *p;
-	uint64_t mask = BITMASK(BITS_PER_SLOT);
+	uint64_t mask = BITMASK(BITS_PER_SLOT8);
 	uint64_t v = value;
-	int shift = ((index % SLOTS_PER_BLOCK) * BITS_PER_SLOT) % 8;
+	int shift = ((index % SLOTS_PER_BLOCK) * BITS_PER_SLOT8) % 8;
 	mask <<= shift;
 	v <<= shift;
 	t &= ~mask;
@@ -479,7 +479,7 @@ static inline uint64_t shift_into_b(const uint64_t a, const uint64_t b,
 	return a_component | b_shifted | (b & b_mask);
 }
 
-#if BITS_PER_SLOT == 8 || BITS_PER_SLOT == 16 || BITS_PER_SLOT == 32 || BITS_PER_SLOT == 64
+#if BITS_PER_SLOT8 == 8 || BITS_PER_SLOT8 == 16 || BITS_PER_SLOT8 == 32 || BITS_PER_SLOT8 == 64
 
 static inline void shift_remainders(QF *qf, uint64_t start_index, uint64_t empty_index)
 {
@@ -547,10 +547,10 @@ static inline void qf_dump_block(const QF *qf, uint64_t i)
 		printf(" %d ", (get_block(qf, i)->runends[j/64] & (1ULL << (j%64))) ? 1 : 0);
 	printf("\n");
 
-#if BITS_PER_SLOT == 8 || BITS_PER_SLOT == 16 || BITS_PER_SLOT == 32
+#if BITS_PER_SLOT8 == 8 || BITS_PER_SLOT8 == 16 || BITS_PER_SLOT8 == 32
 	for (j = 0; j < SLOTS_PER_BLOCK; j++)
 		printf("%02x ", get_block(qf, i)->slots[j]);
-#elif BITS_PER_SLOT == 64
+#elif BITS_PER_SLOT8 == 64
 	for (j = 0; j < SLOTS_PER_BLOCK; j++)
 		printf("%02lx ", get_block(qf, i)->slots[j]);
 #else
@@ -604,7 +604,7 @@ void qf_serialize(const QF *qf, const char *filename)
 	fprintf(fout, "%lu ", qf->ndistinct_elts);
 	fprintf(fout, "%lu ", qf->noccupied_slots);
 
-#if BITS_PER_SLOT == 8 || BITS_PER_SLOT == 16 || BITS_PER_SLOT == 32 || BITS_PER_SLOT == 64
+#if BITS_PER_SLOT8 == 8 || BITS_PER_SLOT8 == 16 || BITS_PER_SLOT8 == 32 || BITS_PER_SLOT8 == 64
 	assert(qf->nblocks == fwrite(qf->blocks, sizeof(qfblock), qf->nblocks, fout));
 #else
 	assert(qf->nblocks == fwrite(qf->blocks, sizeof(qfblock) + SLOTS_PER_BLOCK * qf->bits_per_slot / 8, qf->nblocks, fout));
@@ -640,13 +640,13 @@ void qf_deserialize(QF *qf, const char *filename)
 	qf->range = tmp_range;
 
 	/* allocate the space for the actual qf blocks */
-#if BITS_PER_SLOT == 8 || BITS_PER_SLOT == 16 || BITS_PER_SLOT == 32 || BITS_PER_SLOT == 64
+#if BITS_PER_SLOT8 == 8 || BITS_PER_SLOT8 == 16 || BITS_PER_SLOT8 == 32 || BITS_PER_SLOT8 == 64
 	qf->blocks = (qfblock *)calloc(qf->nblocks, sizeof(qfblock));
 #else
 	qf->blocks = (qfblock *)calloc(qf->nblocks, sizeof(qfblock) + SLOTS_PER_BLOCK * qf->bits_per_slot / 8);
 #endif
 
-#if BITS_PER_SLOT == 8 || BITS_PER_SLOT == 16 || BITS_PER_SLOT == 32 || BITS_PER_SLOT == 64
+#if BITS_PER_SLOT8 == 8 || BITS_PER_SLOT8 == 16 || BITS_PER_SLOT8 == 32 || BITS_PER_SLOT8 == 64
 	assert(qf->nblocks == fread(qf->blocks, sizeof(qfblock), qf->nblocks, fin));
 #else
 	assert(qf->nblocks == fread(qf->blocks, sizeof(qfblock) + SLOTS_PER_BLOCK * qf->bits_per_slot / 8, qf->nblocks, fin));
@@ -1411,7 +1411,7 @@ void qf_init(QF *qf, uint64_t nslots, uint64_t key_bits, uint64_t value_bits)
 	}
 
 	qf->bits_per_slot = qf->key_remainder_bits + qf->value_bits;
-	assert (BITS_PER_SLOT == 0 || BITS_PER_SLOT == qf->bits_per_slot);
+	assert (BITS_PER_SLOT8 == 0 || BITS_PER_SLOT8 == qf->bits_per_slot);
 	assert(qf->bits_per_slot > 1);
 
 	qf->range = qf->nslots;
@@ -1420,7 +1420,7 @@ void qf_init(QF *qf, uint64_t nslots, uint64_t key_bits, uint64_t value_bits)
 	qf->nelts = 0;
 	qf->ndistinct_elts = 0;
 	qf->noccupied_slots = 0;
-#if BITS_PER_SLOT == 8 || BITS_PER_SLOT == 16 || BITS_PER_SLOT == 32 || BITS_PER_SLOT == 64
+#if BITS_PER_SLOT8 == 8 || BITS_PER_SLOT8 == 16 || BITS_PER_SLOT8 == 32 || BITS_PER_SLOT8 == 64
 	qf->blocks = (qfblock *)calloc(qf->nblocks, sizeof(qfblock));
 #else
 	qf->blocks = (qfblock *)calloc(qf->nblocks, sizeof(qfblock) + SLOTS_PER_BLOCK * qf->bits_per_slot / 8);

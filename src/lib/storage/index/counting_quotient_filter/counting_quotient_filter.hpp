@@ -1,6 +1,8 @@
 #pragma once
 
-#include "cqf.hpp"
+#include "cqf8.hpp"
+#include "cqf16.hpp"
+#include "cqf32.hpp"
 #include "types.hpp"
 #include "storage/index/base_filter.hpp"
 
@@ -27,7 +29,9 @@ class CountingQuotientFilter : public BaseFilter {
   uint64_t memory_consumption();
 
  private:
-  gqf::quotient_filter _quotient_filter;
+  std::optional<gqf8::quotient_filter> _quotient_filter8;
+  std::optional<gqf16::quotient_filter> _quotient_filter16;
+  std::optional<gqf32::quotient_filter> _quotient_filter32;
   uint64_t _quotient_bits;
   uint64_t _remainder_bits;
   uint64_t _number_of_slots;
