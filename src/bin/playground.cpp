@@ -1,6 +1,8 @@
 #include <iostream>
 
 #include "types.hpp"
+#include "operator/get_table.hpp"
+#include "operator/table_scan/single_column_table_scan_impl.hpp"
 #include "storage/storage_manager.hpp"
 #include "tpcc/tpcc_table_generator.hpp"
 
@@ -55,7 +57,11 @@ int main() {
   }
 
   // Analyze value interval
-  analyze_value_interval<int>("ORDER", "O_ID");
+  // analyze_value_interval<int>("ORDER", "O_ID");
+
+  //auto get_table = GetTable("CUSTOMERS");
+  //auto table_scan = SingleColumnTableScanImpl(std::shared_ptr<const Table> in_table, const ColumnID left_column_id,
+  //                          const ScanType& scan_type, const AllTypeVariant& right_value)
 
   return 0;
 }
