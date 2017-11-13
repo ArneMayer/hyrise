@@ -10,8 +10,7 @@
 #include "join_test.hpp"
 
 #include "operators/get_table.hpp"
-#include "operators/join_nested_loop_a.hpp"
-#include "operators/join_nested_loop_b.hpp"
+#include "operators/join_nested_loop.hpp"
 #include "operators/join_sort_merge.hpp"
 #include "operators/table_scan.hpp"
 #include "storage/storage_manager.hpp"
@@ -29,7 +28,7 @@ template <typename T>
 class JoinFullTest : public JoinTest {};
 
 // here we define all Join types
-typedef ::testing::Types<JoinNestedLoopA, JoinNestedLoopB, JoinSortMerge> JoinFullTypes;
+typedef ::testing::Types<JoinNestedLoop, JoinSortMerge> JoinFullTypes;
 TYPED_TEST_CASE(JoinFullTest, JoinFullTypes);
 
 TYPED_TEST(JoinFullTest, CrossJoin) {
@@ -72,6 +71,12 @@ TYPED_TEST(JoinFullTest, InnerJoinOnString) {
   this->template test_join_output<TypeParam>(
       this->_table_wrapper_c, this->_table_wrapper_d, std::pair<ColumnID, ColumnID>(ColumnID{1}, ColumnID{0}),
       ScanType::OpEquals, JoinMode::Inner, "src/test/tables/joinoperators/string_inner_join.tbl", 1);
+}
+
+TYPED_TEST(JoinFullTest, InnerJoinSingleChunk) {
+  this->template test_join_output<TypeParam>(
+      this->_table_wrapper_e, this->_table_wrapper_f, std::pair<ColumnID, ColumnID>(ColumnID{1}, ColumnID{0}),
+      ScanType::OpEquals, JoinMode::Inner, "src/test/tables/joinoperators/int_inner_join_single_chunk.tbl", 1);
 }
 
 TYPED_TEST(JoinFullTest, InnerRefJoin) {
@@ -365,6 +370,15 @@ TYPED_TEST(JoinFullTest, JoinOnValueAndReferenceColumn) {
   this->template test_join_output<TypeParam>(
       this->_table_wrapper_a, scan_b, std::pair<ColumnID, ColumnID>(ColumnID{0}, ColumnID{0}), ScanType::OpNotEquals,
       JoinMode::Inner, "src/test/tables/joinoperators/int_inner_join_neq.tbl", 1);
+}
+
+TYPED_TEST(JoinFullTest, JoinLessThanOnDictAndDict) {
+  if (std::is_same<TypeParam, JoinSortMerge>::value) {
+    return;
+  }
+  this->template test_join_output<TypeParam>(
+      this->_table_wrapper_a_dict, this->_table_wrapper_b_dict, std::pair<ColumnID, ColumnID>(ColumnID{0}, ColumnID{0}),
+      ScanType::OpLessThanEquals, JoinMode::Inner, "src/test/tables/joinoperators/int_float_leq_dict.tbl", 1);
 }
 
 TYPED_TEST(JoinFullTest, JoinOnReferenceColumnAndDict) {

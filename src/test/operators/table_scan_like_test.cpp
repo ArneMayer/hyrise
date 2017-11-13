@@ -66,6 +66,13 @@ TEST_F(OperatorsTableScanLikeTest, ScanLikeEmptyString) {
   scan->execute();
   EXPECT_TABLE_EQ(scan->get_output(), expected_result);
 }
+TEST_F(OperatorsTableScanLikeTest, ScanLikeEmptyStringOnDict) {
+  std::shared_ptr<Table> expected_result = load_table("src/test/tables/int_string_like.tbl", 1);
+  // wildcard has to be placed at front and/or back of search string
+  auto scan = std::make_shared<TableScan>(_gt_string_dict, ColumnID{1}, ScanType::OpLike, "%");
+  scan->execute();
+  EXPECT_TABLE_EQ(scan->get_output(), expected_result);
+}
 TEST_F(OperatorsTableScanLikeTest, ScanLikeCaseInsensitivity) {
   std::shared_ptr<Table> expected_result = load_table("src/test/tables/int_string_like_starting.tbl", 1);
   // wildcard has to be placed at front and/or back of search string
@@ -81,18 +88,18 @@ TEST_F(OperatorsTableScanLikeTest, ScanLikeUnderscoreWildcard) {
   scan->execute();
   EXPECT_TABLE_EQ(scan->get_output(), expected_result);
 }
-TEST_F(OperatorsTableScanLikeTest, ScanLikeCharacterWildcard) {
-  std::shared_ptr<Table> expected_result = load_table("src/test/tables/int_string_like_starting.tbl", 1);
-  // wildcard has to be placed at front and/or back of search string
-  auto scan = std::make_shared<TableScan>(_gt_string, ColumnID{1}, ScanType::OpLike, "dam[abcp]f%");
-  scan->execute();
-  EXPECT_TABLE_EQ(scan->get_output(), expected_result);
-}
 
 // ScanType::OpLike - Starting
 TEST_F(OperatorsTableScanLikeTest, ScanLike_Starting) {
   std::shared_ptr<Table> expected_result = load_table("src/test/tables/int_string_like_starting.tbl", 1);
   auto scan = std::make_shared<TableScan>(_gt_string, ColumnID{1}, ScanType::OpLike, "Dampf%");
+  scan->execute();
+  EXPECT_TABLE_EQ(scan->get_output(), expected_result);
+}
+TEST_F(OperatorsTableScanLikeTest, ScanLikeEmptyStringDict) {
+  std::shared_ptr<Table> expected_result = load_table("src/test/tables/int_string_like.tbl", 1);
+  // wildcard has to be placed at front and/or back of search string
+  auto scan = std::make_shared<TableScan>(_gt_string_dict, ColumnID{1}, ScanType::OpLike, "%");
   scan->execute();
   EXPECT_TABLE_EQ(scan->get_output(), expected_result);
 }

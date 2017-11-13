@@ -14,6 +14,7 @@
 #include "import_export/csv_meta.hpp"
 #include "resolve_type.hpp"
 #include "scheduler/job_task.hpp"
+#include "storage/dictionary_compression.hpp"
 #include "storage/table.hpp"
 #include "utils/assert.hpp"
 #include "utils/load_table.hpp"
@@ -27,10 +28,7 @@ std::shared_ptr<Table> CsvParser::parse(const std::string& filename, const std::
   } else {
     _meta = *csv_meta;
   }
-  return _parse(filename);
-}
 
-std::shared_ptr<Table> CsvParser::_parse(const std::string& filename) {
   auto table = _create_table_from_meta();
 
   std::ifstream csvfile{filename};
@@ -62,6 +60,9 @@ std::shared_ptr<Table> CsvParser::_parse(const std::string& filename) {
     // create and start parsing task to fill chunk
     tasks.emplace_back(std::make_shared<JobTask>([this, relevant_content, field_ends, &table, &chunk]() {
       _parse_into_chunk(relevant_content, field_ends, *table, chunk);
+      if (_meta.auto_compress && chunk.size() == _meta.chunk_size) {
+        DictionaryCompression::compress_chunk(table->column_types(), chunk);
+      }
     }));
     tasks.back()->schedule();
   }
@@ -174,8 +175,8 @@ void CsvParser::_parse_into_chunk(std::string_view csv_chunk, const std::vector<
       try {
         converters[column_id]->insert(field, row_id);
       } catch (const std::exception& exception) {
-        std::cerr << "Exception while parsing CSV, row " << row_id << ", column " << column_id << "." << std::endl;
-        throw;
+        throw std::logic_error("Exception while parsing CSV, row " + std::to_string(row_id) + ", column " +
+                               std::to_string(column_id) + ":\n" + exception.what());
       }
     }
   }

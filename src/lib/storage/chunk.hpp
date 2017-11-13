@@ -21,9 +21,7 @@ namespace opossum {
 class BaseIndex;
 class BaseColumn;
 
-enum class ChunkUseMvcc {
-  Yes, No
-};
+enum class ChunkUseMvcc { Yes, No };
 
 /**
  * A Chunk is a horizontal partition of a table.

@@ -9,6 +9,9 @@
 #include "concurrency/transaction_manager.hpp"
 #include "operators/get_table.hpp"
 #include "operators/insert.hpp"
+#include "operators/projection.hpp"
+#include "operators/table_wrapper.hpp"
+#include "operators/validate.hpp"
 #include "storage/dictionary_compression.hpp"
 #include "storage/storage_manager.hpp"
 #include "storage/table.hpp"
@@ -52,7 +55,7 @@ TEST_F(OperatorsInsertTest, InsertRespectChunkSize) {
   auto t_name = "test1";
   auto t_name2 = "test2";
 
-  // 3 Rows, column_size = 4
+  // 3 Rows, chunk_size = 4
   auto t = load_table("src/test/tables/int.tbl", 4u);
   StorageManager::get().add_table(t_name, t);
 
@@ -125,6 +128,112 @@ TEST_F(OperatorsInsertTest, CompressedChunks) {
   EXPECT_EQ(t->chunk_count(), 7u);
   EXPECT_EQ(t->get_chunk(ChunkID{6}).size(), 2u);
   EXPECT_EQ(t->row_count(), 13u);
+}
+
+TEST_F(OperatorsInsertTest, Rollback) {
+  auto t_name = "test3";
+
+  auto t = load_table("src/test/tables/int.tbl", 4u);
+  StorageManager::get().add_table(t_name, t);
+
+  auto gt1 = std::make_shared<GetTable>(t_name);
+  gt1->execute();
+
+  auto ins = std::make_shared<Insert>(t_name, gt1);
+  auto context1 = TransactionManager::get().new_transaction_context();
+  ins->set_transaction_context(context1);
+  ins->execute();
+  context1->rollback();
+
+  auto gt2 = std::make_shared<GetTable>(t_name);
+  gt2->execute();
+  auto validate = std::make_shared<Validate>(gt2);
+  auto context2 = TransactionManager::get().new_transaction_context();
+  validate->set_transaction_context(context2);
+  validate->execute();
+
+  EXPECT_EQ(validate->get_output()->row_count(), 3u);
+}
+
+TEST_F(OperatorsInsertTest, InsertStringNullValue) {
+  auto t_name = "test1";
+  auto t_name2 = "test2";
+
+  auto t = load_table("src/test/tables/string_with_null.tbl", 4u);
+  StorageManager::get().add_table(t_name, t);
+
+  auto t2 = load_table("src/test/tables/string_with_null.tbl", 4u);
+  StorageManager::get().add_table(t_name2, t2);
+
+  auto gt2 = std::make_shared<GetTable>(t_name2);
+  gt2->execute();
+
+  auto ins = std::make_shared<Insert>(t_name, gt2);
+  auto context = TransactionManager::get().new_transaction_context();
+  ins->set_transaction_context(context);
+  ins->execute();
+  context->commit();
+
+  EXPECT_EQ(t->chunk_count(), 2u);
+  EXPECT_EQ(t->row_count(), 8u);
+
+  auto null_val = (*(t->get_chunk(ChunkID{1}).get_column(ColumnID{0})))[2];
+  EXPECT_TRUE(is_null(null_val));
+}
+
+TEST_F(OperatorsInsertTest, InsertIntFloatNullValues) {
+  auto t_name = "test1";
+  auto t_name2 = "test2";
+
+  auto t = load_table("src/test/tables/int_float_with_null.tbl", 3u);
+  StorageManager::get().add_table(t_name, t);
+
+  auto t2 = load_table("src/test/tables/int_float_with_null.tbl", 4u);
+  StorageManager::get().add_table(t_name2, t2);
+
+  auto gt2 = std::make_shared<GetTable>(t_name2);
+  gt2->execute();
+
+  auto ins = std::make_shared<Insert>(t_name, gt2);
+  auto context = TransactionManager::get().new_transaction_context();
+  ins->set_transaction_context(context);
+  ins->execute();
+  context->commit();
+
+  EXPECT_EQ(t->chunk_count(), 3u);
+  EXPECT_EQ(t->row_count(), 8u);
+
+  auto null_val_int = (*(t->get_chunk(ChunkID{2}).get_column(ColumnID{0})))[0];
+  EXPECT_TRUE(is_null(null_val_int));
+
+  auto null_val_float = (*(t->get_chunk(ChunkID{1}).get_column(ColumnID{1})))[2];
+  EXPECT_TRUE(is_null(null_val_float));
+}
+
+TEST_F(OperatorsInsertTest, InsertSingleNullFromDummyProjection) {
+  auto t_name = "test1";
+
+  auto t = load_table("src/test/tables/float_with_null.tbl", 4u);
+  StorageManager::get().add_table(t_name, t);
+
+  auto dummy_wrapper = std::make_shared<TableWrapper>(Projection::dummy_table());
+  dummy_wrapper->execute();
+
+  auto literal = Projection::ColumnExpressions{Expression::create_literal(NullValue{})};
+  auto projection = std::make_shared<Projection>(dummy_wrapper, literal);
+  projection->execute();
+
+  auto ins = std::make_shared<Insert>(t_name, projection);
+  auto context = TransactionManager::get().new_transaction_context();
+  ins->set_transaction_context(context);
+  ins->execute();
+  context->commit();
+
+  EXPECT_EQ(t->chunk_count(), 2u);
+  EXPECT_EQ(t->row_count(), 5u);
+
+  auto null_val = (*(t->get_chunk(ChunkID{1}).get_column(ColumnID{0})))[0];
+  EXPECT_TRUE(is_null(null_val));
 }
 
 }  // namespace opossum

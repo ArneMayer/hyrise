@@ -36,7 +36,7 @@ const AllTypeVariant ValueColumn<T>::operator[](const size_t i) const {
   DebugAssert(i != INVALID_CHUNK_OFFSET, "Passed chunk offset must be valid.");
   PerformanceWarning("operator[] used");
 
-  // Columns supports null values and value is null
+  // Column supports null values and value is null
   if (is_nullable() && (*_null_values).at(i)) {
     return NULL_VALUE;
   }
@@ -166,30 +166,6 @@ void ValueColumn<T>::copy_value_to_value_column(BaseColumn& value_column, ChunkO
       output_column.null_values().push_back(false);
     }
   }
-}
-
-// TODO(anyone): This method is part of an algorithm that hasn't yet been updated to support null values.
-template <typename T>
-const std::shared_ptr<pmr_vector<std::pair<RowID, T>>> ValueColumn<T>::materialize(
-    ChunkID chunk_id, std::shared_ptr<std::vector<ChunkOffset>> offsets) {
-  auto materialized_vector = std::make_shared<pmr_vector<std::pair<RowID, T>>>(_values.get_allocator());
-
-  // we may want to sort offsets first?
-  if (offsets) {
-    materialized_vector->reserve(offsets->size());
-    for (auto& offset : *offsets) {
-      auto materialized_row = std::make_pair(RowID{chunk_id, offset}, _values[offset]);
-      materialized_vector->push_back(materialized_row);
-    }
-  } else {
-    materialized_vector->reserve(_values.size());
-    for (ChunkOffset offset = 0; offset < _values.size(); offset++) {
-      auto materialized_row = std::make_pair(RowID{chunk_id, offset}, _values[offset]);
-      materialized_vector->push_back(materialized_row);
-    }
-  }
-
-  return materialized_vector;
 }
 
 EXPLICITLY_INSTANTIATE_COLUMN_TYPES(ValueColumn);
