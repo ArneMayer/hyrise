@@ -1,10 +1,13 @@
 #include <iostream>
+#include <chrono>
 
 #include "types.hpp"
-#include "operator/get_table.hpp"
-#include "operator/table_scan/single_column_table_scan_impl.hpp"
+#include "operators/get_table.hpp"
+#include "operators/table_scan.hpp"
 #include "storage/storage_manager.hpp"
 #include "tpcc/tpcc_table_generator.hpp"
+
+using namespace opossum;
 
 template <typename T>
 void analyze_value_interval(std::string table_name, std::string column_name) {
@@ -36,18 +39,18 @@ void analyze_value_interval(std::string table_name, std::string column_name) {
 int main() {
   std::cout << "TPCC" << std::endl;
   std::cout << " > Generating tables" << std::endl;
-  opossum::ChunkOffset chunk_size = 10000;
-  size_t warehouse_size = 1;
+  ChunkOffset chunk_size = 1000;
+  size_t warehouse_size = 2;
   auto tables = tpcc::TpccTableGenerator(chunk_size, warehouse_size).generate_all_tables();
 
   // Add tables
   for (auto& pair : tables) {
-    opossum::StorageManager::get().add_table(pair.first, pair.second);
+    StorageManager::get().add_table(pair.first, pair.second);
     std::cout << "table: " << pair.first << std::endl;
     std::cout << "rows: " << pair.second->row_count() << std::endl;
     std::cout << "chunks: " << pair.second->chunk_count() << std::endl;
     std::cout << "columns: " << pair.second->column_count() << std::endl;
-    for (auto column_id = opossum::ColumnID{0}; column_id < pair.second->column_count(); column_id++) {
+    for (auto column_id = ColumnID{0}; column_id < pair.second->column_count(); column_id++) {
       auto column_name = pair.second->column_name(column_id);
       auto column_type = pair.second->column_type(column_id);
       std::cout << "(" << column_type << ") " << column_name << ", ";
@@ -57,11 +60,22 @@ int main() {
   }
 
   // Analyze value interval
-  // analyze_value_interval<int>("ORDER", "O_ID");
+  analyze_value_interval<int>("CUSTOMER", "C_ID");
 
-  //auto get_table = GetTable("CUSTOMERS");
-  //auto table_scan = SingleColumnTableScanImpl(std::shared_ptr<const Table> in_table, const ColumnID left_column_id,
-  //                          const ScanType& scan_type, const AllTypeVariant& right_value)
+  auto table = StorageManager::get().get_table("CUSTOMER");
+  auto column_id = table->column_id_by_name("C_ID");
+  table->populate_quotient_filters(column_id);
+
+  auto get_table = std::make_shared<GetTable>("CUSTOMER");
+  auto table_scan = std::make_shared<TableScan>(get_table, column_id, ScanType::OpEquals, 1000);
+
+  auto start = std::chrono::steady_clock::now();
+
+  get_table->execute();
+  table_scan->execute();
+
+  auto duration = std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::steady_clock::now() - start);
+  std::cout << "Time: " <<  duration.count() << std::endl;
 
   return 0;
 }

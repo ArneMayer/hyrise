@@ -54,6 +54,17 @@ void SingleColumnTableScanImpl::handle_dictionary_column(const BaseDictionaryCol
   const auto& mapped_chunk_offsets = context->_mapped_chunk_offsets;
   auto& left_column = static_cast<const BaseDictionaryColumn&>(base_column);
 
+  // cqf is only supported for equal scans
+
+  auto table = _in_table;
+  auto& chunk = _in_table->get_chunk(chunk_id);
+  if (_scan_type == ScanType::OpEquall) {
+    auto cqf = chunk.quotient_filter(_left_column_id);
+    if (cqf.count(value) == 0) {
+      return;
+    }
+  }
+
   /**
    * ValueID value_id; // left value id
    * Variant value; // right value
