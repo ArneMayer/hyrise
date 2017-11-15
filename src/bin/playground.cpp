@@ -6,6 +6,8 @@
 #include "operators/table_scan.hpp"
 #include "storage/storage_manager.hpp"
 #include "tpcc/tpcc_table_generator.hpp"
+#include "scheduler/abstract_task.hpp"
+#include "scheduler/current_scheduler.hpp"
 
 using namespace opossum;
 
@@ -40,7 +42,7 @@ int main() {
   std::cout << "TPCC" << std::endl;
   std::cout << " > Generating tables" << std::endl;
   ChunkOffset chunk_size = 1000;
-  size_t warehouse_size = 2;
+  size_t warehouse_size = 1;
   auto tables = tpcc::TpccTableGenerator(chunk_size, warehouse_size).generate_all_tables();
 
   // Add tables
@@ -64,7 +66,8 @@ int main() {
 
   auto table = StorageManager::get().get_table("CUSTOMER");
   auto column_id = table->column_id_by_name("C_ID");
-  table->populate_quotient_filters(column_id);
+  auto filter_insert_jobs = table->populate_quotient_filters(column_id);
+  CurrentScheduler::wait_for_tasks(filter_insert_jobs);
 
   auto get_table = std::make_shared<GetTable>("CUSTOMER");
   auto table_scan = std::make_shared<TableScan>(get_table, column_id, ScanType::OpEquals, 1000);

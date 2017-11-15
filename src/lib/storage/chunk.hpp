@@ -144,9 +144,20 @@ class Chunk : private Noncopyable {
     return index;
   }
 
+  /**
+  * Checks whether all the columns of this chunk are reference columns and whether they all reference the same table.
+  */
   bool references_exactly_one_table() const;
 
+  /**
+  * Inserts the all values from a column into its corresponding quotient filter.
+  */
   std::shared_ptr<AbstractTask> populate_quotient_filter(ColumnID column_id, std::string column_type);
+
+  /**
+  * Retrieves the filter for a specific column.
+  */
+  std::shared_ptr<const BaseFilter> get_filter(ColumnID column_id) const;
 
  protected:
   pmr_concurrent_vector<std::shared_ptr<BaseColumn>> _columns;

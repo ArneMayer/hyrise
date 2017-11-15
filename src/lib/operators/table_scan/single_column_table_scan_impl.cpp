@@ -54,13 +54,11 @@ void SingleColumnTableScanImpl::handle_dictionary_column(const BaseDictionaryCol
   const auto& mapped_chunk_offsets = context->_mapped_chunk_offsets;
   auto& left_column = static_cast<const BaseDictionaryColumn&>(base_column);
 
-  // cqf is only supported for equal scans
-
-  auto table = _in_table;
-  auto& chunk = _in_table->get_chunk(chunk_id);
-  if (_scan_type == ScanType::OpEquall) {
-    auto cqf = chunk.quotient_filter(_left_column_id);
-    if (cqf.count(value) == 0) {
+  // Check whether this chunk needs to be looked at by performing a filter query
+  // CQF is only supported for ScanType::OpEquals
+  if (_scan_type == ScanType::OpEquals) {
+    auto cqf = _in_table->get_chunk(chunk_id).get_filter(_left_column_id);
+    if (cqf != nullptr && cqf->count(_right_value) == 0) {
       return;
     }
   }

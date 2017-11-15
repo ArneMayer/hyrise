@@ -145,4 +145,14 @@ std::shared_ptr<AbstractTask> Chunk::populate_quotient_filter(ColumnID column_id
   });
 }
 
+std::shared_ptr<const BaseFilter> Chunk::get_filter(ColumnID column_id) const {
+  auto result = _quotient_filters.find(column_id);
+  if (result == _quotient_filters.end()) {
+    std::cout << "no filter found for column " << column_id << std::endl;
+    return nullptr;
+  } else {
+    return result->second;
+  }
+}
+
 }  // namespace opossum

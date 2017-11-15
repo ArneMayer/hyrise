@@ -55,7 +55,13 @@ void CountingQuotientFilter<ElementType>::insert(ElementType element) {
 }
 
 template <typename ElementType>
-uint64_t CountingQuotientFilter<ElementType>::count(ElementType element) {
+uint64_t CountingQuotientFilter<ElementType>::count(AllTypeVariant value) const {
+  DebugAssert(value.type() == typeid(ElementType), "Value does not have the same type as the filter elements");
+  return count(type_cast<ElementType>(value));
+}
+
+template <typename ElementType>
+uint64_t CountingQuotientFilter<ElementType>::count(ElementType element) const {
   uint64_t bitmask = static_cast<uint64_t>(std::pow(2, _hash_bits)) - 1;
   uint64_t hash = bitmask & _hash(element);
   if (_remainder_bits == 8) {
@@ -71,7 +77,7 @@ uint64_t CountingQuotientFilter<ElementType>::count(ElementType element) {
 * Computes the hash for a value.
 **/
 template <typename ElementType>
-uint64_t CountingQuotientFilter<ElementType>::_hash(ElementType value) {
+uint64_t CountingQuotientFilter<ElementType>::_hash(ElementType value) const {
   uint32_t seed = 384812094;
   auto hash = xxh::xxhash<64, ElementType>(&value, 1, seed);
   return static_cast<uint64_t>(hash);
@@ -81,14 +87,14 @@ uint64_t CountingQuotientFilter<ElementType>::_hash(ElementType value) {
 * Computes the hash for a string.
 **/
 template <>
-uint64_t CountingQuotientFilter<std::string>::_hash(std::string value) {
+uint64_t CountingQuotientFilter<std::string>::_hash(std::string value) const {
   uint32_t seed = 384812094;
   auto hash = xxh::xxhash<64, char>(value.data(), value.length(), seed);
   return static_cast<uint64_t>(hash);
 }
 
 template <typename ElementType>
-uint64_t CountingQuotientFilter<ElementType>::memory_consumption() {
+uint64_t CountingQuotientFilter<ElementType>::memory_consumption() const {
   // TODO
   uint64_t consumption = sizeof(CountingQuotientFilter<ElementType>);
   return consumption;

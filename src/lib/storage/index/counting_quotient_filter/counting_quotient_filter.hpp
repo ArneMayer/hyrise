@@ -25,8 +25,9 @@ class CountingQuotientFilter : public BaseFilter {
   void insert(ElementType value, uint64_t count);
   void insert(ElementType value);
   void populate(std::shared_ptr<const BaseColumn> column) override;
-  uint64_t count(ElementType value);
-  uint64_t memory_consumption();
+  uint64_t count(ElementType value) const;
+  uint64_t count(AllTypeVariant value) const;
+  uint64_t memory_consumption() const;
 
  private:
   std::optional<gqf8::quotient_filter> _quotient_filter8;
@@ -36,7 +37,7 @@ class CountingQuotientFilter : public BaseFilter {
   uint64_t _remainder_bits;
   uint64_t _number_of_slots;
   uint64_t _hash_bits;
-  uint64_t _hash(ElementType value);
+  uint64_t _hash(ElementType value) const;
 
 };
 
