@@ -13,7 +13,7 @@ class BaseFilter : private Noncopyable {
   BaseFilter(BaseFilter&&) = default;
   BaseFilter& operator=(BaseFilter&&) = default;
 
-  virtual uint64_t count(AllTypeVariant value) const = 0;
+  virtual uint64_t count_all_type(AllTypeVariant value) const = 0;
   virtual void populate(std::shared_ptr<const BaseColumn> column) = 0;
 };
 

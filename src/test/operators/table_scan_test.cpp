@@ -199,7 +199,7 @@ class OperatorsTableScanTest : public BaseTest {
     ASSERT_EQ(expected.size(), 0u);
   }
 
-  std::shared_ptr<TableWrapper> _table_wrapper, _table_wrapper_even_dict;
+  std::shared_ptr<TableWrapper> _table_wrapper, _table_cqf_wrapper ,_table_wrapper_even_dict;
 };
 
 TEST_F(OperatorsTableScanTest, DoubleScan) {
@@ -559,11 +559,18 @@ TEST_F(OperatorsTableScanTest, ScanForNullValuesWithNullRowIDOnReferencedDictCol
 }
 
 
-TEST_F(OperatorsTableScanTest, ScanWithQuotientFilter)
-  auto scan = std::make_shared<TableScan>(_table_cqf_wrapper, ColumnID{0}, ScanType::OpEquals, 1);
-  scan->execute();
+TEST_F(OperatorsTableScanTest, ScanWithQuotientFilter) {
+  auto scan1 = std::make_shared<TableScan>(_table_cqf_wrapper, ColumnID{1}, ScanType::OpEquals, 456.7);
+  scan1->execute();
 
-  ASSERT_COLUMN_EQ(scan->get_output(), ColumnID{1}, test.second);
+  ASSERT_COLUMN_EQ(scan1->get_output(), ColumnID{1}, {123});
+
+/*
+  auto scan2 = std::make_shared<TableScan>(_table_cqf_wrapper, ColumnID{1}, ScanType::OpEquals, 500);
+  scan2->execute();
+
+  ASSERT_COLUMN_EQ(scan2->get_output(), ColumnID{1}, {});
+  */
 }
 
 }  // namespace opossum
