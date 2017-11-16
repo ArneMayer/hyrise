@@ -26,6 +26,8 @@ class OperatorsTableScanTest : public BaseTest {
   void SetUp() override {
     _table_wrapper = std::make_shared<TableWrapper>(load_table("src/test/tables/int_float.tbl", 2));
     _table_wrapper->execute();
+    _table_cqf_wrapper = std::make_shared<TableWrapper>(load_table("src/test/tables/int_float.tbl", 2));
+    _table_cqf_wrapper->execute();
 
     std::shared_ptr<Table> test_even_dict = std::make_shared<Table>(5);
     test_even_dict->add_column("a", "int");
@@ -554,6 +556,14 @@ TEST_F(OperatorsTableScanTest, ScanForNullValuesWithNullRowIDOnReferencedDictCol
                                                                      {ScanType::OpNotEquals, {12345, NULL_VALUE}}};
 
   scan_for_null_values(table_wrapper, tests);
+}
+
+
+TEST_F(OperatorsTableScanTest, ScanWithQuotientFilter)
+  auto scan = std::make_shared<TableScan>(_table_cqf_wrapper, ColumnID{0}, ScanType::OpEquals, 1);
+  scan->execute();
+
+  ASSERT_COLUMN_EQ(scan->get_output(), ColumnID{1}, test.second);
 }
 
 }  // namespace opossum
