@@ -67,6 +67,9 @@ int main() {
   auto table = StorageManager::get().get_table("CUSTOMER");
   auto column_id = table->column_id_by_name("C_ID");
   auto filter_insert_jobs = table->populate_quotient_filters(column_id);
+  for (auto job : filter_insert_jobs) {
+    job->schedule();
+  }
   CurrentScheduler::wait_for_tasks(filter_insert_jobs);
 
   auto get_table = std::make_shared<GetTable>("CUSTOMER");
