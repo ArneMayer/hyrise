@@ -38,16 +38,15 @@ void analyze_value_interval(std::string table_name, std::string column_name) {
   }
 }
 
-int main() {
+void generate_data(int warehouse_size, int chunk_size, std::string table_name, std::string column_name) {
   std::cout << "TPCC" << std::endl;
   std::cout << " > Generating tables" << std::endl;
-  ChunkOffset chunk_size = 1000;
-  size_t warehouse_size = 1;
   auto tables = tpcc::TpccTableGenerator(chunk_size, warehouse_size).generate_all_tables();
 
   // Add tables
   for (auto& pair : tables) {
     StorageManager::get().add_table(pair.first, pair.second);
+    /*
     std::cout << "table: " << pair.first << std::endl;
     std::cout << "rows: " << pair.second->row_count() << std::endl;
     std::cout << "chunks: " << pair.second->chunk_count() << std::endl;
@@ -58,30 +57,48 @@ int main() {
       std::cout << "(" << column_type << ") " << column_name << ", ";
     }
     std::cout << std::endl;
-    std::cout << "------------------------" << std::endl;
+    //std::cout << "------------------------" << std::endl;
+    */
+  }
+  std::cout << " > Done" << std::endl;
+}
+
+std::shared_ptr<AbstractOperator> generate_benchmark(std::string table_name, std::string column_name,
+                                                     uint8_t quotient_size, uint8_t remainder_size) {
+  auto table = StorageManager::get().get_table(table_name);
+  auto column_id = table->column_id_by_name(column_name);
+  if (remainder_size > 0) {
+    std::cout << " > Generating Filters" << std::endl;
+    auto filter_insert_jobs = table->populate_quotient_filters(column_id, quotient_size, remainder_size);
+    for (auto job : filter_insert_jobs) {
+      job->schedule();
+    }
+    CurrentScheduler::wait_for_tasks(filter_insert_jobs);
+    std::cout << " > Done" << std::endl;
   }
 
-  // Analyze value interval
-  analyze_value_interval<int>("CUSTOMER", "C_ID");
-
-  auto table = StorageManager::get().get_table("CUSTOMER");
-  auto column_id = table->column_id_by_name("C_ID");
-  auto filter_insert_jobs = table->populate_quotient_filters(column_id);
-  for (auto job : filter_insert_jobs) {
-    job->schedule();
-  }
-  CurrentScheduler::wait_for_tasks(filter_insert_jobs);
-
-  auto get_table = std::make_shared<GetTable>("CUSTOMER");
+  auto get_table = std::make_shared<GetTable>(table_name);
   auto table_scan = std::make_shared<TableScan>(get_table, column_id, ScanType::OpEquals, 1000);
-
-  auto start = std::chrono::steady_clock::now();
-
   get_table->execute();
-  table_scan->execute();
+  return table_scan;
+}
 
-  auto duration = std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::steady_clock::now() - start);
-  std::cout << "Time: " <<  duration.count() << std::endl;
+int main() {
+  auto table_name = "CUSTOMER";
+  auto column_name = "C_ID";
+  auto warehouse_size = 10;
+  auto chunk_size = 1000;
+  auto quotient_size = 16;
+
+  generate_data(warehouse_size, chunk_size, table_name, column_name);
+  auto remainder_sizes = {0, 8, 16, 32};
+  for (auto remainder_size : remainder_sizes) {
+    auto benchmark = generate_benchmark(table_name, column_name, quotient_size, remainder_size);
+    auto start = std::chrono::steady_clock::now();
+    benchmark->execute();
+    auto duration = std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::steady_clock::now() - start);
+    std::cout << "Time: " <<  duration.count() << std::endl;
+  }
 
   return 0;
 }

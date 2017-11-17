@@ -138,7 +138,8 @@ class Table : private Noncopyable {
    */
   TableType get_type() const;
 
-  std::vector<std::shared_ptr<AbstractTask>> populate_quotient_filters(ColumnID column_id);
+  std::vector<std::shared_ptr<AbstractTask>> populate_quotient_filters(ColumnID column_id, uint8_t quotient_bits,
+                                                                       uint8_t remainder_bits);
 
  protected:
   // 0 means that the chunk has an unlimited size.

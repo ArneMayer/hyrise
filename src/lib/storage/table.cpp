@@ -195,11 +195,12 @@ TableType Table::get_type() const {
   }
 }
 
-std::vector<std::shared_ptr<AbstractTask>> Table::populate_quotient_filters(ColumnID column_id) {
+std::vector<std::shared_ptr<AbstractTask>> Table::populate_quotient_filters(ColumnID column_id, uint8_t quotient_bits,
+                                                                            uint8_t remainder_bits) {
   auto type = column_type(column_id);
   auto jobs = std::vector<std::shared_ptr<AbstractTask>>();
   for (auto chunk_id = ChunkID{0}; chunk_id < chunk_count(); ++chunk_id) {
-    jobs.push_back(get_chunk(chunk_id).populate_quotient_filter(column_id, type));
+    jobs.push_back(get_chunk(chunk_id).populate_quotient_filter(column_id, type, quotient_bits, remainder_bits));
   }
   return jobs;
 }

@@ -138,9 +138,11 @@ bool Chunk::references_exactly_one_table() const {
   return true;
 }
 
-std::shared_ptr<AbstractTask> Chunk::populate_quotient_filter(ColumnID column_id, std::string column_type) {
-  return std::make_shared<JobTask>([this, column_id, column_type]() {
-    _quotient_filters[column_id] = make_shared_by_column_type<BaseFilter, CountingQuotientFilter>(column_type, 16, 8);
+std::shared_ptr<AbstractTask> Chunk::populate_quotient_filter(ColumnID column_id, std::string column_type,
+                                                              uint8_t quotient_bits, uint8_t remainder_bits) {
+  return std::make_shared<JobTask>([this, column_id, column_type, quotient_bits, remainder_bits]() {
+    _quotient_filters[column_id] = make_shared_by_column_type<BaseFilter, CountingQuotientFilter>(column_type,
+                                                                                        quotient_bits, remainder_bits);
     _quotient_filters[column_id]->populate(get_column(column_id));
   });
 }
@@ -148,7 +150,6 @@ std::shared_ptr<AbstractTask> Chunk::populate_quotient_filter(ColumnID column_id
 std::shared_ptr<const BaseFilter> Chunk::get_filter(ColumnID column_id) const {
   auto result = _quotient_filters.find(column_id);
   if (result == _quotient_filters.end()) {
-    std::cout << "no filter found for column " << column_id << std::endl;
     return nullptr;
   } else {
     return result->second;

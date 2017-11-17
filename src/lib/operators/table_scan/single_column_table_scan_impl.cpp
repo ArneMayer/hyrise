@@ -59,7 +59,7 @@ void SingleColumnTableScanImpl::handle_dictionary_column(const BaseDictionaryCol
   if (_scan_type == ScanType::OpEquals) {
     auto cqf = _in_table->get_chunk(chunk_id).get_filter(_left_column_id);
     if (cqf != nullptr && cqf->count_all_type(_right_value) == 0) {
-      std::cout << "skipping chunk" << std::endl;
+      //std::cout << "skipping chunk" << std::endl;
       return;
     }
   }
