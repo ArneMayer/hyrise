@@ -14,6 +14,7 @@
 #include "operators/print.hpp"
 #include "operators/table_scan.hpp"
 #include "operators/table_wrapper.hpp"
+#include "operators/print.hpp"
 #include "storage/dictionary_compression.hpp"
 #include "storage/reference_column.hpp"
 #include "storage/table.hpp"
@@ -563,14 +564,12 @@ TEST_F(OperatorsTableScanTest, ScanWithQuotientFilter) {
   auto scan1 = std::make_shared<TableScan>(_table_cqf_wrapper, ColumnID{1}, ScanType::OpEquals, 456.7);
   scan1->execute();
 
-  ASSERT_COLUMN_EQ(scan1->get_output(), ColumnID{1}, {123});
+  ASSERT_COLUMN_EQ(scan1->get_output(), ColumnID{0}, {123});
 
-/*
   auto scan2 = std::make_shared<TableScan>(_table_cqf_wrapper, ColumnID{1}, ScanType::OpEquals, 500);
   scan2->execute();
 
-  ASSERT_COLUMN_EQ(scan2->get_output(), ColumnID{1}, {});
-  */
+  ASSERT_COLUMN_EQ(scan2->get_output(), ColumnID{0}, {});
 }
 
 }  // namespace opossum
