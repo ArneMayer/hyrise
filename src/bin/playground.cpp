@@ -88,13 +88,13 @@ int main() {
   auto column_name = "C_ID";
   auto warehouse_size = 10;
   auto chunk_size = 1000;
-  //auto quotient_size = 16;
-  auto remainder_size = 8;
+  auto quotient_size = 10;
+  //auto remainder_size = 8;
 
   generate_data(warehouse_size, chunk_size, table_name, column_name);
-  //auto remainder_sizes = {0, 8, 16, 32};
-  auto quotient_sizes = {0, 8, 16};
-  for (auto quotient_size : quotient_sizes) {
+  auto remainder_sizes = {0, 8, 16, 32};
+  //auto quotient_sizes = {0, 10, 16};
+  for (auto remainder_size : remainder_sizes) {
     auto benchmark = generate_benchmark(table_name, column_name, quotient_size, remainder_size);
     auto start = std::chrono::steady_clock::now();
     benchmark->execute();
