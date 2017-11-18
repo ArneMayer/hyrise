@@ -67,14 +67,14 @@ std::shared_ptr<AbstractOperator> generate_benchmark(std::string table_name, std
                                                      uint8_t quotient_size, uint8_t remainder_size) {
   auto table = StorageManager::get().get_table(table_name);
   auto column_id = table->column_id_by_name(column_name);
-  if (remainder_size > 0) {
-    std::cout << " > Generating Filters" << std::endl;
+  if (remainder_size > 0 && quotient_size > 0) {
+    //std::cout << " > Generating Filters" << std::endl;
     auto filter_insert_jobs = table->populate_quotient_filters(column_id, quotient_size, remainder_size);
     for (auto job : filter_insert_jobs) {
       job->schedule();
     }
     CurrentScheduler::wait_for_tasks(filter_insert_jobs);
-    std::cout << " > Done" << std::endl;
+    //std::cout << " > Done" << std::endl;
   }
 
   auto get_table = std::make_shared<GetTable>(table_name);
@@ -88,16 +88,18 @@ int main() {
   auto column_name = "C_ID";
   auto warehouse_size = 10;
   auto chunk_size = 1000;
-  auto quotient_size = 16;
+  //auto quotient_size = 16;
+  auto remainder_size = 8;
 
   generate_data(warehouse_size, chunk_size, table_name, column_name);
-  auto remainder_sizes = {0, 8, 16, 32};
-  for (auto remainder_size : remainder_sizes) {
+  //auto remainder_sizes = {0, 8, 16, 32};
+  auto quotient_sizes = {0, 8, 16};
+  for (auto quotient_size : quotient_sizes) {
     auto benchmark = generate_benchmark(table_name, column_name, quotient_size, remainder_size);
     auto start = std::chrono::steady_clock::now();
     benchmark->execute();
     auto duration = std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::steady_clock::now() - start);
-    std::cout << "Time: " <<  duration.count() << std::endl;
+    std::cout << "quotient size: " << quotient_size << ", remainder size: " << remainder_size << ", time: " <<  duration.count() << std::endl;
   }
 
   return 0;
