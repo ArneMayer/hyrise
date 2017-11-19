@@ -1,5 +1,6 @@
 #include <iostream>
 #include <chrono>
+#include <fstream>
 
 #include "types.hpp"
 #include "operators/get_table.hpp"
@@ -8,6 +9,7 @@
 #include "tpcc/tpcc_table_generator.hpp"
 #include "scheduler/abstract_task.hpp"
 #include "scheduler/current_scheduler.hpp"
+#include <json.hpp>
 
 using namespace opossum;
 
@@ -83,24 +85,48 @@ std::shared_ptr<AbstractOperator> generate_benchmark(std::string table_name, std
   return table_scan;
 }
 
+void serialize_results(nlohmann::json results) {
+  std::ofstream outfile;
+  outfile.open ("~/dev/jupyter/benchmark_results.json");
+  outfile << results;
+  outfile.close();
+}
+
 int main() {
   auto table_name = "CUSTOMER";
   auto column_name = "C_ID";
-  auto warehouse_size = 10;
+  auto warehouse_size = 1;
   auto chunk_size = 1000;
   auto quotient_size = 10;
   //auto remainder_size = 8;
-
-  generate_data(warehouse_size, chunk_size, table_name, column_name);
   auto remainder_sizes = {0, 8, 16, 32};
   //auto quotient_sizes = {0, 10, 16};
+  nlohmann::json results;
+  results["results"] = nlohmann::json::array();
+  results["table_name"] = table_name;
+  results["column_name"] = column_name;
+  results["warehouse_size"] = warehouse_size;
+  results["chunk_size"] = chunk_size;
+
+  generate_data(warehouse_size, chunk_size, table_name, column_name);
   for (auto remainder_size : remainder_sizes) {
     auto benchmark = generate_benchmark(table_name, column_name, quotient_size, remainder_size);
     auto start = std::chrono::steady_clock::now();
     benchmark->execute();
     auto duration = std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::steady_clock::now() - start);
-    std::cout << "quotient size: " << quotient_size << ", remainder size: " << remainder_size << ", time: " <<  duration.count() << std::endl;
+    results["results"].push_back({
+      {"quotient_size", quotient_size},
+      {"remainder_size", remainder_size},
+      {"runtime", duration.count()}
+    });
+    std::cout << "quotient_size: " << quotient_size
+              << ", remainder_size: " << remainder_size
+              << ", runtime: " << duration.count()
+              << std::endl;
   }
+
+  std::cout << results << std::endl;
+  serialize_results(results);
 
   return 0;
 }
