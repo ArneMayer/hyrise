@@ -87,9 +87,15 @@ std::shared_ptr<AbstractOperator> generate_benchmark(std::string table_name, std
 
 void serialize_results(nlohmann::json results) {
   std::ofstream outfile;
-  outfile.open ("~/dev/jupyter/benchmark_results.json");
-  outfile << results;
-  outfile.close();
+  outfile.open ("/home/osboxes/dev/jupyter/benchmark_results.json");
+  //outfile.open ("results.json");
+  if (outfile.is_open()) {
+    outfile << results;
+    outfile.close();
+    std::cout << " > result written" << std::endl;
+  } else {
+    std::cout << " > could not write results to file" << std::endl;
+  }
 }
 
 int main() {
