@@ -43,6 +43,8 @@ void analyze_value_interval(std::string table_name, std::string column_name) {
 void generate_data(int warehouse_size, int chunk_size, std::string table_name, std::string column_name) {
   std::cout << "TPCC" << std::endl;
   std::cout << " > Generating tables" << std::endl;
+  // TODO generate only what you need
+  // TODO generate custom data
   auto tables = tpcc::TpccTableGenerator(chunk_size, warehouse_size).generate_all_tables();
 
   // Add tables
@@ -85,9 +87,9 @@ std::shared_ptr<AbstractOperator> generate_benchmark(std::string table_name, std
   return table_scan;
 }
 
-void serialize_results(nlohmann::json results) {
+void serialize_results(nlohmann::json resultssl) {
   std::ofstream outfile;
-  outfile.open ("/home/osboxes/dev/jupyter/benchmark_results.json");
+  outfile.open ("/home/arne/dev/jupyter/benchmark_results.json");
   //outfile.open ("results.json");
   if (outfile.is_open()) {
     outfile << results;
@@ -101,12 +103,15 @@ void serialize_results(nlohmann::json results) {
 int main() {
   auto table_name = "CUSTOMER";
   auto column_name = "C_ID";
-  auto warehouse_size = 1;
+  auto warehouse_size = 10;
   auto chunk_size = 1000;
   auto quotient_size = 10;
   //auto remainder_size = 8;
+
   auto remainder_sizes = {0, 8, 16, 32};
   //auto quotient_sizes = {0, 10, 16};
+
+
   nlohmann::json results;
   results["results"] = nlohmann::json::array();
   results["table_name"] = table_name;
