@@ -455,8 +455,40 @@ TpccTableGeneratorFunctions TpccTableGenerator::tpcc_table_generator_functions()
   return generators;
 }
 
+TpccTableGeneratorFunctions TpccTableGenerator::tpcc_table_generator_functions(const opossum::ChunkOffset chunk_size,
+                                                                               const size_t warehouse_size) {
+  TpccTableGeneratorFunctions generators{
+      {"ITEM", [=]() { return tpcc::TpccTableGenerator(chunk_size, warehouse_size).generate_items_table(); }},
+      {"WAREHOUSE", [=]() { return tpcc::TpccTableGenerator(chunk_size, warehouse_size).generate_warehouse_table(); }},
+      {"STOCK", [=]() { return tpcc::TpccTableGenerator(chunk_size, warehouse_size).generate_stock_table(); }},
+      {"DISTRICT", [=]() { return tpcc::TpccTableGenerator(chunk_size, warehouse_size).generate_district_table(); }},
+      {"CUSTOMER", [=]() { return tpcc::TpccTableGenerator(chunk_size, warehouse_size).generate_customer_table(); }},
+      {"HISTORY", [=]() { return tpcc::TpccTableGenerator(chunk_size, warehouse_size).generate_history_table(); }},
+      {"ORDER", [=]() { return tpcc::TpccTableGenerator(chunk_size, warehouse_size).generate_new_order_table(); }},
+      {"NEW-ORDER",
+       [=]() {
+         auto order_line_counts = tpcc::TpccTableGenerator(chunk_size, warehouse_size).generate_order_line_counts();
+         return tpcc::TpccTableGenerator(chunk_size, warehouse_size).generate_order_table(order_line_counts);
+       }},
+      {"ORDER-LINE", [=]() {
+         auto order_line_counts = tpcc::TpccTableGenerator(chunk_size, warehouse_size).generate_order_line_counts();
+         return tpcc::TpccTableGenerator(chunk_size, warehouse_size).generate_order_line_table(order_line_counts);
+       }}};
+  return generators;
+}
+
 std::shared_ptr<opossum::Table> TpccTableGenerator::generate_tpcc_table(const std::string& tablename) {
   auto generators = TpccTableGenerator::tpcc_table_generator_functions();
+  if (generators.find(tablename) == generators.end()) {
+    return nullptr;
+  }
+  return generators[tablename]();
+}
+
+std::shared_ptr<opossum::Table> TpccTableGenerator::generate_tpcc_table(const std::string& tablename,
+                                                                        const opossum::ChunkOffset chunk_size,
+                                                                        const size_t warehouse_size) {
+  auto generators = TpccTableGenerator::tpcc_table_generator_functions(chunk_size, warehouse_size);
   if (generators.find(tablename) == generators.end()) {
     return nullptr;
   }
