@@ -12,6 +12,7 @@
 #include "operators/export_binary.hpp"
 #include "operators/table_wrapper.hpp"
 #include "storage/storage_manager.hpp"
+#include "storage/dictionary_compression.hpp"
 #include "tpcc/tpcc_table_generator.hpp"
 #include "scheduler/abstract_task.hpp"
 #include "scheduler/current_scheduler.hpp"
@@ -59,6 +60,23 @@ void analyze_value_interval(std::string table_name, std::string column_name) {
     row_number_prefix += chunk_size;
     std::cout << "Chunk " << chunk_id << ": [" << min_value << ", " << max_value << "]" << std::endl;
   }
+}
+
+int analyze_skippable_chunks(std::string table_name, std::string column_name, AllTypeVariant scan_value) {
+  auto table = StorageManager::get().get_table(table_name);
+  auto column_id = table->column_id_by_name(column_name);
+
+  auto skippable_count = 0;
+  for (auto chunk_id = ChunkID{0}; chunk_id < table->chunk_count(); chunk_id++) {
+    auto& chunk = table->get_chunk(chunk_id);
+    auto filter = chunk.get_filter(column_id);
+    if (filter == nullptr) {
+    } else if(filter->count_all_type(scan_value) == 0) {
+      skippable_count++;
+    }
+  }
+
+  return skippable_count;
 }
 
 void print_chunk_sizes(std::shared_ptr<const Table> table) {
@@ -154,7 +172,7 @@ std::string best_case_load_or_generate(int row_count, int chunk_size) {
   // Generate table header
   auto table = std::make_shared<Table>(chunk_size);
   for (int i = 0; i < column_count; i++) {
-    table->add_column_definition("column" + i, "int", false);
+    table->add_column("column" + std::to_string(i), "int", false);
   }
 
   // Generate table data
@@ -168,6 +186,7 @@ std::string best_case_load_or_generate(int row_count, int chunk_size) {
     }
   }
 
+  DictionaryCompression::compress_table(*table);
   StorageManager::get().add_table(table_name, table);
   save_table(table, table_name);
 
@@ -177,12 +196,8 @@ std::string best_case_load_or_generate(int row_count, int chunk_size) {
 void worst_case_load_or_generate(int rows, int chunk_size) {
 }
 
-std::shared_ptr<AbstractOperator> generate_benchmark(std::string tpcc_table_name, std::string column_name,
-                                                     uint8_t quotient_size, uint8_t remainder_size, int warehouse_size,
-                                                     int chunk_size) {
-  auto table_name = tpcc_load_or_generate(warehouse_size, chunk_size, tpcc_table_name);
-  auto table = StorageManager::get().get_table(table_name);
-  auto column_id = table->column_id_by_name(column_name);
+void create_quotient_filters(std::shared_ptr<Table> table, ColumnID column_id, uint8_t quotient_size,
+    	                       uint8_t remainder_size) {
   if (remainder_size > 0 && quotient_size > 0) {
     //std::cout << " > Generating Filters" << std::endl;
     auto filter_insert_jobs = table->populate_quotient_filters(column_id, quotient_size, remainder_size);
@@ -192,7 +207,29 @@ std::shared_ptr<AbstractOperator> generate_benchmark(std::string tpcc_table_name
     CurrentScheduler::wait_for_tasks(filter_insert_jobs);
     //std::cout << " > Done" << std::endl;
   }
+}
 
+std::shared_ptr<AbstractOperator> generate_benchmark_best_case(uint8_t quotient_size, uint8_t remainder_size, int rows,
+                                                               int chunk_size) {
+  auto table_name = best_case_load_or_generate(rows, chunk_size);
+  //print_table_layout(table_name);
+  //analyze_value_interval<int>(table_name, "column0");
+  auto table = StorageManager::get().get_table(table_name);
+  create_quotient_filters(table, ColumnID{0}, quotient_size, remainder_size);
+  std::cout << analyze_skippable_chunks(table_name, "column0", 3000) << " chunks skippable" << std::endl;
+  auto get_table = std::make_shared<GetTable>(table_name);
+  auto table_scan = std::make_shared<TableScan>(get_table, ColumnID{0}, ScanType::OpEquals, 3000);
+  get_table->execute();
+  return table_scan;
+}
+
+std::shared_ptr<AbstractOperator> generate_benchmark_tpcc(std::string tpcc_table_name, std::string column_name,
+                                                     uint8_t quotient_size, uint8_t remainder_size, int warehouse_size,
+                                                     int chunk_size) {
+  auto table_name = tpcc_load_or_generate(warehouse_size, chunk_size, tpcc_table_name);
+  auto table = StorageManager::get().get_table(table_name);
+  auto column_id = table->column_id_by_name(column_name);
+  create_quotient_filters(table, column_id, quotient_size, remainder_size);
   auto get_table = std::make_shared<GetTable>(table_name);
   auto table_scan = std::make_shared<TableScan>(get_table, column_id, ScanType::OpEquals, 3000);
   get_table->execute();
@@ -212,7 +249,7 @@ void serialize_results(nlohmann::json results) {
   }
 }
 
-int main() {
+void tpcc_benchmark_series() {
   auto tpcc_table_name = std::string("ORDER");
   auto column_name = std::string("NO_O_ID");
   auto warehouse_size = 100;
@@ -221,29 +258,30 @@ int main() {
   //auto remainder_size = 8;
   auto remainder_sizes = {0, 8, 16, 32};
   //auto quotient_sizes = {0, 10, 16};
+
   nlohmann::json results;
   results["results"] = nlohmann::json::array();
   results["table_name"] = tpcc_table_name;
   results["column_name"] = column_name;
-  results["warehouse_size"] = warehouse_size;
+  results["row_count"] = "?";
   results["chunk_size"] = chunk_size;
 
   std::cout << "------------------------" << std::endl;
   std::cout << "Benchmark configuration: " << std::endl;
   std::cout << "table_name:     " << tpcc_table_name << std::endl;
   std::cout << "column_name:    " << column_name << std::endl;
-  std::cout << "warehouse_size: " << warehouse_size << std::endl;
+  std::cout << "row_count:      " << "?" << std::endl;
   std::cout << "chunk_size:     " << chunk_size << std::endl;
   std::cout << "quotient_size:  " << quotient_size << std::endl;
   std::cout << "------------------------" << std::endl;
 
   // analyze_value_interval<int>(table_name, column_name);
   for (auto remainder_size : remainder_sizes) {
-    auto benchmark = generate_benchmark(tpcc_table_name, column_name, quotient_size, remainder_size,
+    auto benchmark = generate_benchmark_tpcc(tpcc_table_name, column_name, quotient_size, remainder_size,
                                         warehouse_size, chunk_size);
     auto start = std::chrono::steady_clock::now();
     benchmark->execute();
-    auto duration = std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::steady_clock::now() - start);
+    auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - start);
     results["results"].push_back({
       {"quotient_size", quotient_size},
       {"remainder_size", remainder_size},
@@ -257,6 +295,62 @@ int main() {
 
   serialize_results(results);
   StorageManager::get().reset();
+}
 
+void best_case_benchmark_series() {
+  auto row_count = 100'000'000;
+  auto chunk_size = 1'000'000;
+  auto quotient_size = 20;
+  //auto remainder_size = 8;
+  auto remainder_sizes = {0, 8, 16, 32};
+  //auto quotient_sizes = {0, 10, 16};
+  nlohmann::json results;
+  results["results"] = nlohmann::json::array();
+  results["table_name"] = "best_case";
+  results["column_name"] = "column0";
+  results["row_count"] = row_count;
+  results["chunk_size"] = chunk_size;
+
+  std::cout << "------------------------" << std::endl;
+  std::cout << "Benchmark configuration: " << std::endl;
+  std::cout << "table_name:     " << "best_case" << std::endl;
+  std::cout << "column_name:    " << "column0" << std::endl;
+  std::cout << "row_count:      " << row_count << std::endl;
+  std::cout << "chunk_size:     " << chunk_size << std::endl;
+  std::cout << "quotient_size:  " << quotient_size << std::endl;
+  std::cout << "------------------------" << std::endl;
+
+  // analyze_value_interval<int>(table_name, column_name);
+  for (auto remainder_size : remainder_sizes) {
+    auto benchmark = generate_benchmark_best_case(quotient_size, remainder_size, row_count, chunk_size);
+    auto start = std::chrono::steady_clock::now();
+    benchmark->execute();
+    auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - start);
+    results["results"].push_back({
+      {"quotient_size", quotient_size},
+      {"remainder_size", remainder_size},
+      {"runtime", duration.count()}
+    });
+    std::cout << "quotient_size: " << quotient_size
+              << ", remainder_size: " << remainder_size
+              << ", runtime: " << duration.count()
+              << std::endl;
+  }
+
+  serialize_results(results);
+  StorageManager::get().reset();
+}
+
+/* NOTES
+* Best Case Benchmark:
+* - Performance improvement comes from not having to do a dictionary lookup
+* - The improvement is bigger for bigger dictionaries
+* - For a noticable improvement we need:
+*   - big dictionaries
+*   - lots of chunks
+**/
+
+int main() {
+  best_case_benchmark_series();
   return 0;
 }
