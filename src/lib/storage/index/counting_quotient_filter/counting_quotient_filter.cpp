@@ -36,6 +36,19 @@ CountingQuotientFilter<ElementType>::CountingQuotientFilter(uint8_t quotient_bit
 }
 
 template <typename ElementType>
+CountingQuotientFilter<ElementType>::~CountingQuotientFilter() {
+  if (_quotient_filter8.has_value()) {
+    gqf8::qf_destroy(&_quotient_filter8.value());
+  }
+  if (_quotient_filter16.has_value()) {
+    gqf16::qf_destroy(&_quotient_filter16.value());
+  }
+  if (_quotient_filter32.has_value()) {
+    gqf32::qf_destroy(&_quotient_filter32.value());
+  }
+}
+
+template <typename ElementType>
 void CountingQuotientFilter<ElementType>::insert(ElementType element, uint64_t count) {
   uint64_t bitmask = static_cast<uint64_t>(std::pow(2, _hash_bits)) - 1;
   uint64_t hash = bitmask & _hash(element);

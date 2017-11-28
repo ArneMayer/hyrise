@@ -22,6 +22,7 @@ template <typename ElementType>
 class CountingQuotientFilter : public BaseFilter {
  public:
   CountingQuotientFilter(uint8_t quotient_bits, uint8_t remainder_bits);
+  virtual ~CountingQuotientFilter();// = default;
   void insert(ElementType value, uint64_t count);
   void insert(ElementType value);
   void populate(std::shared_ptr<const BaseColumn> column) override;

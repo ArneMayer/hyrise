@@ -208,6 +208,8 @@ set(
     storage/index/counting_quotient_filter/cqf32.cpp
     storage/index/counting_quotient_filter/counting_quotient_filter.hpp
     storage/index/counting_quotient_filter/counting_quotient_filter.cpp
+    storage/index/interval_tree_node.hpp
+    storage/index/interval_tree_node.cpp
     storage/index/adaptive_radix_tree/adaptive_radix_tree_nodes.cpp
     storage/index/adaptive_radix_tree/adaptive_radix_tree_nodes.hpp
     storage/index/base_index.cpp

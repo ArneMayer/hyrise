@@ -160,7 +160,7 @@ std::string best_case_load_or_generate(int row_count, int chunk_size) {
   // - 10 columns minimum,
   // - Every chunk is compressed
 
-  // Best case: Dictionary can prune nothing, filter can prune everything
+  // Best case: Dictionary pruning takes long, filter can prune everything
   // -> Scan value in between min/max
   // -> No chunk contains the actual scan value
   const auto column_count = 10;
@@ -216,7 +216,7 @@ std::shared_ptr<AbstractOperator> generate_benchmark_best_case(uint8_t quotient_
   //analyze_value_interval<int>(table_name, "column0");
   auto table = StorageManager::get().get_table(table_name);
   create_quotient_filters(table, ColumnID{0}, quotient_size, remainder_size);
-  std::cout << analyze_skippable_chunks(table_name, "column0", 3000) << " chunks skippable" << std::endl;
+  //std::cout << analyze_skippable_chunks(table_name, "column0", 3000) << " chunks skippable" << std::endl;
   auto get_table = std::make_shared<GetTable>(table_name);
   auto table_scan = std::make_shared<TableScan>(get_table, ColumnID{0}, ScanType::OpEquals, 3000);
   get_table->execute();
@@ -281,7 +281,7 @@ void tpcc_benchmark_series() {
                                         warehouse_size, chunk_size);
     auto start = std::chrono::steady_clock::now();
     benchmark->execute();
-    auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - start);
+    auto duration = std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::steady_clock::now() - start);
     results["results"].push_back({
       {"quotient_size", quotient_size},
       {"remainder_size", remainder_size},
@@ -298,8 +298,9 @@ void tpcc_benchmark_series() {
 }
 
 void best_case_benchmark_series() {
-  auto row_count = 100'000'000;
-  auto chunk_size = 1'000'000;
+  auto sample_size = 100;
+  auto row_count = 1'000'000;
+  auto chunk_size = 100'000;
   auto quotient_size = 20;
   //auto remainder_size = 8;
   auto remainder_sizes = {0, 8, 16, 32};
@@ -322,18 +323,35 @@ void best_case_benchmark_series() {
 
   // analyze_value_interval<int>(table_name, column_name);
   for (auto remainder_size : remainder_sizes) {
-    auto benchmark = generate_benchmark_best_case(quotient_size, remainder_size, row_count, chunk_size);
-    auto start = std::chrono::steady_clock::now();
-    benchmark->execute();
-    auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - start);
-    results["results"].push_back({
-      {"quotient_size", quotient_size},
-      {"remainder_size", remainder_size},
-      {"runtime", duration.count()}
-    });
+    std::chrono::microseconds min_time;
+    std::chrono::microseconds max_time;
+    std::chrono::microseconds sum_time = std::chrono::milliseconds(0);
+
+    for (int i = 0; i < sample_size; i++) {
+      auto benchmark = generate_benchmark_best_case(quotient_size, remainder_size, row_count, chunk_size);
+      auto start = std::chrono::steady_clock::now();
+      benchmark->execute();
+      auto duration = std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::steady_clock::now() - start);
+      if (i == 0) {
+        min_time = duration;
+        max_time = duration;
+      }
+      if (duration < min_time) min_time = duration;
+      if (duration > max_time) max_time = duration;
+      sum_time += duration;
+      results["results"].push_back({
+        {"quotient_size", quotient_size},
+        {"remainder_size", remainder_size},
+        {"runtime", duration.count()}
+      });
+    }
+
+    auto avg_time = sum_time / sample_size;
     std::cout << "quotient_size: " << quotient_size
               << ", remainder_size: " << remainder_size
-              << ", runtime: " << duration.count()
+              << ", min_time: " << min_time.count()
+              << ", max_time: " << max_time.count()
+              << ", avg_time: " << avg_time.count()
               << std::endl;
   }
 
@@ -344,10 +362,20 @@ void best_case_benchmark_series() {
 /* NOTES
 * Best Case Benchmark:
 * - Performance improvement comes from not having to do a dictionary lookup
-* - The improvement is bigger for bigger dictionaries
+* - The improvement if the dictionary lookup would take long
+*    - for bigger dictionaries
+*    - for non-present values
 * - For a noticable improvement we need:
 *   - big dictionaries
 *   - lots of chunks
+*   - vergleich bei uncompressed besser
+* - Current best case is not the best case for a compressed setting
+*   - quotient filter can shine when there is no dictionary
+*   - this is the case in an uncompressed setting
+*
+* Worst Case Benchmark:
+* - when dictionary lookup takes no time at all
+* - this is the case when the scan value is out of the min/max range
 **/
 
 int main() {
