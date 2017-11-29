@@ -167,7 +167,7 @@ std::string best_case_load_or_generate(int row_count, int chunk_size) {
   const auto scan_column = 0;
   const auto scan_value = 3000;
   const auto min_value = 0;
-  const auto max_value = 200000;
+  const auto max_value = row_count;
 
   // Generate table header
   auto table = std::make_shared<Table>(chunk_size);
@@ -177,12 +177,16 @@ std::string best_case_load_or_generate(int row_count, int chunk_size) {
 
   // Generate table data
   for (int row_number = 0; row_number < row_count; row_number++) {
+    int value = row_number;
+    if (value == scan_value) {
+      value++;
+    }
     if (row_number % chunk_size == 0) {
       table->append(generate_row(scan_column, min_value, column_count));
     } else if (row_number % chunk_size == 1) {
       table->append(generate_row(scan_column, max_value, column_count));
     } else {
-      table->append(generate_row(scan_column, random_int(min_value, max_value, scan_value), column_count));
+      table->append(generate_row(scan_column, value, column_count));
     }
   }
 
@@ -299,9 +303,9 @@ void tpcc_benchmark_series() {
 
 void best_case_benchmark_series() {
   auto sample_size = 100;
-  auto row_count = 1'000'000;
-  auto chunk_size = 100'000;
-  auto quotient_size = 20;
+  auto row_count = 100'000'000;
+  auto chunk_size = 10'000;
+  auto quotient_size = 10;
   //auto remainder_size = 8;
   auto remainder_sizes = {0, 8, 16, 32};
   //auto quotient_sizes = {0, 10, 16};
