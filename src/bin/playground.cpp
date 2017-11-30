@@ -242,7 +242,10 @@ std::shared_ptr<AbstractOperator> generate_benchmark_tpcc(std::string tpcc_table
 
 void serialize_results(nlohmann::json results) {
   std::ofstream outfile;
-  outfile.open ("/home/Arne.Mayer/dev/MasterarbeitJuypter/benchmark_results.json");
+  //auto user_name = std::string("arne");
+  auto user_name = std::string("osboxes");
+  //auto user_name = std::string("Arne.Mayer");
+  outfile.open ("/home/" + user_name + "/dev/MasterarbeitJupyter/benchmark_results.json");
   //outfile.open ("results.json");
   if (outfile.is_open()) {
     outfile << results;
