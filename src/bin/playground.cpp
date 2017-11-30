@@ -242,7 +242,7 @@ std::shared_ptr<AbstractOperator> generate_benchmark_tpcc(std::string tpcc_table
 
 void serialize_results(nlohmann::json results) {
   std::ofstream outfile;
-  outfile.open ("/home/osboxes/dev/jupyter/benchmark_results.json");
+  outfile.open ("/home/Arne.Mayer/dev/MasterarbeitJuypter/benchmark_results.json");
   //outfile.open ("results.json");
   if (outfile.is_open()) {
     outfile << results;
@@ -303,9 +303,9 @@ void tpcc_benchmark_series() {
 
 void best_case_benchmark_series() {
   auto sample_size = 100;
-  auto row_count = 100'000'000;
+  auto row_count = 1'000'000;
   auto chunk_size = 10'000;
-  auto quotient_size = 10;
+  auto quotient_size = 14;
   //auto remainder_size = 8;
   auto remainder_sizes = {0, 8, 16, 32};
   //auto quotient_sizes = {0, 10, 16};
