@@ -13,8 +13,8 @@ namespace opossum {
 
 template <typename ElementType>
 CountingQuotientFilter<ElementType>::CountingQuotientFilter(uint8_t quotient_bits, uint8_t remainder_bits) {
-  DebugAssert(remainder_bits == 8 || remainder_bits == 16 || remainder_bits == 32,
-              "Only the remainder sizes 8, 16, and 32 are supported");
+  DebugAssert(remainder_bits == 2 || remainder_bits == 4 || remainder_bits == 8 || remainder_bits == 16
+              || remainder_bits == 32, "Only the remainder sizes 2, 4, 8, 16, and 32 are supported");
   DebugAssert(quotient_bits > 0, "quotient size can not be zero.");
   DebugAssert(quotient_bits + remainder_bits <= 64, "The hash length can not exceed 64 bits.");
 
@@ -23,7 +23,13 @@ CountingQuotientFilter<ElementType>::CountingQuotientFilter(uint8_t quotient_bit
   _number_of_slots = std::pow(2, _quotient_bits);
   _hash_bits = _quotient_bits + _remainder_bits;
 
-  if (remainder_bits == 8) {
+  if (remainder_bits == 2) {
+    _quotient_filter2= gqf2::quotient_filter();
+    gqf2::qf_init(&_quotient_filter2.value(), _number_of_slots, _hash_bits, 0);
+  } else if (remainder_bits == 4) {
+    _quotient_filter4 = gqf4::quotient_filter();
+    gqf4::qf_init(&_quotient_filter4.value(), _number_of_slots, _hash_bits, 0);
+  } else if (remainder_bits == 8) {
     _quotient_filter8 = gqf8::quotient_filter();
     gqf8::qf_init(&_quotient_filter8.value(), _number_of_slots, _hash_bits, 0);
   } else if (remainder_bits == 16) {
@@ -37,6 +43,12 @@ CountingQuotientFilter<ElementType>::CountingQuotientFilter(uint8_t quotient_bit
 
 template <typename ElementType>
 CountingQuotientFilter<ElementType>::~CountingQuotientFilter() {
+  if (_quotient_filter2.has_value()) {
+    gqf2::qf_destroy(&_quotient_filter2.value());
+  }
+  if (_quotient_filter4.has_value()) {
+    gqf4::qf_destroy(&_quotient_filter4.value());
+  }
   if (_quotient_filter8.has_value()) {
     gqf8::qf_destroy(&_quotient_filter8.value());
   }
@@ -52,7 +64,11 @@ template <typename ElementType>
 void CountingQuotientFilter<ElementType>::insert(ElementType element, uint64_t count) {
   uint64_t bitmask = static_cast<uint64_t>(std::pow(2, _hash_bits)) - 1;
   uint64_t hash = bitmask & _hash(element);
-  if (_remainder_bits == 8) {
+  if (_remainder_bits == 2) {
+    gqf2::qf_insert(&_quotient_filter2.value(), hash, 0, count);
+  } else if (_remainder_bits == 4) {
+    gqf4::qf_insert(&_quotient_filter4.value(), hash, 0, count);
+  } else if (_remainder_bits == 8) {
     gqf8::qf_insert(&_quotient_filter8.value(), hash, 0, count);
   } else if (_remainder_bits == 16) {
     gqf16::qf_insert(&_quotient_filter16.value(), hash, 0, count);
@@ -76,7 +92,11 @@ template <typename ElementType>
 uint64_t CountingQuotientFilter<ElementType>::count(ElementType element) const {
   uint64_t bitmask = static_cast<uint64_t>(std::pow(2, _hash_bits)) - 1;
   uint64_t hash = bitmask & _hash(element);
-  if (_remainder_bits == 8) {
+  if (_remainder_bits == 2) {
+    return gqf2::qf_count_key_value(&_quotient_filter2.value(), hash, 0);
+  } else if (_remainder_bits == 4) {
+    return gqf4::qf_count_key_value(&_quotient_filter4.value(), hash, 0);
+  } else if (_remainder_bits == 8) {
     return gqf8::qf_count_key_value(&_quotient_filter8.value(), hash, 0);
   } else if (_remainder_bits == 16) {
     return gqf16::qf_count_key_value(&_quotient_filter16.value(), hash, 0);

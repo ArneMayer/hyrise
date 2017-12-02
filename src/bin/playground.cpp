@@ -310,7 +310,7 @@ void best_case_benchmark_series() {
   auto chunk_size = 10'000;
   auto quotient_size = 14;
   //auto remainder_size = 8;
-  auto remainder_sizes = {0, 8, 16, 32};
+  auto remainder_sizes = {0, 2, 4, 8, 16, 32};
   //auto quotient_sizes = {0, 10, 16};
   nlohmann::json results;
   results["results"] = nlohmann::json::array();

@@ -200,6 +200,10 @@ set(
     storage/fitted_attribute_vector.hpp
     storage/index/adaptive_radix_tree/adaptive_radix_tree_index.cpp
     storage/index/adaptive_radix_tree/adaptive_radix_tree_index.hpp
+    storage/index/counting_quotient_filter/cqf2.hpp
+    storage/index/counting_quotient_filter/cqf2.cpp
+    storage/index/counting_quotient_filter/cqf4.hpp
+    storage/index/counting_quotient_filter/cqf4.cpp
     storage/index/counting_quotient_filter/cqf8.hpp
     storage/index/counting_quotient_filter/cqf8.cpp
     storage/index/counting_quotient_filter/cqf16.hpp

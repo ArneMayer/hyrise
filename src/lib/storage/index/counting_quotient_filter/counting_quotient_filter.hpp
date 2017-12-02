@@ -1,5 +1,7 @@
 #pragma once
 
+#include "cqf2.hpp"
+#include "cqf4.hpp"
 #include "cqf8.hpp"
 #include "cqf16.hpp"
 #include "cqf32.hpp"
@@ -31,6 +33,8 @@ class CountingQuotientFilter : public BaseFilter {
   uint64_t memory_consumption() const;
 
  private:
+  std::optional<gqf2::quotient_filter> _quotient_filter2;
+  std::optional<gqf4::quotient_filter> _quotient_filter4;
   std::optional<gqf8::quotient_filter> _quotient_filter8;
   std::optional<gqf16::quotient_filter> _quotient_filter16;
   std::optional<gqf32::quotient_filter> _quotient_filter32;

@@ -28,7 +28,7 @@ class OperatorsTableScanTest : public BaseTest {
     _table_wrapper = std::make_shared<TableWrapper>(load_table("src/test/tables/int_float.tbl", 2));
     _table_wrapper->execute();
     auto cqf_table = load_table("src/test/tables/int_float.tbl", 2);
-    cqf_table->populate_quotient_filters(ColumnID{1});
+    cqf_table->populate_quotient_filters(ColumnID{1}, 8, 8);
     _table_cqf_wrapper = std::make_shared<TableWrapper>(cqf_table);
     _table_cqf_wrapper->execute();
 
