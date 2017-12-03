@@ -44,6 +44,7 @@ TEST_F(CountingQuotientFilterTest, MultipleMembershipInt2) {
   EXPECT_TRUE(filter.count(90) >= 1);
   EXPECT_TRUE(filter.count(100) >= 1);
 }
+
 TEST_F(CountingQuotientFilterTest, MultipleMembershipInt4) {
   auto filter = CountingQuotientFilter<int>(16, 4);
   filter.insert(10);

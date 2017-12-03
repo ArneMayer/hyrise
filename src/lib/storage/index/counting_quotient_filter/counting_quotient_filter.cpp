@@ -23,8 +23,8 @@ CountingQuotientFilter<ElementType>::CountingQuotientFilter(uint8_t quotient_bit
   _number_of_slots = std::pow(2, _quotient_bits);
   _hash_bits = _quotient_bits + _remainder_bits;
 
-  if (remainder_bits == 2) {
-    _quotient_filter2= gqf2::quotient_filter();
+if (remainder_bits == 2) {
+    _quotient_filter2 = gqf2::quotient_filter();
     gqf2::qf_init(&_quotient_filter2.value(), _number_of_slots, _hash_bits, 0);
   } else if (remainder_bits == 4) {
     _quotient_filter4 = gqf4::quotient_filter();
