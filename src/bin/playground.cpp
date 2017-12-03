@@ -20,6 +20,15 @@
 
 using namespace opossum;
 
+void clear_cache() {
+  std::vector<int> clear = std::vector<int>();
+  clear.resize(500 * 1000 * 1000, 42);
+  for (uint i = 0; i < clear.size(); i++) {
+    clear[i] += 1;
+  }
+  clear.resize(0);
+}
+
 void print_table_layout(std::string table_name) {
   auto table = StorageManager::get().get_table(table_name);
   std::cout << "table: " << table_name << std::endl;
@@ -95,9 +104,10 @@ bool load_table(std::string table_name) {
   }
   bool file_exists = std::ifstream(table_name).good();
   if (file_exists) {
-    std::cout << " > Loading table " << table_name << " from disk" << std::endl;
+    std::cout << " > Loading table " << table_name << " from disk" << "...";
     auto import = std::make_shared<ImportBinary>(table_name, table_name);
     import->execute();
+    std::cout << "OK!" << std::endl;
     return true;
   } else {
     return false;
@@ -105,20 +115,22 @@ bool load_table(std::string table_name) {
 }
 
 void save_table(std::shared_ptr<const Table> table, std::string file_name) {
-  std::cout << " > Saving table " << file_name << " to disk" << std::endl;
+  std::cout << " > Saving table " << file_name << " to disk" << "...";
   auto table_wrapper = std::make_shared<TableWrapper>(table);
   table_wrapper->execute();
   auto export_operator = std::make_shared<ExportBinary>(table_wrapper, file_name);
   export_operator->execute();
+  std::cout << "OK!" << std::endl;
 }
 
 std::string tpcc_load_or_generate(int warehouse_size, int chunk_size, std::string tpcc_table_name) {
   auto table_name = tpcc_table_name + "_" + std::to_string(warehouse_size) + "_" + std::to_string(chunk_size);
   auto loaded = load_table(table_name);
   if (!loaded) {
-    std::cout << " > Generating table " << table_name << std::endl;
+    std::cout << " > Generating table " << table_name << "...";
     auto table = tpcc::TpccTableGenerator::generate_tpcc_table(tpcc_table_name, chunk_size, warehouse_size);
     StorageManager::get().add_table(table_name, table);
+    std::cout << "OK!" << std::endl;
     save_table(table, table_name);
   }
 
@@ -174,7 +186,7 @@ std::string best_case_load_or_generate(int row_count, int chunk_size) {
     return table_name;
   }
 
-  std::cout << " > Generating table " << table_name << std::endl;
+  std::cout << " > Generating table " << table_name << "...";
 
   // Requirements:
   // - 10 columns minimum,
@@ -211,6 +223,8 @@ std::string best_case_load_or_generate(int row_count, int chunk_size) {
 
   DictionaryCompression::compress_table(*table);
   StorageManager::get().add_table(table_name, table);
+
+  std::cout << "OK!" << std::endl;
   save_table(table, table_name);
 
   return table_name;
@@ -325,60 +339,64 @@ void tpcc_benchmark_series() {
 
 void best_case_benchmark_series() {
   auto sample_size = 100;
-  auto row_count = 1'000'000;
-  auto chunk_size = 10'000;
   auto quotient_size = 14;
-  //auto remainder_size = 8;
+  auto row_counts = {100'000};
   auto remainder_sizes = {0, 2, 4, 8, 16, 32};
+  auto chunk_sizes = {1'000, 10'000, 100'000};
   //auto quotient_sizes = {0, 10, 16};
   nlohmann::json results;
   results["results"] = nlohmann::json::array();
   results["table_name"] = "best_case";
   results["column_name"] = "column0";
-  results["row_count"] = row_count;
-  results["chunk_size"] = chunk_size;
 
   std::cout << "------------------------" << std::endl;
   std::cout << "Benchmark configuration: " << std::endl;
   std::cout << "table_name:     " << "best_case" << std::endl;
   std::cout << "column_name:    " << "column0" << std::endl;
-  std::cout << "row_count:      " << row_count << std::endl;
-  std::cout << "chunk_size:     " << chunk_size << std::endl;
   std::cout << "quotient_size:  " << quotient_size << std::endl;
   std::cout << "------------------------" << std::endl;
 
   // analyze_value_interval<int>(table_name, column_name);
-  for (auto remainder_size : remainder_sizes) {
-    std::chrono::microseconds min_time;
-    std::chrono::microseconds max_time;
-    std::chrono::microseconds sum_time = std::chrono::milliseconds(0);
+  for (auto row_count : row_counts) {
+    for (auto chunk_size : chunk_sizes) {
+      for (auto remainder_size : remainder_sizes) {
+        std::chrono::microseconds min_time;
+        std::chrono::microseconds max_time;
+        std::chrono::microseconds sum_time = std::chrono::milliseconds(0);
 
-    for (int i = 0; i < sample_size; i++) {
-      auto benchmark = generate_benchmark_best_case(quotient_size, remainder_size, row_count, chunk_size);
-      auto start = std::chrono::steady_clock::now();
-      benchmark->execute();
-      auto duration = std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::steady_clock::now() - start);
-      if (i == 0) {
-        min_time = duration;
-        max_time = duration;
+        for (int i = 0; i < sample_size; i++) {
+          auto benchmark = generate_benchmark_best_case(quotient_size, remainder_size, row_count, chunk_size);
+          clear_cache();
+          auto start = std::chrono::steady_clock::now();
+          benchmark->execute();
+          auto duration = std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::steady_clock::now() - start);
+          if (i == 0) {
+            min_time = duration;
+            max_time = duration;
+          }
+          if (duration < min_time) min_time = duration;
+          if (duration > max_time) max_time = duration;
+          sum_time += duration;
+          results["results"].push_back({
+            {"row_count", row_count},
+            {"chunk_size", chunk_size},
+            {"quotient_size", quotient_size},
+            {"remainder_size", remainder_size},
+            {"runtime", duration.count()}
+          });
+        }
+
+        auto avg_time = sum_time / sample_size;
+        std::cout << "row_count: " << row_count
+                  << ", chunk_size: " << chunk_size
+                  << ", quotient_size: " << quotient_size
+                  << ", remainder_size: " << remainder_size
+                  << ", min_time: " << min_time.count()
+                  << ", max_time: " << max_time.count()
+                  << ", avg_time: " << avg_time.count()
+                  << std::endl;
       }
-      if (duration < min_time) min_time = duration;
-      if (duration > max_time) max_time = duration;
-      sum_time += duration;
-      results["results"].push_back({
-        {"quotient_size", quotient_size},
-        {"remainder_size", remainder_size},
-        {"runtime", duration.count()}
-      });
     }
-
-    auto avg_time = sum_time / sample_size;
-    std::cout << "quotient_size: " << quotient_size
-              << ", remainder_size: " << remainder_size
-              << ", min_time: " << min_time.count()
-              << ", max_time: " << max_time.count()
-              << ", avg_time: " << avg_time.count()
-              << std::endl;
   }
 
   serialize_results(results);
