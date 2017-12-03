@@ -137,7 +137,27 @@ int random_int(int min, int max, int except) {
   return value;
 }
 
-std::vector<AllTypeVariant> generate_row(int scan_column, int scan_column_value, int column_count) {
+char random_char() {
+  const char lowest = 'A';
+  const char highest = 'z';
+  return lowest + std::rand() % (highest - lowest);
+}
+
+std::string random_string(int length, std::string except) {
+  std::string result;
+  do {
+    auto sstream = std::stringstream();
+    for (int i = 0; i < length; i++) {
+      sstream << random_char();
+    }
+    result = sstream.str();
+  } while (result == except);
+
+  return result;
+}
+
+template <typename T>
+std::vector<AllTypeVariant> generate_row(int scan_column, T scan_column_value, int column_count) {
   auto row = std::vector<AllTypeVariant>(column_count);
   for (int i = 0; i < column_count; i++) {
     row[i] = 0;
@@ -158,35 +178,34 @@ std::string best_case_load_or_generate(int row_count, int chunk_size) {
 
   // Requirements:
   // - 10 columns minimum,
-  // - Every chunk is compressed
+  // - Every chunk is compressed#
+  // - strings
 
-  // Best case: Dictionary pruning takes long, filter can prune everything
+  // Best case: Dictionary pruning takes long -> strings, filter can prune everything
   // -> Scan value in between min/max
   // -> No chunk contains the actual scan value
-  const auto column_count = 10;
+  const auto column_count = 1;
   const auto scan_column = 0;
-  const auto scan_value = 3000;
-  const auto min_value = 0;
-  const auto max_value = row_count;
+  const auto string_size = 64;
+  const auto scan_value = std::string("l_scan_value");
+  const auto min_value  = std::string("a_") + random_string(string_size - 2, "");
+  const auto max_value = std::string("z_") + random_string(string_size - 2, "");;
 
   // Generate table header
   auto table = std::make_shared<Table>(chunk_size);
-  for (int i = 0; i < column_count; i++) {
+  table->add_column("column0", "string", false);
+  for (int i = 1; i < column_count; i++) {
     table->add_column("column" + std::to_string(i), "int", false);
   }
 
   // Generate table data
   for (int row_number = 0; row_number < row_count; row_number++) {
-    int value = row_number;
-    if (value == scan_value) {
-      value++;
-    }
     if (row_number % chunk_size == 0) {
-      table->append(generate_row(scan_column, min_value, column_count));
+      table->append(generate_row<std::string>(scan_column, min_value, column_count));
     } else if (row_number % chunk_size == 1) {
-      table->append(generate_row(scan_column, max_value, column_count));
+      table->append(generate_row<std::string>(scan_column, max_value, column_count));
     } else {
-      table->append(generate_row(scan_column, value, column_count));
+      table->append(generate_row<std::string>(scan_column, random_string(string_size, scan_value), column_count));
     }
   }
 
@@ -222,7 +241,7 @@ std::shared_ptr<AbstractOperator> generate_benchmark_best_case(uint8_t quotient_
   create_quotient_filters(table, ColumnID{0}, quotient_size, remainder_size);
   //std::cout << analyze_skippable_chunks(table_name, "column0", 3000) << " chunks skippable" << std::endl;
   auto get_table = std::make_shared<GetTable>(table_name);
-  auto table_scan = std::make_shared<TableScan>(get_table, ColumnID{0}, ScanType::OpEquals, 3000);
+  auto table_scan = std::make_shared<TableScan>(get_table, ColumnID{0}, ScanType::OpEquals, std::string("l_scan_value"));
   get_table->execute();
   return table_scan;
 }
