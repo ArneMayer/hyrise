@@ -283,8 +283,8 @@ std::shared_ptr<AbstractOperator> generate_benchmark_tpcc(std::string tpcc_table
 void serialize_results_csv(std::shared_ptr<Table> table) {
   std::cout << "Writing results to csv...";
   //auto user_name = std::string("arne");
-  auto user_name = std::string("osboxes");
-  //auto user_name = std::string("Arne.Mayer");
+  //auto user_name = std::string("osboxes");
+  auto user_name = std::string("Arne.Mayer");
   auto file_name = "/home/" + user_name + "/dev/MasterarbeitJupyter/benchmark_results.csv";
   auto table_wrapper = std::make_shared<TableWrapper>(table);
   table_wrapper->execute();
