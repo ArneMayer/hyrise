@@ -4,6 +4,7 @@
 #include <sstream>
 #include <string>
 #include <cstdlib>
+#include <cmath>
 
 #include "types.hpp"
 #include "operators/get_table.hpp"
@@ -250,8 +251,8 @@ void create_quotient_filters(std::shared_ptr<Table> table, ColumnID column_id, u
   }
 }
 
-std::shared_ptr<AbstractOperator> generate_benchmark_best_case(uint8_t quotient_size, uint8_t remainder_size, int rows,
-                                                               int chunk_size) {
+std::shared_ptr<AbstractOperator> generate_benchmark_best_case(uint8_t remainder_size, int rows, int chunk_size) {
+  auto quotient_size = static_cast<int>(std::ceil(std::log(chunk_size) / std::log(2)));
   auto table_name = best_case_load_or_generate(rows, chunk_size);
   //print_table_layout(table_name);
   //analyze_value_interval<int>(table_name, "column0");
@@ -359,26 +360,25 @@ void tpcc_benchmark_series() {
 */
 
 void best_case_benchmark_series() {
-  auto sample_size = 3;
-  auto quotient_size = 14;
-  //auto row_counts = {100'000, 1'000'000, 10'000'000};
-  //auto remainder_sizes = {0, 2, 4, 8, 16, 32};
-  //auto chunk_sizes = {1'000, 10'000, 100'000};
-  auto row_counts = {100'000};
-  auto remainder_sizes = {4};
-  auto chunk_sizes = {10'000};
+  auto sample_size = 100;
+  auto row_counts = {100'000, 500'000, 1'000'000};
+  auto remainder_sizes = {0, 2, 4, 8, 16};
+  auto chunk_sizes = {1'000, 10'000, 100'000};
+  //auto row_counts = {100'000};
+  //auto remainder_sizes = {4};
+  //auto chunk_sizes = {10'000};
 
   std::cout << "------------------------" << std::endl;
   std::cout << "Benchmark configuration: " << std::endl;
+  std::cout << "sample_size:    " << sample_size << std::endl;
   std::cout << "table_name:     " << "best_case" << std::endl;
   std::cout << "column_name:    " << "column0" << std::endl;
-  std::cout << "quotient_size:  " << quotient_size << std::endl;
   std::cout << "------------------------" << std::endl;
 
   auto results_table = std::make_shared<Table>();
   results_table->add_column("row_count", "int", false);
   results_table->add_column("chunk_size", "int", false);
-  results_table->add_column("quotient_size", "int", false);
+  //results_table->add_column("quotient_size", "int", false);
   results_table->add_column("remainder_size", "int", false);
   results_table->add_column("run_time", "int", false);
 
@@ -392,7 +392,7 @@ void best_case_benchmark_series() {
 
         for (int i = 0; i < sample_size; i++) {
           std::cout << i << ",";
-          auto benchmark = generate_benchmark_best_case(quotient_size, remainder_size, row_count, chunk_size);
+          auto benchmark = generate_benchmark_best_case(remainder_size, row_count, chunk_size);
           clear_cache();
           auto start = std::chrono::steady_clock::now();
           benchmark->execute();
@@ -404,14 +404,13 @@ void best_case_benchmark_series() {
           if (duration < min_time) min_time = duration;
           if (duration > max_time) max_time = duration;
           sum_time += duration;
-          results_table->append({row_count, chunk_size, quotient_size, remainder_size, duration.count()});
+          results_table->append({row_count, chunk_size, remainder_size, duration.count()});
         }
         std::cout << std::endl;
 
         auto avg_time = sum_time / sample_size;
         std::cout << "row_count: " << row_count
                   << ", chunk_size: " << chunk_size
-                  << ", quotient_size: " << quotient_size
                   << ", remainder_size: " << remainder_size
                   << ", min_time: " << min_time.count()
                   << ", max_time: " << max_time.count()
