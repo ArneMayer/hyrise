@@ -10,6 +10,7 @@
 #include "operators/table_scan.hpp"
 #include "operators/import_binary.hpp"
 #include "operators/export_binary.hpp"
+#include "operators/export_csv.hpp"
 #include "operators/table_wrapper.hpp"
 #include "storage/storage_manager.hpp"
 #include "storage/dictionary_compression.hpp"
@@ -123,6 +124,7 @@ void save_table(std::shared_ptr<const Table> table, std::string file_name) {
   std::cout << "OK!" << std::endl;
 }
 
+/*
 std::string tpcc_load_or_generate(int warehouse_size, int chunk_size, std::string tpcc_table_name) {
   auto table_name = tpcc_table_name + "_" + std::to_string(warehouse_size) + "_" + std::to_string(chunk_size);
   auto loaded = load_table(table_name);
@@ -136,6 +138,7 @@ std::string tpcc_load_or_generate(int warehouse_size, int chunk_size, std::strin
 
   return table_name;
 }
+*/
 
 int random_int(int min, int max, int except) {
   DebugAssert(min <= max, "min value must be <= max value");
@@ -236,13 +239,14 @@ void worst_case_load_or_generate(int rows, int chunk_size) {
 void create_quotient_filters(std::shared_ptr<Table> table, ColumnID column_id, uint8_t quotient_size,
     	                       uint8_t remainder_size) {
   if (remainder_size > 0 && quotient_size > 0) {
-    //std::cout << " > Generating Filters" << std::endl;
+    //std::cout << " > Populating quotient filter (" << static_cast<int>(quotient_size) << ", "
+    //                                               <<  static_cast<int>(remainder_size) << ")...";
     auto filter_insert_jobs = table->populate_quotient_filters(column_id, quotient_size, remainder_size);
     for (auto job : filter_insert_jobs) {
       job->schedule();
     }
     CurrentScheduler::wait_for_tasks(filter_insert_jobs);
-    //std::cout << " > Done" << std::endl;
+    //std::cout << "OK!" << std::endl;
   }
 }
 
@@ -260,6 +264,7 @@ std::shared_ptr<AbstractOperator> generate_benchmark_best_case(uint8_t quotient_
   return table_scan;
 }
 
+/*
 std::shared_ptr<AbstractOperator> generate_benchmark_tpcc(std::string tpcc_table_name, std::string column_name,
                                                      uint8_t quotient_size, uint8_t remainder_size, int warehouse_size,
                                                      int chunk_size) {
@@ -272,13 +277,27 @@ std::shared_ptr<AbstractOperator> generate_benchmark_tpcc(std::string tpcc_table
   get_table->execute();
   return table_scan;
 }
+*/
 
-void serialize_results(nlohmann::json results) {
+void serialize_results_csv(std::shared_ptr<Table> table) {
+  std::cout << "Writing results to csv...";
+  //auto user_name = std::string("arne");
+  auto user_name = std::string("osboxes");
+  //auto user_name = std::string("Arne.Mayer");
+  auto file_name = "/home/" + user_name + "/dev/MasterarbeitJupyter/benchmark_results.csv";
+  auto table_wrapper = std::make_shared<TableWrapper>(table);
+  table_wrapper->execute();
+  auto export_csv = std::make_shared<ExportCsv>(table_wrapper, file_name);
+  export_csv->execute();
+  std::cout << "OK!" << std::endl;
+}
+
+void serialize_results_json(nlohmann::json results) {
   std::ofstream outfile;
   //auto user_name = std::string("arne");
   auto user_name = std::string("osboxes");
   //auto user_name = std::string("Arne.Mayer");
-  outfile.open ("/home/" + user_name + "/dev/MasterarbeitJupyter/benchmark_results.json");
+  outfile.open("/home/" + user_name + "/dev/MasterarbeitJupyter/benchmark_results.json");
   //outfile.open ("results.json");
   if (outfile.is_open()) {
     outfile << results;
@@ -289,6 +308,7 @@ void serialize_results(nlohmann::json results) {
   }
 }
 
+/*
 void tpcc_benchmark_series() {
   auto tpcc_table_name = std::string("ORDER");
   auto column_name = std::string("NO_O_ID");
@@ -299,12 +319,12 @@ void tpcc_benchmark_series() {
   auto remainder_sizes = {0, 8, 16, 32};
   //auto quotient_sizes = {0, 10, 16};
 
-  nlohmann::json results;
-  results["results"] = nlohmann::json::array();
-  results["table_name"] = tpcc_table_name;
-  results["column_name"] = column_name;
-  results["row_count"] = "?";
-  results["chunk_size"] = chunk_size;
+  auto results_table = std::make_shared<Table>();
+  results_table->add_column("row_count", "int", false);
+  results_table->add_column("chunk_size", "int", false);
+  results_table->add_column("quotient_size", "int", false);
+  results_table->add_column("remainder_size", "int", false);
+  results_table->add_column("run_time", "int", false);
 
   std::cout << "------------------------" << std::endl;
   std::cout << "Benchmark configuration: " << std::endl;
@@ -336,18 +356,17 @@ void tpcc_benchmark_series() {
   serialize_results(results);
   StorageManager::get().reset();
 }
+*/
 
 void best_case_benchmark_series() {
-  auto sample_size = 100;
+  auto sample_size = 3;
   auto quotient_size = 14;
+  //auto row_counts = {100'000, 1'000'000, 10'000'000};
+  //auto remainder_sizes = {0, 2, 4, 8, 16, 32};
+  //auto chunk_sizes = {1'000, 10'000, 100'000};
   auto row_counts = {100'000};
-  auto remainder_sizes = {0, 2, 4, 8, 16, 32};
-  auto chunk_sizes = {1'000, 10'000, 100'000};
-  //auto quotient_sizes = {0, 10, 16};
-  nlohmann::json results;
-  results["results"] = nlohmann::json::array();
-  results["table_name"] = "best_case";
-  results["column_name"] = "column0";
+  auto remainder_sizes = {4};
+  auto chunk_sizes = {10'000};
 
   std::cout << "------------------------" << std::endl;
   std::cout << "Benchmark configuration: " << std::endl;
@@ -355,6 +374,13 @@ void best_case_benchmark_series() {
   std::cout << "column_name:    " << "column0" << std::endl;
   std::cout << "quotient_size:  " << quotient_size << std::endl;
   std::cout << "------------------------" << std::endl;
+
+  auto results_table = std::make_shared<Table>();
+  results_table->add_column("row_count", "int", false);
+  results_table->add_column("chunk_size", "int", false);
+  results_table->add_column("quotient_size", "int", false);
+  results_table->add_column("remainder_size", "int", false);
+  results_table->add_column("run_time", "int", false);
 
   // analyze_value_interval<int>(table_name, column_name);
   for (auto row_count : row_counts) {
@@ -365,11 +391,12 @@ void best_case_benchmark_series() {
         std::chrono::microseconds sum_time = std::chrono::milliseconds(0);
 
         for (int i = 0; i < sample_size; i++) {
+          std::cout << i << ",";
           auto benchmark = generate_benchmark_best_case(quotient_size, remainder_size, row_count, chunk_size);
           clear_cache();
           auto start = std::chrono::steady_clock::now();
           benchmark->execute();
-          auto duration = std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::steady_clock::now() - start);
+          auto duration = std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::steady_clock::now()-start);
           if (i == 0) {
             min_time = duration;
             max_time = duration;
@@ -377,14 +404,9 @@ void best_case_benchmark_series() {
           if (duration < min_time) min_time = duration;
           if (duration > max_time) max_time = duration;
           sum_time += duration;
-          results["results"].push_back({
-            {"row_count", row_count},
-            {"chunk_size", chunk_size},
-            {"quotient_size", quotient_size},
-            {"remainder_size", remainder_size},
-            {"runtime", duration.count()}
-          });
+          results_table->append({row_count, chunk_size, quotient_size, remainder_size, duration.count()});
         }
+        std::cout << std::endl;
 
         auto avg_time = sum_time / sample_size;
         std::cout << "row_count: " << row_count
@@ -399,7 +421,7 @@ void best_case_benchmark_series() {
     }
   }
 
-  serialize_results(results);
+  serialize_results_csv(results_table);
   StorageManager::get().reset();
 }
 
