@@ -361,9 +361,9 @@ void tpcc_benchmark_series() {
 
 void best_case_benchmark_series() {
   auto sample_size = 100;
-  auto row_counts = {100'000, 500'000, 1'000'000};
+  auto row_counts = {1'000'000, 5'000'000, 10'000'000};
   auto remainder_sizes = {0, 2, 4, 8, 16};
-  auto chunk_sizes = {1'000, 10'000, 100'000};
+  auto chunk_sizes = {10'000, 100'000, 1'000'000};
   //auto row_counts = {100'000};
   //auto remainder_sizes = {4};
   //auto chunk_sizes = {10'000};
