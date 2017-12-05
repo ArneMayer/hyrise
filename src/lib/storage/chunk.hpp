@@ -218,7 +218,7 @@ class Chunk : private Noncopyable {
   /**
   * Inserts the all values from a column into its corresponding quotient filter.
   */
-  std::shared_ptr<AbstractTask> populate_quotient_filter(ColumnID column_id, std::string column_type,
+  std::shared_ptr<AbstractTask> populate_quotient_filter(ColumnID column_id, DataType column_type,
                                                          uint8_t quotient_bits, uint8_t remainder_bits);
 
   /**

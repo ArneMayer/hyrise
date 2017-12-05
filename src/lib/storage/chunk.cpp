@@ -148,10 +148,10 @@ std::shared_ptr<BaseIndex> Chunk::get_index(const ColumnIndexType index_type,
   return get_index(index_type, columns);
 }
 
-std::shared_ptr<AbstractTask> Chunk::populate_quotient_filter(ColumnID column_id, std::string column_type,
+std::shared_ptr<AbstractTask> Chunk::populate_quotient_filter(ColumnID column_id, DataType column_type,
                                                               uint8_t quotient_bits, uint8_t remainder_bits) {
   return std::make_shared<JobTask>([this, column_id, column_type, quotient_bits, remainder_bits]() {
-    _quotient_filters[column_id] = make_shared_by_column_type<BaseFilter, CountingQuotientFilter>(column_type,
+    _quotient_filters[column_id] = make_shared_by_data_type<BaseFilter, CountingQuotientFilter>(column_type,
                                                                                         quotient_bits, remainder_bits);
     _quotient_filters[column_id]->populate(get_column(column_id));
   });

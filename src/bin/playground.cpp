@@ -40,7 +40,7 @@ void print_table_layout(std::string table_name) {
   for (auto column_id = ColumnID{0}; column_id < table->column_count(); column_id++) {
     auto column_name = table->column_name(column_id);
     auto column_type = table->column_type(column_id);
-    std::cout << "(" << column_type << ") " << column_name << ", ";
+    std::cout << "(" << static_cast<int>(column_type) << ") " << column_name << ", ";
   }
   std::cout << std::endl;
   std::cout << "------------------------" << std::endl;
@@ -209,9 +209,9 @@ std::string best_case_load_or_generate(int row_count, int chunk_size) {
 
   // Generate table header
   auto table = std::make_shared<Table>(chunk_size);
-  table->add_column("column0", "string", false);
+  table->add_column("column0", DataType::String, false);
   for (int i = 1; i < column_count; i++) {
-    table->add_column("column" + std::to_string(i), "int", false);
+    table->add_column("column" + std::to_string(i), DataType::Int, false);
   }
 
   // Generate table data
@@ -376,11 +376,11 @@ void best_case_benchmark_series() {
   std::cout << "------------------------" << std::endl;
 
   auto results_table = std::make_shared<Table>();
-  results_table->add_column("row_count", "int", false);
-  results_table->add_column("chunk_size", "int", false);
+  results_table->add_column("row_count", DataType::Int, false);
+  results_table->add_column("chunk_size", DataType::Int, false);
   //results_table->add_column("quotient_size", "int", false);
-  results_table->add_column("remainder_size", "int", false);
-  results_table->add_column("run_time", "int", false);
+  results_table->add_column("remainder_size", DataType::Int, false);
+  results_table->add_column("run_time", DataType::Int, false);
 
   // analyze_value_interval<int>(table_name, column_name);
   for (auto row_count : row_counts) {
