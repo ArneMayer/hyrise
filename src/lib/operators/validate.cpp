@@ -13,18 +13,19 @@ namespace opossum {
 
 namespace {
 
-bool is_row_visible(CommitID our_tid, CommitID our_lcid, ChunkOffset chunk_offset, const Chunk::MvccColumns& columns) {
+bool is_row_visible(CommitID our_tid, CommitID snapshot_commit_id, ChunkOffset chunk_offset,
+                    const Chunk::MvccColumns& columns) {
   const auto row_tid = columns.tids[chunk_offset].load();
   const auto begin_cid = columns.begin_cids[chunk_offset];
   const auto end_cid = columns.end_cids[chunk_offset];
 
   // Taken from: https://github.com/hyrise/hyrise/blob/master/docs/documentation/queryexecution/tx.rst
-  // const auto own_insert = (our_tid == row_tid) && !(our_lcid >= begin_cid) && !(our_lcid >= end_cid);
-  // const auto past_insert = (our_tid != row_tid) && (our_lcid >= begin_cid) && !(our_lcid >= end_cid);
+  // auto own_insert = (our_tid == row_tid) && !(snapshot_commit_id >= begin_cid) && !(snapshot_commit_id >= end_cid);
+  // auto past_insert = (our_tid != row_tid) && (snapshot_commit_id >= begin_cid) && !(snapshot_commit_id >= end_cid);
   // return own_insert || past_insert;
 
   // since gcc and clang are surprisingly bad at optimizing the above boolean expression, lets do that ourselves
-  return our_lcid < end_cid && ((our_lcid >= begin_cid) != (row_tid == our_tid));
+  return snapshot_commit_id < end_cid && ((snapshot_commit_id >= begin_cid) != (row_tid == our_tid));
 }
 
 }  // namespace
@@ -49,7 +50,7 @@ std::shared_ptr<const Table> Validate::_on_execute(std::shared_ptr<TransactionCo
   auto output = Table::create_with_layout_from(_in_table);
 
   const auto our_tid = transaction_context->transaction_id();
-  const auto our_lcid = transaction_context->last_commit_id();
+  const auto snapshot_commit_id = transaction_context->snapshot_commit_id();
 
   for (ChunkID chunk_id{0}; chunk_id < _in_table->chunk_count(); ++chunk_id) {
     const auto& chunk_in = _in_table->get_chunk(chunk_id);
@@ -66,11 +67,15 @@ std::shared_ptr<const Table> Validate::_on_execute(std::shared_ptr<TransactionCo
 
       // Check all rows in the old poslist and put them in pos_list_out if they are visible.
       referenced_table = ref_col_in->referenced_table();
+      DebugAssert(referenced_table->get_chunk(ChunkID{0}).has_mvcc_columns(),
+                  "Trying to use Validate on a table that has no MVCC columns");
+
       for (auto row_id : *ref_col_in->pos_list()) {
         const auto& referenced_chunk = referenced_table->get_chunk(row_id.chunk_id);
 
         auto mvcc_columns = referenced_chunk.mvcc_columns();
-        if (is_row_visible(our_tid, our_lcid, row_id.chunk_offset, *mvcc_columns)) {
+
+        if (is_row_visible(our_tid, snapshot_commit_id, row_id.chunk_offset, *mvcc_columns)) {
           pos_list_out->emplace_back(row_id);
         }
       }
@@ -86,12 +91,13 @@ std::shared_ptr<const Table> Validate::_on_execute(std::shared_ptr<TransactionCo
       // Otherwise we have a Value- or DictionaryColumn and simply iterate over all rows to build a poslist.
     } else {
       referenced_table = _in_table;
+      DebugAssert(chunk_in.has_mvcc_columns(), "Trying to use Validate on a table that has no MVCC columns");
       const auto mvcc_columns = chunk_in.mvcc_columns();
 
       // Generate pos_list_out.
       auto chunk_size = chunk_in.size();  // The compiler fails to optimize this in the for clause :(
       for (auto i = 0u; i < chunk_size; i++) {
-        if (is_row_visible(our_tid, our_lcid, i, *mvcc_columns)) {
+        if (is_row_visible(our_tid, snapshot_commit_id, i, *mvcc_columns)) {
           pos_list_out->emplace_back(RowID{chunk_id, i});
         }
       }

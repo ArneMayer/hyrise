@@ -7,6 +7,7 @@
 #include <boost/type_traits/has_nothrow_copy.hpp>
 
 #include <functional>
+#include <limits>
 
 /*
  * This is an extension of boost's BOOST_STRONG_TYPEDEF.
@@ -24,18 +25,18 @@
     constexpr explicit D(const T& t_) BOOST_NOEXCEPT_IF(boost::has_nothrow_copy_constructor<T>::value) : t(t_) {} \
     D() BOOST_NOEXCEPT_IF(boost::has_nothrow_default_constructor<T>::value) : t() {}                              \
     D(const D& t_) BOOST_NOEXCEPT_IF(boost::has_nothrow_copy_constructor<T>::value) : t(t_.t) {}                  \
-    D& operator=(const D& rhs) BOOST_NOEXCEPT_IF(boost::has_nothrow_assign<T>::value) {                           \
-      t = rhs.t;                                                                                                  \
+    D& operator=(const D& other) BOOST_NOEXCEPT_IF(boost::has_nothrow_assign<T>::value) {                         \
+      t = other.t;                                                                                                \
       return *this;                                                                                               \
     }                                                                                                             \
-    D& operator=(const T& rhs) BOOST_NOEXCEPT_IF(boost::has_nothrow_assign<T>::value) {                           \
-      t = rhs;                                                                                                    \
+    D& operator=(const T& other) BOOST_NOEXCEPT_IF(boost::has_nothrow_assign<T>::value) {                         \
+      t = other;                                                                                                  \
       return *this;                                                                                               \
     }                                                                                                             \
     operator const T&() const { return t; }                                                                       \
     operator T&() { return t; }                                                                                   \
-    bool operator==(const D& rhs) const { return t == rhs.t; }                                                    \
-    bool operator<(const D& rhs) const { return t < rhs.t; }                                                      \
+    bool operator==(const D& other) const { return t == other.t; }                                                \
+    bool operator<(const D& other) const { return t < other.t; }                                                  \
   };                                                                                                              \
   } /* NOLINT */                                                                                                  \
                                                                                                                   \
@@ -43,6 +44,16 @@
   template <>                                                                                                     \
   struct hash<::opossum::D> : public unary_function<::opossum::D, size_t> {                                       \
     size_t operator()(const ::opossum::D& x) const { return hash<T>{}(x); }                                       \
+  };                                                                                                              \
+  template <>                                                                                                     \
+                                                                                                                  \
+  struct numeric_limits<::opossum::D> {                                                                           \
+    static typename std::enable_if_t<std::is_arithmetic<T>::value, ::opossum::D> min() {                          \
+      return ::opossum::D(numeric_limits<T>::min());                                                              \
+    }                                                                                                             \
+    static typename std::enable_if_t<std::is_arithmetic<T>::value, ::opossum::D> max() {                          \
+      return ::opossum::D(numeric_limits<T>::max());                                                              \
+    }                                                                                                             \
   };                                                                                                              \
   } /* NOLINT */                                                                                                  \
   static_assert(true, "End call of macro with a semicolon")

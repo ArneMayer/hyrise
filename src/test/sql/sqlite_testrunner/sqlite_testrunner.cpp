@@ -17,14 +17,16 @@
 #include "concurrency/transaction_manager.hpp"
 #include "operators/print.hpp"
 #include "scheduler/current_scheduler.hpp"
+#include "scheduler/node_queue_scheduler.hpp"
 #include "scheduler/operator_task.hpp"
+#include "scheduler/topology.hpp"
 #include "sql/sql_planner.hpp"
 #include "sqlite_wrapper.hpp"
 #include "storage/storage_manager.hpp"
 
 namespace opossum {
 
-class SQLiteTestRunner : public testing::TestWithParam<std::string> {
+class SQLiteTestRunner : public BaseTestWithParam<std::string> {
  protected:
   void SetUp() override {
     StorageManager::get().reset();
@@ -51,9 +53,12 @@ class SQLiteTestRunner : public testing::TestWithParam<std::string> {
 
       _sqlite->create_table_from_tbl(table_file, table_name);
 
-      std::shared_ptr<Table> table = load_table(table_file, 0);
+      std::shared_ptr<Table> table = load_table(table_file, Chunk::MAX_SIZE);
       StorageManager::get().add_table(table_name, std::move(table));
     }
+
+    opossum::CurrentScheduler::set(
+        std::make_shared<opossum::NodeQueueScheduler>(opossum::Topology::create_numa_topology()));
   }
 
   std::unique_ptr<SQLiteWrapper> _sqlite;
@@ -103,15 +108,18 @@ TEST_P(SQLiteTestRunner, CompareToSQLite) {
   ASSERT_TRUE(result_table->row_count() > 0 && sqlite_result_table->row_count() > 0)
       << "The SQLiteTestRunner cannot handle queries without results";
 
-  bool order_sensitive = false;
+  auto order_sensitivity = OrderSensitivity::No;
 
   if (parse_result.getStatements().back()->is(hsql::kStmtSelect)) {
     auto select_statement = dynamic_cast<const hsql::SelectStatement*>(parse_result.getStatements().back());
-    order_sensitive = (select_statement->order != nullptr);
+    if (select_statement->order != nullptr) {
+      order_sensitivity = OrderSensitivity::Yes;
+    }
   }
 
-  ASSERT_TRUE(check_table_equal(*result_table, *sqlite_result_table, order_sensitive, false)) << "Query failed: "
-                                                                                              << query;
+  ASSERT_TRUE(check_table_equal(result_table, sqlite_result_table, order_sensitivity, TypeCmpMode::Lenient,
+                                FloatComparisonMode::RelativeDifference))
+      << "Query failed: " << query;
 }
 
 auto formatter = [](const testing::TestParamInfo<std::string>) {

@@ -51,7 +51,7 @@ class TransactionContext : public std::enable_shared_from_this<TransactionContex
   friend class TransactionManager;
 
  public:
-  TransactionContext(const TransactionID transaction_id, const CommitID last_commit_id);
+  TransactionContext(const TransactionID transaction_id, const CommitID snapshot_commit_id);
   ~TransactionContext();
 
   /**
@@ -60,12 +60,14 @@ class TransactionContext : public std::enable_shared_from_this<TransactionContex
   TransactionID transaction_id() const;
 
   /**
-   * The last commit id represents the snapshot in time of the database
+   * The snapshot commit id represents the snapshot in time of the database
    * that the transaction is able to see and access.
    */
-  CommitID last_commit_id() const;
+  CommitID snapshot_commit_id() const;
 
   /**
+   * The commit id that this transaction has once it is committed. This is the one that is written to the
+   * begin/end commit ids of rows modified by this transaction.
    * Only available after TransactionManager::prepare_commit has been called
    */
   CommitID commit_id() const;
@@ -108,7 +110,7 @@ class TransactionContext : public std::enable_shared_from_this<TransactionContex
    * Add an operator to the list of read-write operators.
    * Update must not call this because it consists of a Delete and an Insert, which call this themselves.
    */
-  void register_rw_operator(std::shared_ptr<AbstractReadWriteOperator> op) { _rw_operators.push_back(op); }
+  void register_read_write_operator(std::shared_ptr<AbstractReadWriteOperator> op) { _rw_operators.push_back(op); }
 
   /**
    * @defgroup Update the counter of active operators
@@ -171,7 +173,7 @@ class TransactionContext : public std::enable_shared_from_this<TransactionContex
 
  private:
   const TransactionID _transaction_id;
-  const CommitID _last_commit_id;
+  const CommitID _snapshot_commit_id;
   std::vector<std::shared_ptr<AbstractReadWriteOperator>> _rw_operators;
 
   std::atomic<TransactionPhase> _phase;
