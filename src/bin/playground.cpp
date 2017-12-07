@@ -361,7 +361,7 @@ void tpcc_benchmark_series() {
 
 void best_case_benchmark_series() {
   auto sample_size = 100;
-  auto row_counts = {1'000'000, 5'000'000, 10'000'000};
+  auto row_counts = {100'000  };
   auto remainder_sizes = {0, 2, 4, 8, 16};
   auto chunk_sizes = {10'000, 100'000, 1'000'000};
   //auto row_counts = {100'000};
@@ -391,7 +391,7 @@ void best_case_benchmark_series() {
         std::chrono::microseconds sum_time = std::chrono::milliseconds(0);
 
         for (int i = 0; i < sample_size; i++) {
-          std::cout << i << ",";
+          //std::cout << i << ",";
           auto benchmark = generate_benchmark_best_case(remainder_size, row_count, chunk_size);
           clear_cache();
           auto start = std::chrono::steady_clock::now();
@@ -406,7 +406,7 @@ void best_case_benchmark_series() {
           sum_time += duration;
           results_table->append({row_count, chunk_size, remainder_size, duration.count()});
         }
-        std::cout << std::endl;
+        //sstd::cout << std::endl;
 
         auto avg_time = sum_time / sample_size;
         std::cout << "row_count: " << row_count

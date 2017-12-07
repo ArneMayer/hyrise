@@ -30,6 +30,7 @@
 #include <sys/mman.h>
 
 #include <vector>
+#include <iostream>
 
 #include "cqf16.hpp"
 
@@ -623,17 +624,21 @@ void qf_deserialize(QF *qf, const char *filename)
 		exit(EXIT_FAILURE);
 	}
 
-	fscanf(fin, "%lu ", &qf->nslots);
-	fscanf(fin, "%lu ", &qf->xnslots);
-	fscanf(fin, "%lu ", &qf->key_bits);
-	fscanf(fin, "%lu ", &qf->value_bits);
-	fscanf(fin, "%lu ", &qf->key_remainder_bits);
-	fscanf(fin, "%lu ", &qf->bits_per_slot);
-	fscanf(fin, "%lu ", &tmp_range);
-	fscanf(fin, "%lu ", &qf->nblocks);
-	fscanf(fin, "%lu ", &qf->nelts);
-	fscanf(fin, "%lu ", &qf->ndistinct_elts);
-	fscanf(fin, "%lu ", &qf->noccupied_slots);
+  int result = 0;
+	result |= fscanf(fin, "%lu ", &qf->nslots);
+	result |= fscanf(fin, "%lu ", &qf->xnslots);
+	result |= fscanf(fin, "%lu ", &qf->key_bits);
+	result |= fscanf(fin, "%lu ", &qf->value_bits);
+	result |= fscanf(fin, "%lu ", &qf->key_remainder_bits);
+	result |= fscanf(fin, "%lu ", &qf->bits_per_slot);
+	result |= fscanf(fin, "%lu ", &tmp_range);
+	result |= fscanf(fin, "%lu ", &qf->nblocks);
+	result |= fscanf(fin, "%lu ", &qf->nelts);
+	result |= fscanf(fin, "%lu ", &qf->ndistinct_elts);
+	result |= fscanf(fin, "%lu ", &qf->noccupied_slots);
+  if (result != 0) {
+    std::cout << "error while using fscanf" << std::endl;
+  }
 
 	/* just a hack to handle __uint128_t value. Don't know a better to handle it
 	 * right now */
