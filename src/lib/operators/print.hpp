@@ -12,8 +12,6 @@ enum PrintFlags { PrintIgnoreEmptyChunks = 1 << 0, PrintMvcc = 1 << 1 };
 
 /**
  * operator to print the table with its data
- *
- * Note: Print does not support null values at the moment
  */
 class Print : public AbstractReadOnlyOperator {
  public:
@@ -25,7 +23,8 @@ class Print : public AbstractReadOnlyOperator {
   static void print(std::shared_ptr<const Table> table, uint32_t flags = 0, std::ostream& out = std::cout);
 
  protected:
-  std::vector<uint16_t> column_string_widths(uint16_t min, uint16_t max, std::shared_ptr<const Table> t) const;
+  std::vector<uint16_t> _column_string_widths(uint16_t min, uint16_t max, std::shared_ptr<const Table> t) const;
+  std::string _truncate_cell(const AllTypeVariant& cell, uint16_t max_width) const;
   std::shared_ptr<const Table> _on_execute() override;
 
   // stream to print the result

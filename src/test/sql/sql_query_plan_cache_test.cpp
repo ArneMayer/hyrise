@@ -23,12 +23,15 @@ class SQLQueryPlanCacheTest : public SQLBaseTest {
     auto table_b = load_table("src/test/tables/int_float2.tbl", 2);
     StorageManager::get().add_table("table_b", std::move(table_b));
 
-    SQLQueryOperator::get_parse_tree_cache().clear_and_resize(0);
     parse_tree_cache_hits = 0;
     query_plan_cache_hits = 0;
   }
 
-  void TearDown() override {}
+  void TearDown() override {
+    SQLQueryOperator::get_parse_tree_cache().clear_and_resize(0);
+    SQLQueryOperator::get_query_plan_cache().clear_and_resize(0);
+    SQLQueryOperator::get_prepared_statement_cache().clear_and_resize(1024);
+  }
 };
 
 TEST_F(SQLQueryPlanCacheTest, SQLQueryPlanCacheTest) {
@@ -53,7 +56,8 @@ TEST_F(SQLQueryPlanCacheTest, SQLQueryPlanCacheTest) {
   for (auto task : task_list1) task->execute();
   for (auto task : task_list2) task->execute();
 
-  EXPECT_TABLE_EQ(task_list1.back()->get_operator()->get_output(), task_list2.back()->get_operator()->get_output());
+  EXPECT_TABLE_EQ_UNORDERED(task_list1.back()->get_operator()->get_output(),
+                            task_list2.back()->get_operator()->get_output());
 }
 
 // Test query plan cache with LRU implementation.

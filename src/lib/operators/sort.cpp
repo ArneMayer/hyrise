@@ -34,9 +34,9 @@ std::shared_ptr<AbstractOperator> Sort::recreate(const std::vector<AllParameterV
 }
 
 std::shared_ptr<const Table> Sort::_on_execute() {
-  _impl = make_unique_by_column_type<AbstractReadOnlyOperatorImpl, SortImpl>(
-      _input_table_left()->column_type(_column_id), _input_table_left(), _column_id, _order_by_mode,
-      _output_chunk_size);
+  _impl = make_unique_by_data_type<AbstractReadOnlyOperatorImpl, SortImpl>(_input_table_left()->column_type(_column_id),
+                                                                           _input_table_left(), _column_id,
+                                                                           _order_by_mode, _output_chunk_size);
   return _impl->_on_execute();
 }
 
@@ -55,6 +55,8 @@ class Sort::SortImplMaterializeOutput {
   std::shared_ptr<const Table> execute() {
     // First we create a new table as the output
     auto output = Table::create_with_layout_from(_table_in, _output_chunk_size);
+
+    // We have decided against duplicating MVCC columns in https://github.com/hyrise/hyrise/issues/408
 
     // After we created the output table and initialized the column structure, we can start adding values. Because the
     // values are not ordered by input chunks anymore, we can't process them chunk by chunk. Instead the values are
@@ -81,7 +83,7 @@ class Sort::SortImplMaterializeOutput {
       for (ColumnID column_id{0}; column_id < output->column_count(); column_id++) {
         auto column_type = _table_in->column_type(column_id);
         column_vectors[column_id] =
-            make_shared_by_column_type<BaseColumn, ValueColumn>(column_type, _table_in->column_is_nullable(column_id));
+            make_shared_by_data_type<BaseColumn, ValueColumn>(column_type, _table_in->column_is_nullable(column_id));
       }
 
       Chunk chunk_out;
@@ -172,8 +174,6 @@ class Sort::SortImpl : public AbstractReadOnlyOperatorImpl {
 
     auto& null_value_rows = *_null_value_rows;
 
-    auto type_string = _table_in->column_type(_column_id);
-
     for (ChunkID chunk_id{0}; chunk_id < _table_in->chunk_count(); ++chunk_id) {
       auto& chunk = _table_in->get_chunk(chunk_id);
 
@@ -193,11 +193,11 @@ class Sort::SortImpl : public AbstractReadOnlyOperatorImpl {
     }
   }
 
-  template <typename Comp>
+  template <typename Comparator>
   void sort_with_operator() {
-    Comp comp;
+    Comparator comparator;
     std::stable_sort(_row_id_value_vector->begin(), _row_id_value_vector->end(),
-                     [comp](RowIDValuePair a, RowIDValuePair b) { return comp(a.second, b.second); });
+                     [comparator](RowIDValuePair a, RowIDValuePair b) { return comparator(a.second, b.second); });
   }
 
   const std::shared_ptr<const Table> _table_in;

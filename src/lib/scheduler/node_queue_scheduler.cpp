@@ -41,7 +41,8 @@ void NodeQueueScheduler::begin() {
     auto& topology_node = _topology->nodes()[q];
 
     for (auto& topology_cpu : topology_node.cpus) {
-      _processing_units.emplace_back(std::make_shared<ProcessingUnit>(queue, _worker_id_allocator, topology_cpu.cpuID));
+      _processing_units.emplace_back(
+          std::make_shared<ProcessingUnit>(queue, _worker_id_allocator, topology_cpu.cpu_id));
     }
   }
 
@@ -80,6 +81,10 @@ void NodeQueueScheduler::finish() {
   for (auto& processing_unit : _processing_units) {
     processing_unit->join();
   }
+
+  _processing_units = {};
+  _queues = {};
+  _task_counter = 0;
 
   _shut_down = true;
 }

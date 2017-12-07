@@ -62,7 +62,7 @@ std::shared_ptr<const Table> JoinSortMerge::_on_execute() {
               "Left and right column types do not match. The sort merge join requires matching column types");
 
   // Create implementation to compute the join result
-  _impl = make_unique_by_column_type<AbstractJoinOperatorImpl, JoinSortMergeImpl>(
+  _impl = make_unique_by_data_type<AbstractJoinOperatorImpl, JoinSortMergeImpl>(
       left_column_type, *this, _column_ids.first, _column_ids.second, _scan_type, _mode);
 
   return _impl->_on_execute();
@@ -96,6 +96,10 @@ class JoinSortMerge::JoinSortMergeImpl : public AbstractJoinOperatorImpl {
   // Contains the materialized sorted input tables
   std::unique_ptr<MaterializedColumnList<T>> _sorted_left_table;
   std::unique_ptr<MaterializedColumnList<T>> _sorted_right_table;
+
+  // Contains the null value row ids if a join column is an outer join column
+  std::unique_ptr<PosList> _null_rows_left;
+  std::unique_ptr<PosList> _null_rows_right;
 
   const ColumnID _left_column_id;
   const ColumnID _right_column_id;
@@ -239,7 +243,7 @@ class JoinSortMerge::JoinSortMergeImpl : public AbstractJoinOperatorImpl {
   }
 
   /**
-  * Emits a combination of a lhs row id and a rhs row id to the join output.
+  * Emits a combination of a left row id and a right row id to the join output.
   **/
   void _emit_combination(size_t output_cluster, RowID left, RowID right) {
     _output_pos_lists_left[output_cluster]->push_back(left);
@@ -448,28 +452,28 @@ class JoinSortMerge::JoinSortMergeImpl : public AbstractJoinOperatorImpl {
     auto end_of_right_table = _end_of_table(_sorted_right_table);
 
     if (_op == ScanType::OpLessThan) {
-      // Look for the first rhs value that is bigger than the smallest lhs value.
+      // Look for the first right value that is bigger than the smallest left value.
       auto result =
           _first_value_that_satisfies(_sorted_right_table, [&](const T& value) { return value > left_min_value; });
       if (result.has_value()) {
         _emit_left_null_combinations(0, TablePosition(0, 0).to(*result));
       }
     } else if (_op == ScanType::OpLessThanEquals) {
-      // Look for the first rhs value that is bigger or equal to the smallest lhs value.
+      // Look for the first right value that is bigger or equal to the smallest left value.
       auto result =
           _first_value_that_satisfies(_sorted_right_table, [&](const T& value) { return value >= left_min_value; });
       if (result.has_value()) {
         _emit_left_null_combinations(0, TablePosition(0, 0).to(*result));
       }
     } else if (_op == ScanType::OpGreaterThan) {
-      // Look for the first rhs value that is smaller than the biggest lhs value.
+      // Look for the first right value that is smaller than the biggest left value.
       auto result = _first_value_that_satisfies_reverse(_sorted_right_table,
                                                         [&](const T& value) { return value < left_max_value; });
       if (result.has_value()) {
         _emit_left_null_combinations(0, (*result).to(end_of_right_table));
       }
     } else if (_op == ScanType::OpGreaterThanEquals) {
-      // Look for the first rhs value that is smaller or equal to the biggest lhs value.
+      // Look for the first right value that is smaller or equal to the biggest left value.
       auto result = _first_value_that_satisfies_reverse(_sorted_right_table,
                                                         [&](const T& value) { return value <= left_max_value; });
       if (result.has_value()) {
@@ -489,28 +493,28 @@ class JoinSortMerge::JoinSortMergeImpl : public AbstractJoinOperatorImpl {
     auto end_of_left_table = _end_of_table(_sorted_left_table);
 
     if (_op == ScanType::OpLessThan) {
-      // Look for the last lhs value that is smaller than the biggest rhs value.
+      // Look for the last left value that is smaller than the biggest right value.
       auto result = _first_value_that_satisfies_reverse(_sorted_left_table,
                                                         [&](const T& value) { return value < right_max_value; });
       if (result.has_value()) {
         _emit_right_null_combinations(0, (*result).to(end_of_left_table));
       }
     } else if (_op == ScanType::OpLessThanEquals) {
-      // Look for the last lhs value that is smaller or equal than the biggest rhs value.
+      // Look for the last left value that is smaller or equal than the biggest right value.
       auto result = _first_value_that_satisfies_reverse(_sorted_left_table,
                                                         [&](const T& value) { return value <= right_max_value; });
       if (result.has_value()) {
         _emit_right_null_combinations(0, (*result).to(end_of_left_table));
       }
     } else if (_op == ScanType::OpGreaterThan) {
-      // Look for the first lhs value that is bigger than the smallest rhs value.
+      // Look for the first left value that is bigger than the smallest right value.
       auto result =
           _first_value_that_satisfies(_sorted_left_table, [&](const T& value) { return value > right_min_value; });
       if (result.has_value()) {
         _emit_right_null_combinations(0, TablePosition(0, 0).to(*result));
       }
     } else if (_op == ScanType::OpGreaterThanEquals) {
-      // Look for the first lhs value that is bigger or equal to the smallest rhs value.
+      // Look for the first left value that is bigger or equal to the smallest right value.
       auto result =
           _first_value_that_satisfies(_sorted_left_table, [&](const T& value) { return value >= right_min_value; });
       if (result.has_value()) {
@@ -610,7 +614,11 @@ class JoinSortMerge::JoinSortMergeImpl : public AbstractJoinOperatorImpl {
     // Get the row ids that are referenced
     auto new_pos_list = std::make_shared<PosList>();
     for (const auto& row : *pos_list) {
-      new_pos_list->push_back((*input_pos_lists[row.chunk_id])[row.chunk_offset]);
+      if (row.chunk_offset == INVALID_CHUNK_OFFSET) {
+        new_pos_list->push_back(RowID{ChunkID{0}, INVALID_CHUNK_OFFSET});
+      } else {
+        new_pos_list->push_back((*input_pos_lists[row.chunk_id])[row.chunk_offset]);
+      }
     }
 
     return new_pos_list;
@@ -621,13 +629,17 @@ class JoinSortMerge::JoinSortMergeImpl : public AbstractJoinOperatorImpl {
   * Executes the SortMergeJoin operator.
   **/
   std::shared_ptr<const Table> _on_execute() {
-    auto radix_clusterer =
-        RadixClusterSort<T>(_sort_merge_join._input_table_left(), _sort_merge_join._input_table_right(),
-                            _sort_merge_join._column_ids, _op == ScanType::OpEquals, _cluster_count);
+    bool include_null_left = (_mode == JoinMode::Left || _mode == JoinMode::Outer);
+    bool include_null_right = (_mode == JoinMode::Right || _mode == JoinMode::Outer);
+    auto radix_clusterer = RadixClusterSort<T>(
+        _sort_merge_join._input_table_left(), _sort_merge_join._input_table_right(), _sort_merge_join._column_ids,
+        _op == ScanType::OpEquals, include_null_left, include_null_right, _cluster_count);
     // Sort and cluster the input tables
     auto sort_output = radix_clusterer.execute();
-    _sorted_left_table = std::move(sort_output.first);
-    _sorted_right_table = std::move(sort_output.second);
+    _sorted_left_table = std::move(sort_output.clusters_left);
+    _sorted_right_table = std::move(sort_output.clusters_right);
+    _null_rows_left = std::move(sort_output.null_rows_left);
+    _null_rows_right = std::move(sort_output.null_rows_right);
     _end_of_left_table = _end_of_table(_sorted_left_table);
     _end_of_right_table = _end_of_table(_sorted_right_table);
 
@@ -638,6 +650,20 @@ class JoinSortMerge::JoinSortMergeImpl : public AbstractJoinOperatorImpl {
     // merge the pos lists into single pos lists
     auto output_left = _concatenate_pos_lists(_output_pos_lists_left);
     auto output_right = _concatenate_pos_lists(_output_pos_lists_right);
+
+    // Add the outer join rows which had a null value in their join column
+    if (include_null_left) {
+      for (auto row_id_left : *_null_rows_left) {
+        output_left->push_back(row_id_left);
+        output_right->push_back(NULL_ROW_ID);
+      }
+    }
+    if (include_null_right) {
+      for (auto row_id_right : *_null_rows_right) {
+        output_left->push_back(NULL_ROW_ID);
+        output_right->push_back(row_id_right);
+      }
+    }
 
     // Add the columns from both input tables to the output
     _add_output_columns(output_table, _sort_merge_join._input_table_left(), output_left);
