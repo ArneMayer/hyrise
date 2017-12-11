@@ -136,12 +136,9 @@ template <typename ElementType>
 void CountingQuotientFilter<ElementType>::populate(std::shared_ptr<const BaseColumn> column) {
   resolve_column_type<ElementType>(*column, [&](const auto& typed_column) {
     auto iterable_left = create_iterable_from_column<ElementType>(typed_column);
-    auto i = 0;
     iterable_left.for_each([&](const auto& value) {
-      i++;
       if (value.is_null()) return;
       insert(value.value());
-      //std::cout << "inserted " << i << std::endl;
     });
   });
 }

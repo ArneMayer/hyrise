@@ -13,6 +13,7 @@
 
 #include "storage/dictionary_column.hpp"
 #include "storage/index/b_tree/b_tree_index.hpp"
+#include "storage/index/b_tree/b_tree_index.cpp"
 
 namespace opossum {
 
@@ -33,7 +34,7 @@ TEST_F(BTreeIndexTest, VectorOfRandomInts) {
   std::shuffle(ints.begin(), ints.end(), random_generator);
 
   auto column = create_dict_column_by_type<int>(DataType::Int, ints);
-  auto index = std::make_shared<BTreeIndex>(std::vector<std::shared_ptr<const BaseColumn>>({column}));
+  auto index = std::make_shared<BTreeIndex<int>>(std::vector<std::shared_ptr<const BaseColumn>>({column}));
 
   for (auto i : {0, 2, 4, 8, 12, 14, 60, 64, 128, 130, 1024, 1026, 2048, 2050, 4096, 8190, 8192, 8194, 16382, 16384}) {
     EXPECT_EQ(column->get(*index->lower_bound({i})), i);

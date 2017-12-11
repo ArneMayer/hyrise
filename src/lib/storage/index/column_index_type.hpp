@@ -10,12 +10,12 @@ namespace opossum {
 
 namespace hana = boost::hana;
 
-enum class ColumnIndexType : uint8_t { Invalid, GroupKey, CompositeGroupKey, AdaptiveRadixTree, BTree };
+enum class ColumnIndexType : uint8_t { Invalid, GroupKey, CompositeGroupKey, AdaptiveRadixTree, BaseBTree };
 
 class GroupKeyIndex;
 class CompositeGroupKeyIndex;
 class AdaptiveRadixTreeIndex;
-class BTreeIndex;
+class BaseBTreeIndex;
 
 namespace detail {
 
@@ -23,7 +23,7 @@ constexpr auto column_index_map =
     hana::make_map(hana::make_pair(hana::type_c<GroupKeyIndex>, ColumnIndexType::GroupKey),
                    hana::make_pair(hana::type_c<CompositeGroupKeyIndex>, ColumnIndexType::CompositeGroupKey),
                    hana::make_pair(hana::type_c<AdaptiveRadixTreeIndex>, ColumnIndexType::AdaptiveRadixTree),
-                   hana::make_pair(hana::type_c<BTreeIndex>, ColumnIndexType::BTree));
+                   hana::make_pair(hana::type_c<BaseBTreeIndex>, ColumnIndexType::BaseBTree));
 
 }  // namespace detail
 
