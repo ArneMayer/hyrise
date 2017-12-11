@@ -43,6 +43,10 @@ set(
     operators/update_test.cpp
     operators/validate_test.cpp
     operators/validate_visibility_test.cpp
+    operators/maintenance/create_view_test.cpp
+    operators/maintenance/drop_view_test.cpp
+    operators/maintenance/show_columns_test.cpp
+    operators/maintenance/show_tables_test.cpp
     logical_query_plan/logical_query_plan_test.cpp
     logical_query_plan/aggregate_node_test.cpp
     logical_query_plan/delete_node_test.cpp
@@ -73,6 +77,7 @@ set(
     sql/sql_basic_cache_test.cpp
     sql/sql_expression_translator_test.cpp
     sql/sql_parse_tree_cache_test.cpp
+    sql/sql_pipeline_test.cpp
     sql/sql_prepare_execute_test.cpp
     sql/sql_query_operator_test.cpp
     sql/sql_query_plan_test.cpp

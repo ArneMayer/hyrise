@@ -10,6 +10,9 @@
 [submodule "third_party/pgasus"]
 	path = third_party/pgasus
 	url = https://github.com/hyrise/pgasus.git
+[submodule "third_party/cxxopts"]
+	path = third_party/cxxopts
+	url = https://github.com/jarro2783/cxxopts.git
 [submodulee "third_party/cpp-btree"]
   path = third_party/cpp-btree
   url = https://github.com/algorithm-ninja/cpp-btree
