@@ -79,6 +79,7 @@ set(
     sql/sql_query_plan_cache_test.cpp
     sql/sql_translator_test.cpp
     sql/sqlite_testrunner/sqlite_testrunner.cpp
+    storage/b_tree_index_test.cpp
     storage/adaptive_radix_tree_index_test.cpp
     storage/counting_quotient_filter_test.cpp
     storage/chunk_test.cpp

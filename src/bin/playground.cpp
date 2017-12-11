@@ -406,7 +406,7 @@ void best_case_benchmark_series() {
           sum_time += duration;
           results_table->append({row_count, chunk_size, remainder_size, duration.count()});
         }
-        //sstd::cout << std::endl;
+        //std::cout << std::endl;
 
         auto avg_time = sum_time / sample_size;
         std::cout << "row_count: " << row_count
