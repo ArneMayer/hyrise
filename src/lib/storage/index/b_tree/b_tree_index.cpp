@@ -12,11 +12,10 @@
 namespace opossum {
 
 template <typename DataType>
-BTreeIndex<DataType>::BTreeIndex(std::shared_ptr<const Table> table, const ColumnID column_id)
-    : BaseBTreeIndex{table, column_id} {
-  for (auto chunk_id = ChunkID{0}; chunk_id < table->chunk_count(); chunk_id++) {
-    auto& chunk = table->get_chunk(chunk_id);
-    auto column = chunk.get_column(column_id);
+BTreeIndex<DataType>::BTreeIndex(const Table& table, const ColumnID column_id) : BaseBTreeIndex{table, column_id} {
+  for (auto chunk_id = ChunkID{0}; chunk_id < _table.chunk_count(); chunk_id++) {
+    auto& chunk = _table.get_chunk(chunk_id);
+    auto column = chunk.get_column(_column_id);
     resolve_column_type<DataType>(*column, [&](const auto& typed_column) {
       auto iterable_left = create_iterable_from_column<DataType>(typed_column);
       iterable_left.for_each([&](const auto& value) {

@@ -16,7 +16,7 @@ template <typename DataType>
 class BTreeIndex : public BaseBTreeIndex {
  public:
   BTreeIndex() = delete;
-  explicit BTreeIndex(std::shared_ptr<const Table> table, const ColumnID column_id);
+  explicit BTreeIndex(const Table& table, const ColumnID column_id);
   BTreeIndex(BTreeIndex&&) = default;
   BTreeIndex& operator=(BTreeIndex&&) = default;
   virtual ~BTreeIndex() = default;

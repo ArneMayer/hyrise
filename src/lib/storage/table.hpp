@@ -14,6 +14,8 @@
 #include "utils/assert.hpp"
 #include "utils/performance_warning.hpp"
 #include "storage/table.hpp"
+#include "storage/index/b_tree/b_tree_index.hpp"
+#include "storage/index/b_tree/base_b_tree_index.hpp"
 
 namespace opossum {
 
@@ -143,6 +145,7 @@ class Table : private Noncopyable {
 
   std::vector<std::shared_ptr<AbstractTask>> populate_quotient_filters(ColumnID column_id, uint8_t quotient_bits,
                                                                        uint8_t remainder_bits);
+  void populate_btree_index(ColumnID column_id);
 
  protected:
   const uint32_t _max_chunk_size;
@@ -160,5 +163,7 @@ class Table : private Noncopyable {
   std::vector<bool> _column_nullable;
   std::shared_ptr<TableStatistics> _table_statistics;
   std::unique_ptr<std::mutex> _append_mutex;
+
+  std::map<ColumnID, std::shared_ptr<BaseBTreeIndex>> _btree_indices;
 };
 }  // namespace opossum

@@ -218,4 +218,9 @@ std::vector<std::shared_ptr<AbstractTask>> Table::populate_quotient_filters(Colu
   return jobs;
 }
 
+void Table::populate_btree_index(ColumnID column_id) {
+  _btree_indices[column_id] = make_shared_by_data_type<BaseBTreeIndex, BTreeIndex>(column_type(column_id),
+                                                                                        *this, column_id);
+}
+
 }  // namespace opossum
