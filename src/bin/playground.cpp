@@ -183,8 +183,10 @@ std::vector<AllTypeVariant> generate_row(int scan_column, T scan_column_value, i
   return row;
 }
 
-std::string best_case_load_or_generate(int row_count, int chunk_size) {
-  auto table_name = "best_case_" + std::to_string(row_count) + "_" + std::to_string(chunk_size);
+std::string best_case_load_or_generate(int row_count, int chunk_size, int prunable_chunks) {
+  auto table_name = "best_case_" + std::to_string(row_count) + "_"
+                                 + std::to_string(chunk_size) + "_"
+                                 + std::to_string(prunable_chunks);
   auto loaded = load_table(table_name);
   if (loaded) {
     return table_name;
@@ -216,11 +218,19 @@ std::string best_case_load_or_generate(int row_count, int chunk_size) {
 
   // Generate table data
   for (int row_number = 0; row_number < row_count; row_number++) {
+    // Ensure minimum value
     if (row_number % chunk_size == 0) {
       table->append(generate_row<std::string>(scan_column, min_value, column_count));
+    // Ensure maximum value
     } else if (row_number % chunk_size == 1) {
       table->append(generate_row<std::string>(scan_column, max_value, column_count));
-    } else {
+    // Ensure non-prunability
+    } else if (row_number % chunk_size == 2) {
+      if(static_cast<int>(row_number / chunk_size) >= prunable_chunks) {
+        table->append(generate_row<std::string>(scan_column, scan_value, column_count));
+      }
+    }
+    else {
       table->append(generate_row<std::string>(scan_column, random_string(string_size, scan_value), column_count));
     }
   }
@@ -251,9 +261,12 @@ void create_quotient_filters(std::shared_ptr<Table> table, ColumnID column_id, u
   }
 }
 
-std::shared_ptr<AbstractOperator> generate_benchmark_best_case(uint8_t remainder_size, int rows, int chunk_size) {
+std::shared_ptr<AbstractOperator> generate_benchmark_best_case(uint8_t remainder_size, int rows, int chunk_size,
+                                                               double pruning_ratio) {
   auto quotient_size = static_cast<int>(std::ceil(std::log(chunk_size) / std::log(2)));
-  auto table_name = best_case_load_or_generate(rows, chunk_size);
+  auto chunk_count = static_cast<int>(std::ceil(rows / static_cast<double>(chunk_size)));
+  auto prunable_chunks = static_cast<int>(chunk_count * pruning_ratio);
+  auto table_name = best_case_load_or_generate(rows, chunk_size, prunable_chunks);
   //print_table_layout(table_name);
   //analyze_value_interval<int>(table_name, "column0");
   auto table = StorageManager::get().get_table(table_name);
@@ -364,6 +377,7 @@ void best_case_benchmark_series() {
   auto row_counts = {10'000'000};
   auto remainder_sizes = {0, 2, 4, 8, 16};
   auto chunk_sizes = {100'000, 500'000, 1'000'000};
+  auto pruning_ratio = 0.5;
   //auto row_counts = {100'000};
   //auto remainder_sizes = {4};
   //auto chunk_sizes = {10'000};
@@ -378,6 +392,7 @@ void best_case_benchmark_series() {
   auto results_table = std::make_shared<Table>();
   results_table->add_column("row_count", DataType::Int, false);
   results_table->add_column("chunk_size", DataType::Int, false);
+  results_table->add_column("pruning_ratio", DataType::Double, false);
   //results_table->add_column("quotient_size", "int", false);
   results_table->add_column("remainder_size", DataType::Int, false);
   results_table->add_column("run_time", DataType::Int, false);
@@ -392,7 +407,7 @@ void best_case_benchmark_series() {
 
         for (int i = 0; i < sample_size; i++) {
           //std::cout << i << ",";
-          auto benchmark = generate_benchmark_best_case(remainder_size, row_count, chunk_size);
+          auto benchmark = generate_benchmark_best_case(remainder_size, row_count, chunk_size, pruning_ratio);
           clear_cache();
           auto start = std::chrono::steady_clock::now();
           benchmark->execute();
@@ -404,7 +419,7 @@ void best_case_benchmark_series() {
           if (duration < min_time) min_time = duration;
           if (duration > max_time) max_time = duration;
           sum_time += duration;
-          results_table->append({row_count, chunk_size, remainder_size, duration.count()});
+          results_table->append({row_count, chunk_size, pruning_ratio, remainder_size, duration.count()});
         }
         //std::cout << std::endl;
 

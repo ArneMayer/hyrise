@@ -11,6 +11,8 @@
 #include <cstdint>
 #include <vector>
 #include <string>
+#include <cstdlib>
+#include <ctime>
 
 
 namespace opossum {
@@ -43,6 +45,7 @@ class CountingQuotientFilter : public BaseFilter {
   uint64_t _number_of_slots;
   uint64_t _hash_bits;
   uint64_t _hash(ElementType value) const;
+  const uint32_t _seed = std::rand();
 
 };
 
