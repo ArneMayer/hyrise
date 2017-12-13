@@ -4,7 +4,7 @@
 
 namespace opossum {
 
-BaseBTreeIndex::BaseBTreeIndex(const std::vector<std::shared_ptr<const BaseColumn>>& index_columns)
-    : BaseIndex{get_index_type_of<BaseBTreeIndex>()}, _index_column(index_columns.front()) { }
+BaseBTreeIndex::BaseBTreeIndex(std::shared_ptr<const Table> table, const ColumnID column_id)
+    : _table{table}, _column_id(column_id) { }
 
 } // namespace opossum

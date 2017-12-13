@@ -11,7 +11,7 @@
 #include "types.hpp"
 
 #include "storage/dictionary_column.hpp"
-#include "storage/index/counting_quotient_filter/counting_quotient_filter.cpp"
+#include "storage/index/counting_quotient_filter/counting_quotient_filter.hpp"
 
 namespace opossum {
 
