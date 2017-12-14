@@ -303,7 +303,6 @@ set(
     LIBRARIES
     pthread
     sqlparser
-    cpp-btree
     ${TBB_LIBRARY}
 )
 

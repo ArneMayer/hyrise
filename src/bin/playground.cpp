@@ -401,9 +401,9 @@ void best_case_benchmark_series() {
   for (auto row_count : row_counts) {
     for (auto chunk_size : chunk_sizes) {
       for (auto remainder_size : remainder_sizes) {
-        std::chrono::microseconds min_time;
-        std::chrono::microseconds max_time;
-        std::chrono::microseconds sum_time = std::chrono::milliseconds(0);
+        auto min_time = std::chrono::microseconds(0);
+        auto max_time = std::chrono::microseconds(0);
+        auto sum_time = std::chrono::microseconds(0);
 
         for (int i = 0; i < sample_size; i++) {
           //std::cout << i << ",";
