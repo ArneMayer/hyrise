@@ -78,6 +78,24 @@ std::shared_ptr<const Table> TableScan::_on_execute() {
   auto jobs = std::vector<std::shared_ptr<AbstractTask>>{};
   jobs.reserve(_in_table->chunk_count());
 
+  auto btree_index = _in_table->get_btree_index(_left_column_id);
+  if (btree_index && is_variant(_right_parameter)) {
+    Chunk chunk_out;
+    AllTypeVariant scan_value = boost::get<AllTypeVariant>(_right_parameter);
+    auto matches_out = std::make_shared<PosList>(btree_index->point_query_all_type(scan_value));
+    for (ColumnID column_id{0u}; column_id < _in_table->column_count(); ++column_id) {
+      auto ref_column_out = std::make_shared<ReferenceColumn>(_in_table, column_id, matches_out);
+      chunk_out.add_column(ref_column_out);
+    }
+
+    std::lock_guard<std::mutex> lock(output_mutex);
+    if (chunk_out.size() > 0 || _output_table->get_chunk(ChunkID{0}).size() == 0) {
+      _output_table->emplace_chunk(std::move(chunk_out));
+    }
+
+    return _output_table;
+  }
+
   for (ChunkID chunk_id{0u}; chunk_id < _in_table->chunk_count(); ++chunk_id) {
     auto job_task = std::make_shared<JobTask>([=, &output_mutex]() {
       const auto chunk_guard = _in_table->get_chunk_with_access_counting(chunk_id);

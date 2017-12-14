@@ -1,5 +1,6 @@
 #pragma once
 
+#include "types.hpp"
 #include "storage/index/base_index.hpp"
 
 namespace opossum {
@@ -14,7 +15,7 @@ class BaseBTreeIndex : private Noncopyable {
   BaseBTreeIndex& operator=(BaseBTreeIndex&&) = default;
   virtual ~BaseBTreeIndex() = default;
 
-  virtual const std::vector<RowID>& point_query_all_type(AllTypeVariant value) const = 0;
+  virtual const PosList& point_query_all_type(AllTypeVariant value) const = 0;
 
  protected:
   const Table& _table;

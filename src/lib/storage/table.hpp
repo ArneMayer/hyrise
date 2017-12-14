@@ -146,6 +146,7 @@ class Table : private Noncopyable {
   std::vector<std::shared_ptr<AbstractTask>> populate_quotient_filters(ColumnID column_id, uint8_t quotient_bits,
                                                                        uint8_t remainder_bits);
   void populate_btree_index(ColumnID column_id);
+  std::shared_ptr<const BaseBTreeIndex> get_btree_index(ColumnID column_id) const;
 
  protected:
   const uint32_t _max_chunk_size;

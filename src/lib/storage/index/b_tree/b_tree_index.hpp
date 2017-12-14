@@ -21,11 +21,11 @@ class BTreeIndex : public BaseBTreeIndex {
   BTreeIndex& operator=(BTreeIndex&&) = default;
   virtual ~BTreeIndex() = default;
 
-  virtual const std::vector<RowID>& point_query_all_type(AllTypeVariant value) const;
-  const std::vector<RowID>& point_query(DataType value) const;
+  virtual const PosList& point_query_all_type(AllTypeVariant value) const;
+  const PosList& point_query(DataType value) const;
 
  private:
-  btree::btree_map<DataType, std::vector<RowID>> _btree;
+  btree::btree_map<DataType, PosList> _btree;
 };
 
 } // namespace opossum

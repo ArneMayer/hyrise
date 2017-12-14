@@ -223,4 +223,13 @@ void Table::populate_btree_index(ColumnID column_id) {
                                                                                         *this, column_id);
 }
 
+std::shared_ptr<const BaseBTreeIndex> Table::get_btree_index(ColumnID column_id) const {
+  auto result = _btree_indices.find(column_id);
+  if (result == _btree_indices.end()) {
+    return nullptr;
+  } else {
+    return result->second;
+  }
+}
+
 }  // namespace opossum

@@ -27,13 +27,13 @@ BTreeIndex<DataType>::BTreeIndex(const Table& table, const ColumnID column_id) :
 }
 
 template <typename DataType>
-const std::vector<RowID>& BTreeIndex<DataType>::point_query_all_type(AllTypeVariant all_type_value) const {
+const PosList& BTreeIndex<DataType>::point_query_all_type(AllTypeVariant all_type_value) const {
   DebugAssert(all_type_value.type() == typeid(DataType), "Value does not have the same type as the index elements");
   return point_query(type_cast<DataType>(all_type_value));
 }
 
 template <typename DataType>
-const std::vector<RowID>& BTreeIndex<DataType>::point_query(DataType value) const {
+const PosList& BTreeIndex<DataType>::point_query(DataType value) const {
   return _btree.find(value)->second;
 }
 
