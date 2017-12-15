@@ -26,6 +26,7 @@ class BTreeIndex : public BaseBTreeIndex {
 
  private:
   btree::btree_map<DataType, PosList> _btree;
+  const PosList _empty_list = PosList();
 };
 
 } // namespace opossum

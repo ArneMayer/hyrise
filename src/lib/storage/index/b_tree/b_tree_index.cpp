@@ -28,13 +28,18 @@ BTreeIndex<DataType>::BTreeIndex(const Table& table, const ColumnID column_id) :
 
 template <typename DataType>
 const PosList& BTreeIndex<DataType>::point_query_all_type(AllTypeVariant all_type_value) const {
-  DebugAssert(all_type_value.type() == typeid(DataType), "Value does not have the same type as the index elements");
+  //DebugAssert(all_type_value.type() == typeid(DataType), "Value does not have the same type as the index elements");
   return point_query(type_cast<DataType>(all_type_value));
 }
 
 template <typename DataType>
 const PosList& BTreeIndex<DataType>::point_query(DataType value) const {
-  return _btree.find(value)->second;
+  auto result = _btree.find(value);
+  if (result != _btree.end()) {
+    return result->second;
+  } else {
+    return _empty_list;
+  }
 }
 
 EXPLICITLY_INSTANTIATE_DATA_TYPES(BTreeIndex);

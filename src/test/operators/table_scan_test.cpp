@@ -30,6 +30,10 @@ class OperatorsTableScanTest : public BaseTest {
     cqf_table->populate_quotient_filters(ColumnID{1}, 8, 8);
     _table_cqf_wrapper = std::make_shared<TableWrapper>(cqf_table);
     _table_cqf_wrapper->execute();
+    auto btree_table = load_table("src/test/tables/int_float.tbl", 2);
+    btree_table->populate_btree_index(ColumnID{1});
+    _table_wrapper_btree = std::make_shared<TableWrapper>(btree_table);
+    _table_wrapper_btree->execute();
     _table_wrapper_null = std::make_shared<TableWrapper>(load_table("src/test/tables/int_float_with_null.tbl", 2));
     _table_wrapper_null->execute();
 
@@ -203,7 +207,8 @@ class OperatorsTableScanTest : public BaseTest {
     ASSERT_EQ(expected.size(), 0u);
   }
 
-  std::shared_ptr<TableWrapper> _table_wrapper, _table_cqf_wrapper,_table_wrapper_even_dict, _table_wrapper_null;
+  std::shared_ptr<TableWrapper> _table_wrapper, _table_wrapper_btree, _table_cqf_wrapper, _table_wrapper_even_dict,
+                                _table_wrapper_null;
 };
 
 TEST_F(OperatorsTableScanTest, DoubleScan) {
@@ -587,7 +592,19 @@ TEST_F(OperatorsTableScanTest, ScanWithQuotientFilter) {
 
   ASSERT_COLUMN_EQ(scan1->get_output(), ColumnID{0}, {123});
 
-  auto scan2 = std::make_shared<TableScan>(_table_cqf_wrapper, ColumnID{1}, ScanType::OpEquals, 500);
+  auto scan2 = std::make_shared<TableScan>(_table_cqf_wrapper, ColumnID{1}, ScanType::OpEquals, 500.0);
+  scan2->execute();
+
+  ASSERT_COLUMN_EQ(scan2->get_output(), ColumnID{0}, {});
+}
+
+TEST_F(OperatorsTableScanTest, ScanWithBTreeIndex) {
+  auto scan1 = std::make_shared<TableScan>(_table_wrapper_btree, ColumnID{1}, ScanType::OpEquals, 456.7);
+  scan1->execute();
+
+  ASSERT_COLUMN_EQ(scan1->get_output(), ColumnID{0}, {123});
+
+  auto scan2 = std::make_shared<TableScan>(_table_wrapper_btree, ColumnID{1}, ScanType::OpEquals, 500.0);
   scan2->execute();
 
   ASSERT_COLUMN_EQ(scan2->get_output(), ColumnID{0}, {});
