@@ -183,10 +183,11 @@ std::vector<AllTypeVariant> generate_row(int scan_column, T scan_column_value, i
   return row;
 }
 
-std::string best_case_load_or_generate(int row_count, int chunk_size, int prunable_chunks) {
+std::string best_case_load_or_generate(int row_count, int chunk_size, int prunable_chunks, bool compressed) {
   auto table_name = "best_case_" + std::to_string(row_count) + "_"
                                  + std::to_string(chunk_size) + "_"
-                                 + std::to_string(prunable_chunks);
+                                 + std::to_string(prunable_chunks) + "_"
+                                 + std::to_string(compressed);
   auto loaded = load_table(table_name);
   if (loaded) {
     return table_name;
@@ -204,7 +205,7 @@ std::string best_case_load_or_generate(int row_count, int chunk_size, int prunab
   // -> No chunk contains the actual scan value
   const auto column_count = 1;
   const auto scan_column = 0;
-  const auto string_size = 64;
+  const auto string_size = 3;
   const auto scan_value = std::string("l_scan_value");
   const auto min_value  = std::string("a_") + random_string(string_size - 2, "");
   const auto max_value = std::string("z_") + random_string(string_size - 2, "");;
@@ -235,16 +236,16 @@ std::string best_case_load_or_generate(int row_count, int chunk_size, int prunab
     }
   }
 
-  DictionaryCompression::compress_table(*table);
+  if (compressed) {
+    DictionaryCompression::compress_table(*table);
+  }
+
   StorageManager::get().add_table(table_name, table);
 
   std::cout << "OK!" << std::endl;
   save_table(table, table_name);
 
   return table_name;
-}
-
-void worst_case_load_or_generate(int rows, int chunk_size) {
 }
 
 void create_quotient_filters(std::shared_ptr<Table> table, ColumnID column_id, uint8_t quotient_size,
@@ -261,20 +262,26 @@ void create_quotient_filters(std::shared_ptr<Table> table, ColumnID column_id, u
   }
 }
 
-std::shared_ptr<AbstractOperator> generate_benchmark_best_case(uint8_t remainder_size, int rows, int chunk_size,
-                                                               double pruning_ratio) {
-  auto quotient_size = static_cast<int>(std::ceil(std::log(chunk_size) / std::log(2)));
+std::shared_ptr<AbstractOperator> generate_benchmark_best_case(uint8_t remainder_size, bool compressed, bool btree,
+                                                               int rows, int chunk_size, double pruning_ratio) {
   auto chunk_count = static_cast<int>(std::ceil(rows / static_cast<double>(chunk_size)));
   auto prunable_chunks = static_cast<int>(chunk_count * pruning_ratio);
-  auto table_name = best_case_load_or_generate(rows, chunk_size, prunable_chunks);
-  //print_table_layout(table_name);
-  //analyze_value_interval<int>(table_name, "column0");
+  auto quotient_size = static_cast<int>(std::ceil(std::log(chunk_size) / std::log(2)));
+  auto table_name = best_case_load_or_generate(rows, chunk_size, prunable_chunks, compressed);
   auto table = StorageManager::get().get_table(table_name);
+
   create_quotient_filters(table, ColumnID{0}, quotient_size, remainder_size);
-  //std::cout << analyze_skippable_chunks(table_name, "column0", 3000) << " chunks skippable" << std::endl;
+  if (btree) {
+    table->populate_btree_index(ColumnID{0});
+  }
+
   auto get_table = std::make_shared<GetTable>(table_name);
   auto table_scan = std::make_shared<TableScan>(get_table, ColumnID{0}, ScanType::OpEquals, std::string("l_scan_value"));
   get_table->execute();
+
+  //print_table_layout(table_name);
+  //analyze_value_interval<int>(table_name, "column0");
+  //std::cout << analyze_skippable_chunks(table_name, "column0", 3000) << " chunks skippable" << std::endl;
   return table_scan;
 }
 
@@ -372,15 +379,49 @@ void tpcc_benchmark_series() {
 }
 */
 
+void run_benchmark(int remainder_size, bool dictionary, bool btree, int row_count, int chunk_size,
+                   double pruning_ratio, int sample_size, std::shared_ptr<Table> results_table) {
+  auto min_time = std::chrono::microseconds(0);
+  auto max_time = std::chrono::microseconds(0);
+  auto sum_time = std::chrono::microseconds(0);
+
+  for (int i = 0; i < sample_size; i++) {
+    auto benchmark = generate_benchmark_best_case(remainder_size, dictionary, btree,
+                                                  row_count, chunk_size, pruning_ratio);
+    clear_cache();
+    auto start = std::chrono::steady_clock::now();
+    benchmark->execute();
+    auto duration = std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::steady_clock::now()-start);
+    if (i == 0) {
+      min_time = duration;
+      max_time = duration;
+    }
+    if (duration < min_time) min_time = duration;
+    if (duration > max_time) max_time = duration;
+    sum_time += duration;
+    results_table->append({row_count, chunk_size, pruning_ratio, remainder_size, static_cast<int>(dictionary),
+                           static_cast<int>(btree), duration.count()});
+  }
+
+  auto avg_time = sum_time / sample_size;
+  std::cout << "row_count: " << row_count
+            << ", chunk_size: " << chunk_size
+            << ", remainder_size: " << remainder_size
+            << ", dictionary: " << dictionary
+            << ", btree: " << btree
+            << ", pruning_ratio: " << pruning_ratio
+            << ", min_time: " << min_time.count()
+            << ", max_time: " << max_time.count()
+            << ", avg_time: " << avg_time.count()
+            << std::endl;
+}
+
 void best_case_benchmark_series() {
   auto sample_size = 100;
   auto row_counts = {10'000'000};
   auto remainder_sizes = {0, 2, 4, 8, 16};
-  auto chunk_sizes = {100'000, 500'000, 1'000'000};
+  auto chunk_sizes = {1'000'000};
   auto pruning_ratio = 0.5;
-  //auto row_counts = {100'000};
-  //auto remainder_sizes = {4};
-  //auto chunk_sizes = {10'000};
 
   std::cout << "------------------------" << std::endl;
   std::cout << "Benchmark configuration: " << std::endl;
@@ -393,45 +434,35 @@ void best_case_benchmark_series() {
   results_table->add_column("row_count", DataType::Int, false);
   results_table->add_column("chunk_size", DataType::Int, false);
   results_table->add_column("pruning_ratio", DataType::Double, false);
-  //results_table->add_column("quotient_size", "int", false);
   results_table->add_column("remainder_size", DataType::Int, false);
+  results_table->add_column("dictionary", DataType::Int, false);
+  results_table->add_column("btree", DataType::Int, false);
   results_table->add_column("run_time", DataType::Int, false);
 
   // analyze_value_interval<int>(table_name, column_name);
   for (auto row_count : row_counts) {
     for (auto chunk_size : chunk_sizes) {
+      auto dictionary = false;
+      auto btree = false;
       for (auto remainder_size : remainder_sizes) {
-        auto min_time = std::chrono::microseconds(0);
-        auto max_time = std::chrono::microseconds(0);
-        auto sum_time = std::chrono::microseconds(0);
-
-        for (int i = 0; i < sample_size; i++) {
-          //std::cout << i << ",";
-          auto benchmark = generate_benchmark_best_case(remainder_size, row_count, chunk_size, pruning_ratio);
-          clear_cache();
-          auto start = std::chrono::steady_clock::now();
-          benchmark->execute();
-          auto duration = std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::steady_clock::now()-start);
-          if (i == 0) {
-            min_time = duration;
-            max_time = duration;
-          }
-          if (duration < min_time) min_time = duration;
-          if (duration > max_time) max_time = duration;
-          sum_time += duration;
-          results_table->append({row_count, chunk_size, pruning_ratio, remainder_size, duration.count()});
-        }
-        //std::cout << std::endl;
-
-        auto avg_time = sum_time / sample_size;
-        std::cout << "row_count: " << row_count
-                  << ", chunk_size: " << chunk_size
-                  << ", remainder_size: " << remainder_size
-                  << ", min_time: " << min_time.count()
-                  << ", max_time: " << max_time.count()
-                  << ", avg_time: " << avg_time.count()
-                  << std::endl;
+        run_benchmark(remainder_size, dictionary, btree, row_count, chunk_size, pruning_ratio,
+                      sample_size, results_table);
       }
+      auto remainder_size = 0;
+      dictionary = false;
+      btree = false;
+      run_benchmark(remainder_size, dictionary, btree, row_count, chunk_size, pruning_ratio,
+                    sample_size, results_table);
+      remainder_size = 0;
+      dictionary = true;
+      btree = false;
+      run_benchmark(remainder_size, dictionary, btree, row_count, chunk_size, pruning_ratio,
+                    sample_size, results_table);
+      remainder_size = 0;
+      dictionary = false;
+      btree = true;
+      run_benchmark(remainder_size, dictionary, btree, row_count, chunk_size, pruning_ratio,
+                    sample_size, results_table);
     }
   }
 

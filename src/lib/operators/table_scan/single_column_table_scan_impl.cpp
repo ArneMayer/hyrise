@@ -25,7 +25,7 @@ PosList SingleColumnTableScanImpl::scan_chunk(ChunkID chunk_id) {
     /**
      * Comparing anything with NULL (without using IS [NOT] NULL) will result in NULL.
      * Therefore, these scans will always return an empty position list.
-     * Because OpIsNull/OpIsNotNull are handled separately in IsNullTableScanImpl, 
+     * Because OpIsNull/OpIsNotNull are handled separately in IsNullTableScanImpl,
      * we can assume that comparing with NULLs here will always return nothing.
      */
     return PosList{};
@@ -40,6 +40,15 @@ void SingleColumnTableScanImpl::handle_value_column(const BaseValueColumn& base_
   auto& matches_out = context->_matches_out;
   const auto& mapped_chunk_offsets = context->_mapped_chunk_offsets;
   const auto chunk_id = context->_chunk_id;
+
+  // Check whether this chunk needs to be looked at by performing a filter query
+  // CQF is only supported for ScanType::OpEquals
+  if (_scan_type == ScanType::OpEquals) {
+    auto cqf = _in_table->get_chunk(chunk_id).get_filter(_left_column_id);
+    if (cqf != nullptr && cqf->count_all_type(_right_value) == 0) {
+      return;
+    }
+  }
 
   const auto left_column_type = _in_table->column_type(_left_column_id);
 
