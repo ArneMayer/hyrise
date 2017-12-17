@@ -215,20 +215,22 @@ class Chunk : private Noncopyable {
 
   bool references_exactly_one_table() const;
 
+  size_t byte_size() const { return 0; }
+
+  const PolymorphicAllocator<Chunk>& get_allocator() const;
+
   /**
   * Inserts the all values from a column into its corresponding quotient filter.
   */
   std::shared_ptr<AbstractTask> populate_quotient_filter(ColumnID column_id, DataType column_type,
                                                          uint8_t quotient_bits, uint8_t remainder_bits);
 
+  void delete_quotient_filter(ColumnID column_id);
+
   /**
   * Retrieves the filter for a specific column.
   */
   std::shared_ptr<const BaseFilter> get_filter(ColumnID column_id) const;
-
-  size_t byte_size() const { return 0; }
-
-  const PolymorphicAllocator<Chunk>& get_allocator() const;
 
  private:
   std::vector<std::shared_ptr<const BaseColumn>> get_columns_for_ids(const std::vector<ColumnID>& column_ids) const;

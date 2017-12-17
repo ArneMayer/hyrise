@@ -25,7 +25,9 @@ class BTreeIndex : public BaseBTreeIndex {
   const PosList& point_query(DataType value) const;
 
  private:
-  btree::btree_map<DataType, PosList> _btree;
+  void _bulk_insert(const Table& table, const ColumnID column_id);
+
+  std::shared_ptr<btree::btree_map<DataType, PosList>> _btree;
   const PosList _empty_list = PosList();
 };
 

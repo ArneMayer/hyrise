@@ -148,24 +148,6 @@ std::shared_ptr<BaseIndex> Chunk::get_index(const ColumnIndexType index_type,
   return get_index(index_type, columns);
 }
 
-std::shared_ptr<AbstractTask> Chunk::populate_quotient_filter(ColumnID column_id, DataType column_type,
-                                                              uint8_t quotient_bits, uint8_t remainder_bits) {
-  return std::make_shared<JobTask>([this, column_id, column_type, quotient_bits, remainder_bits]() {
-    _quotient_filters[column_id] = make_shared_by_data_type<BaseFilter, CountingQuotientFilter>(column_type,
-                                                                                        quotient_bits, remainder_bits);
-    _quotient_filters[column_id]->populate(get_column(column_id));
-  });
-}
-
-std::shared_ptr<const BaseFilter> Chunk::get_filter(ColumnID column_id) const {
-  auto result = _quotient_filters.find(column_id);
-  if (result == _quotient_filters.end()) {
-    return nullptr;
-  } else {
-    return result->second;
-  }
-}
-
 bool Chunk::references_exactly_one_table() const {
   if (column_count() == 0) return false;
 
@@ -225,6 +207,28 @@ std::vector<std::shared_ptr<const BaseColumn>> Chunk::get_columns_for_ids(
   std::transform(column_ids.cbegin(), column_ids.cend(), std::back_inserter(columns),
                  [&](const auto& column_id) { return get_column(column_id); });
   return columns;
+}
+
+std::shared_ptr<AbstractTask> Chunk::populate_quotient_filter(ColumnID column_id, DataType column_type,
+                                                              uint8_t quotient_bits, uint8_t remainder_bits) {
+  return std::make_shared<JobTask>([this, column_id, column_type, quotient_bits, remainder_bits]() {
+    _quotient_filters[column_id] = make_shared_by_data_type<BaseFilter, CountingQuotientFilter>(column_type,
+                                                                                        quotient_bits, remainder_bits);
+    _quotient_filters[column_id]->populate(get_column(column_id));
+  });
+}
+
+void Chunk::delete_quotient_filter(ColumnID column_id) {
+  _quotient_filters[column_id] = nullptr;
+}
+
+std::shared_ptr<const BaseFilter> Chunk::get_filter(ColumnID column_id) const {
+  auto result = _quotient_filters.find(column_id);
+  if (result == _quotient_filters.end()) {
+    return nullptr;
+  } else {
+    return result->second;
+  }
 }
 
 }  // namespace opossum

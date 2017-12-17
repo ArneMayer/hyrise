@@ -218,9 +218,22 @@ std::vector<std::shared_ptr<AbstractTask>> Table::populate_quotient_filters(Colu
   return jobs;
 }
 
+void Table::delete_quotient_filters(ColumnID column_id) {
+  for (auto chunk_id = ChunkID{0}; chunk_id < chunk_count(); ++chunk_id) {
+    get_chunk(chunk_id).delete_quotient_filter(column_id);
+  }
+}
+
 void Table::populate_btree_index(ColumnID column_id) {
-  _btree_indices[column_id] = make_shared_by_data_type<BaseBTreeIndex, BTreeIndex>(column_type(column_id),
-                                                                                        *this, column_id);
+  auto result = _btree_indices.find(column_id);
+  if (result == _btree_indices.end()) {
+    _btree_indices[column_id] = make_shared_by_data_type<BaseBTreeIndex, BTreeIndex>(column_type(column_id),
+                                                                                     *this, column_id);
+  }
+}
+
+void Table::delete_btree_index(ColumnID column_id) {
+  _btree_indices[column_id] = nullptr;
 }
 
 std::shared_ptr<const BaseBTreeIndex> Table::get_btree_index(ColumnID column_id) const {

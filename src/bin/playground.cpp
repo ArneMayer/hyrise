@@ -259,6 +259,8 @@ void create_quotient_filters(std::shared_ptr<Table> table, ColumnID column_id, u
     }
     CurrentScheduler::wait_for_tasks(filter_insert_jobs);
     //std::cout << "OK!" << std::endl;
+  } else {
+    table->delete_quotient_filters(column_id);
   }
 }
 
@@ -273,6 +275,8 @@ std::shared_ptr<AbstractOperator> generate_benchmark_best_case(uint8_t remainder
   create_quotient_filters(table, ColumnID{0}, quotient_size, remainder_size);
   if (btree) {
     table->populate_btree_index(ColumnID{0});
+  } else {
+    table->delete_btree_index(ColumnID{0});
   }
 
   auto get_table = std::make_shared<GetTable>(table_name);
@@ -419,7 +423,7 @@ void run_benchmark(int remainder_size, bool dictionary, bool btree, int row_coun
 void best_case_benchmark_series() {
   auto sample_size = 100;
   auto row_counts = {10'000'000};
-  auto remainder_sizes = {0, 2, 4, 8, 16};
+  auto remainder_sizes = {2, 4, 8, 16};
   auto chunk_sizes = {1'000'000};
   auto pruning_ratio = 0.5;
 

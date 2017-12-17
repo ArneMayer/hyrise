@@ -143,9 +143,15 @@ class Table : private Noncopyable {
    */
   TableType get_type() const;
 
+  /****************************
+  * MA ARNE MAYER
+  */
+
   std::vector<std::shared_ptr<AbstractTask>> populate_quotient_filters(ColumnID column_id, uint8_t quotient_bits,
                                                                        uint8_t remainder_bits);
+  void delete_quotient_filters(ColumnID column_id);
   void populate_btree_index(ColumnID column_id);
+  void delete_btree_index(ColumnID column_id);
   std::shared_ptr<const BaseBTreeIndex> get_btree_index(ColumnID column_id) const;
 
  protected:
