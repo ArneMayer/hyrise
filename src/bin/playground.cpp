@@ -18,6 +18,7 @@
 #include "tpcc/tpcc_table_generator.hpp"
 #include "scheduler/abstract_task.hpp"
 #include "scheduler/current_scheduler.hpp"
+#include "storage/index/counting_quotient_filter/counting_quotient_filter.hpp"
 #include <json.hpp>
 
 using namespace opossum;
@@ -141,13 +142,18 @@ std::string tpcc_load_or_generate(int warehouse_size, int chunk_size, std::strin
 }
 */
 
-int random_int(int min, int max, int except) {
+int random_int(int min, int max) {
   DebugAssert(min <= max, "min value must be <= max value");
+
+  return std::rand() % (max - min) + min;
+}
+
+int random_int(int min, int max, int except) {
   DebugAssert(!(min == max && max == except), "value range empty");
 
   int value;
   do {
-    value = std::rand() % (max - min) + min;
+    value = random_int(min, max);
   } while (value == except);
 
   return value;
@@ -159,16 +165,19 @@ char random_char() {
   return lowest + std::rand() % (highest - lowest);
 }
 
+std::string random_string(int length) {
+  auto sstream = std::stringstream();
+  for (int i = 0; i < length; i++) {
+    sstream << random_char();
+  }
+  return sstream.str();
+}
+
 std::string random_string(int length, std::string except) {
   std::string result;
   do {
-    auto sstream = std::stringstream();
-    for (int i = 0; i < length; i++) {
-      sstream << random_char();
-    }
-    result = sstream.str();
+    result = random_string(length);
   } while (result == except);
-
   return result;
 }
 
@@ -420,6 +429,98 @@ void run_benchmark(int remainder_size, bool dictionary, bool btree, int row_coun
             << std::endl;
 }
 
+std::vector<std::string> generate_dictionary_string(int size, int string_length) {
+  std::vector<std::string> v;
+  for(int i = 0; i < size; i++) {
+    v.push_back(random_string(string_length));
+  }
+  std::sort (v.begin(), v.end());
+  return v;
+}
+
+void dict_query_benchmark_string(std::vector<std::string>& dictionary, int n, int string_length) {
+  auto value = random_string(string_length);
+  for (int i = 0; i < n; i++) {
+    std::binary_search(dictionary.begin(), dictionary.end(), value);
+  }
+}
+
+std::shared_ptr<CountingQuotientFilter<std::string>> generate_filter_string(int size, int string_length, int quotient_size, int remainder_size) {
+  auto filter = std::make_shared<CountingQuotientFilter<std::string>>(quotient_size, remainder_size);
+  for(int i = 0; i < size; i++) {
+    filter->insert(random_string(string_length));
+  }
+  return filter;
+}
+
+void filter_query_benchmark_string(std::shared_ptr<CountingQuotientFilter<std::string>> filter, int n, int string_length) {
+  auto value = random_string(string_length);
+  for (int i = 0; i < n; i++) {
+    filter->count(value);
+  }
+}
+
+std::vector<int> generate_dictionary_int(int size) {
+  std::vector<int> v;
+  for (int i = 0; i < size; i++) {
+    v.push_back(random_int(0, 100000));
+  }
+  std::sort (v.begin(), v.end());
+  return v;
+}
+
+void dict_query_benchmark_int(std::vector<int>& dictionary, int n) {
+  auto value = random_int(0, 100000);
+  for (int i = 0; i < n; i++) {
+    std::binary_search(dictionary.begin(), dictionary.end(), value);
+  }
+}
+
+std::shared_ptr<CountingQuotientFilter<int>> generate_filter_int(int size, int quotient_size, int remainder_size) {
+  auto filter = std::make_shared<CountingQuotientFilter<int>>(quotient_size, remainder_size);
+  for(int i = 0; i < size; i++) {
+    filter->insert(random_int(0, 100000));
+  }
+  return filter;
+}
+
+void filter_query_benchmark_int(std::shared_ptr<CountingQuotientFilter<int>> filter, int n) {
+  auto value = random_int(0, 100000);
+  for (int i = 0; i < n; i++) {
+    filter->count(value);
+  }
+}
+
+void dict_vs_filter_series() {
+  auto string_length = 64;
+  auto size = 1000000;
+  auto n = 10000;
+  auto quotient_size = 20;
+  auto remainder_size = 2;
+
+  auto dict_string = generate_dictionary_string(size, string_length);
+  auto start = std::chrono::steady_clock::now();
+  dict_query_benchmark_string(dict_string, n, string_length);
+  auto duration = std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::steady_clock::now()-start);
+  std::cout << "string dictionary: " << duration.count() << std::endl;
+  auto filter_string = generate_filter_string(size, string_length, quotient_size, remainder_size);
+  start = std::chrono::steady_clock::now();
+  filter_query_benchmark_string(filter_string, n, string_length);
+  duration = std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::steady_clock::now()-start);
+  std::cout << "string filter: " << duration.count() << std::endl;
+
+  auto dict_int = generate_dictionary_int(size);
+  start = std::chrono::steady_clock::now();
+  dict_query_benchmark_int(dict_int, n);
+  duration = std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::steady_clock::now()-start);
+  std::cout << "int dictionary: " << duration.count() << std::endl;
+  auto filter_int = generate_filter_int(size, quotient_size, remainder_size);
+  start = std::chrono::steady_clock::now();
+  filter_query_benchmark_int(filter_int, n);
+  duration = std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::steady_clock::now()-start);
+  std::cout << "int filter: " << duration.count() << std::endl;
+}
+
 void best_case_benchmark_series() {
   auto sample_size = 100;
   auto row_counts = {10'000'000};
@@ -494,6 +595,7 @@ void best_case_benchmark_series() {
 **/
 
 int main() {
-  best_case_benchmark_series();
+  //best_case_benchmark_series();
+  dict_vs_filter_series();
   return 0;
 }
