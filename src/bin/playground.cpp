@@ -1,3 +1,5 @@
+#include "data_generation.hpp"
+
 #include <iostream>
 #include <chrono>
 #include <fstream>
@@ -9,16 +11,12 @@
 #include "types.hpp"
 #include "operators/get_table.hpp"
 #include "operators/table_scan.hpp"
-#include "operators/import_binary.hpp"
-#include "operators/export_binary.hpp"
 #include "operators/export_csv.hpp"
 #include "operators/table_wrapper.hpp"
 #include "storage/storage_manager.hpp"
-#include "storage/dictionary_compression.hpp"
 #include "tpcc/tpcc_table_generator.hpp"
 #include "scheduler/abstract_task.hpp"
 #include "scheduler/current_scheduler.hpp"
-#include "storage/index/counting_quotient_filter/counting_quotient_filter.hpp"
 #include <json.hpp>
 
 using namespace opossum;
@@ -98,165 +96,6 @@ void print_chunk_sizes(std::shared_ptr<const Table> table) {
   }
 }
 
-/**
-* Checks whether the table exist in the storage manager or on disk
-*/
-bool load_table(std::string table_name) {
-  if (StorageManager::get().has_table(table_name)) {
-    return true;
-  }
-  bool file_exists = std::ifstream(table_name).good();
-  if (file_exists) {
-    std::cout << " > Loading table " << table_name << " from disk" << "...";
-    auto import = std::make_shared<ImportBinary>(table_name, table_name);
-    import->execute();
-    std::cout << "OK!" << std::endl;
-    return true;
-  } else {
-    return false;
-  }
-}
-
-void save_table(std::shared_ptr<const Table> table, std::string file_name) {
-  std::cout << " > Saving table " << file_name << " to disk" << "...";
-  auto table_wrapper = std::make_shared<TableWrapper>(table);
-  table_wrapper->execute();
-  auto export_operator = std::make_shared<ExportBinary>(table_wrapper, file_name);
-  export_operator->execute();
-  std::cout << "OK!" << std::endl;
-}
-
-/*
-std::string tpcc_load_or_generate(int warehouse_size, int chunk_size, std::string tpcc_table_name) {
-  auto table_name = tpcc_table_name + "_" + std::to_string(warehouse_size) + "_" + std::to_string(chunk_size);
-  auto loaded = load_table(table_name);
-  if (!loaded) {
-    std::cout << " > Generating table " << table_name << "...";
-    auto table = tpcc::TpccTableGenerator::generate_tpcc_table(tpcc_table_name, chunk_size, warehouse_size);
-    StorageManager::get().add_table(table_name, table);
-    std::cout << "OK!" << std::endl;
-    save_table(table, table_name);
-  }
-
-  return table_name;
-}
-*/
-
-int random_int(int min, int max) {
-  DebugAssert(min <= max, "min value must be <= max value");
-
-  return std::rand() % (max - min) + min;
-}
-
-int random_int(int min, int max, int except) {
-  DebugAssert(!(min == max && max == except), "value range empty");
-
-  int value;
-  do {
-    value = random_int(min, max);
-  } while (value == except);
-
-  return value;
-}
-
-char random_char() {
-  const char lowest = 'A';
-  const char highest = 'z';
-  return lowest + std::rand() % (highest - lowest);
-}
-
-std::string random_string(int length) {
-  auto sstream = std::stringstream();
-  for (int i = 0; i < length; i++) {
-    sstream << random_char();
-  }
-  return sstream.str();
-}
-
-std::string random_string(int length, std::string except) {
-  std::string result;
-  do {
-    result = random_string(length);
-  } while (result == except);
-  return result;
-}
-
-template <typename T>
-std::vector<AllTypeVariant> generate_row(int scan_column, T scan_column_value, int column_count) {
-  auto row = std::vector<AllTypeVariant>(column_count);
-  for (int i = 0; i < column_count; i++) {
-    row[i] = 0;
-  }
-  row[scan_column] = scan_column_value;
-
-  return row;
-}
-
-std::string best_case_load_or_generate(int row_count, int chunk_size, int prunable_chunks, bool compressed) {
-  auto table_name = "best_case_" + std::to_string(row_count) + "_"
-                                 + std::to_string(chunk_size) + "_"
-                                 + std::to_string(prunable_chunks) + "_"
-                                 + std::to_string(compressed);
-  auto loaded = load_table(table_name);
-  if (loaded) {
-    return table_name;
-  }
-
-  std::cout << " > Generating table " << table_name << "...";
-
-  // Requirements:
-  // - 10 columns minimum,
-  // - Every chunk is compressed#
-  // - strings
-
-  // Best case: Dictionary pruning takes long -> strings, filter can prune everything
-  // -> Scan value in between min/max
-  // -> No chunk contains the actual scan value
-  const auto column_count = 1;
-  const auto scan_column = 0;
-  const auto string_size = 3;
-  const auto scan_value = std::string("l_scan_value");
-  const auto min_value  = std::string("a_") + random_string(string_size - 2, "");
-  const auto max_value = std::string("z_") + random_string(string_size - 2, "");;
-
-  // Generate table header
-  auto table = std::make_shared<Table>(chunk_size);
-  table->add_column("column0", DataType::String, false);
-  for (int i = 1; i < column_count; i++) {
-    table->add_column("column" + std::to_string(i), DataType::Int, false);
-  }
-
-  // Generate table data
-  for (int row_number = 0; row_number < row_count; row_number++) {
-    // Ensure minimum value
-    if (row_number % chunk_size == 0) {
-      table->append(generate_row<std::string>(scan_column, min_value, column_count));
-    // Ensure maximum value
-    } else if (row_number % chunk_size == 1) {
-      table->append(generate_row<std::string>(scan_column, max_value, column_count));
-    // Ensure non-prunability
-    } else if (row_number % chunk_size == 2) {
-      if(static_cast<int>(row_number / chunk_size) >= prunable_chunks) {
-        table->append(generate_row<std::string>(scan_column, scan_value, column_count));
-      }
-    }
-    else {
-      table->append(generate_row<std::string>(scan_column, random_string(string_size, scan_value), column_count));
-    }
-  }
-
-  if (compressed) {
-    DictionaryCompression::compress_table(*table);
-  }
-
-  StorageManager::get().add_table(table_name, table);
-
-  std::cout << "OK!" << std::endl;
-  save_table(table, table_name);
-
-  return table_name;
-}
-
 void create_quotient_filters(std::shared_ptr<Table> table, ColumnID column_id, uint8_t quotient_size,
     	                       uint8_t remainder_size) {
   if (remainder_size > 0 && quotient_size > 0) {
@@ -273,12 +112,12 @@ void create_quotient_filters(std::shared_ptr<Table> table, ColumnID column_id, u
   }
 }
 
-std::shared_ptr<AbstractOperator> generate_benchmark_best_case(uint8_t remainder_size, bool compressed, bool btree,
+std::shared_ptr<AbstractOperator> generate_benchmark(uint8_t remainder_size, bool compressed, bool btree,
                                                                int rows, int chunk_size, double pruning_ratio) {
   auto chunk_count = static_cast<int>(std::ceil(rows / static_cast<double>(chunk_size)));
   auto prunable_chunks = static_cast<int>(chunk_count * pruning_ratio);
   auto quotient_size = static_cast<int>(std::ceil(std::log(chunk_size) / std::log(2)));
-  auto table_name = best_case_load_or_generate(rows, chunk_size, prunable_chunks, compressed);
+  auto table_name = load_or_generate(rows, chunk_size, prunable_chunks, compressed);
   auto table = StorageManager::get().get_table(table_name);
 
   create_quotient_filters(table, ColumnID{0}, quotient_size, remainder_size);
@@ -399,8 +238,8 @@ void run_benchmark(int remainder_size, bool dictionary, bool btree, int row_coun
   auto sum_time = std::chrono::microseconds(0);
 
   for (int i = 0; i < sample_size; i++) {
-    auto benchmark = generate_benchmark_best_case(remainder_size, dictionary, btree,
-                                                  row_count, chunk_size, pruning_ratio);
+    auto benchmark = generate_benchmark(remainder_size, dictionary, btree, row_count, chunk_size, pruning_ratio);
+
     clear_cache();
     auto start = std::chrono::steady_clock::now();
     benchmark->execute();
@@ -429,28 +268,12 @@ void run_benchmark(int remainder_size, bool dictionary, bool btree, int row_coun
             << std::endl;
 }
 
-std::vector<std::string> generate_dictionary_string(int size, int string_length) {
-  std::vector<std::string> v;
-  for(int i = 0; i < size; i++) {
-    v.push_back(random_string(string_length));
-  }
-  std::sort (v.begin(), v.end());
-  return v;
-}
-
 void dict_query_benchmark_string(std::vector<std::string>& dictionary, int n, int string_length) {
   auto value = random_string(string_length);
   for (int i = 0; i < n; i++) {
+    //clear_cache();
     std::binary_search(dictionary.begin(), dictionary.end(), value);
   }
-}
-
-std::shared_ptr<CountingQuotientFilter<std::string>> generate_filter_string(int size, int string_length, int quotient_size, int remainder_size) {
-  auto filter = std::make_shared<CountingQuotientFilter<std::string>>(quotient_size, remainder_size);
-  for(int i = 0; i < size; i++) {
-    filter->insert(random_string(string_length));
-  }
-  return filter;
 }
 
 void filter_query_benchmark_string(std::shared_ptr<CountingQuotientFilter<std::string>> filter, int n, int string_length) {
@@ -460,28 +283,11 @@ void filter_query_benchmark_string(std::shared_ptr<CountingQuotientFilter<std::s
   }
 }
 
-std::vector<int> generate_dictionary_int(int size) {
-  std::vector<int> v;
-  for (int i = 0; i < size; i++) {
-    v.push_back(random_int(0, 100000));
-  }
-  std::sort (v.begin(), v.end());
-  return v;
-}
-
 void dict_query_benchmark_int(std::vector<int>& dictionary, int n) {
   auto value = random_int(0, 100000);
   for (int i = 0; i < n; i++) {
     std::binary_search(dictionary.begin(), dictionary.end(), value);
   }
-}
-
-std::shared_ptr<CountingQuotientFilter<int>> generate_filter_int(int size, int quotient_size, int remainder_size) {
-  auto filter = std::make_shared<CountingQuotientFilter<int>>(quotient_size, remainder_size);
-  for(int i = 0; i < size; i++) {
-    filter->insert(random_int(0, 100000));
-  }
-  return filter;
 }
 
 void filter_query_benchmark_int(std::shared_ptr<CountingQuotientFilter<int>> filter, int n) {
@@ -494,34 +300,38 @@ void filter_query_benchmark_int(std::shared_ptr<CountingQuotientFilter<int>> fil
 void dict_vs_filter_series() {
   auto string_length = 64;
   auto size = 1000000;
-  auto n = 10000;
+  auto n = 100;
   auto quotient_size = 20;
   auto remainder_size = 2;
 
   auto dict_string = generate_dictionary_string(size, string_length);
+  clear_cache();
   auto start = std::chrono::steady_clock::now();
   dict_query_benchmark_string(dict_string, n, string_length);
   auto duration = std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::steady_clock::now()-start);
   std::cout << "string dictionary: " << duration.count() << std::endl;
   auto filter_string = generate_filter_string(size, string_length, quotient_size, remainder_size);
+  clear_cache();
   start = std::chrono::steady_clock::now();
   filter_query_benchmark_string(filter_string, n, string_length);
   duration = std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::steady_clock::now()-start);
   std::cout << "string filter: " << duration.count() << std::endl;
 
   auto dict_int = generate_dictionary_int(size);
+  clear_cache();
   start = std::chrono::steady_clock::now();
   dict_query_benchmark_int(dict_int, n);
   duration = std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::steady_clock::now()-start);
   std::cout << "int dictionary: " << duration.count() << std::endl;
   auto filter_int = generate_filter_int(size, quotient_size, remainder_size);
+  clear_cache();
   start = std::chrono::steady_clock::now();
   filter_query_benchmark_int(filter_int, n);
   duration = std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::steady_clock::now()-start);
   std::cout << "int filter: " << duration.count() << std::endl;
 }
 
-void best_case_benchmark_series() {
+void benchmark_series() {
   auto sample_size = 100;
   auto row_counts = {10'000'000};
   auto remainder_sizes = {2, 4, 8, 16};
@@ -531,7 +341,7 @@ void best_case_benchmark_series() {
   std::cout << "------------------------" << std::endl;
   std::cout << "Benchmark configuration: " << std::endl;
   std::cout << "sample_size:    " << sample_size << std::endl;
-  std::cout << "table_name:     " << "best_case" << std::endl;
+  std::cout << "table_name:     " << "bench" << std::endl;
   std::cout << "column_name:    " << "column0" << std::endl;
   std::cout << "------------------------" << std::endl;
 
@@ -595,7 +405,7 @@ void best_case_benchmark_series() {
 **/
 
 int main() {
-  //best_case_benchmark_series();
+  benchmark_series();
   dict_vs_filter_series();
   return 0;
 }

@@ -111,8 +111,8 @@ uint64_t CountingQuotientFilter<ElementType>::count(ElementType element) const {
 **/
 template <typename ElementType>
 uint64_t CountingQuotientFilter<ElementType>::_hash(ElementType value) const {
-  //auto hash = xxh::xxhash<64, ElementType>(&value, 1, _seed);
-  auto hash = murmur2<ElementType>(value, _seed);
+  auto hash = xxh::xxhash<64, ElementType>(&value, 1, _seed);
+  //auto hash = murmur2<ElementType>(value, _seed);
   return static_cast<uint64_t>(hash);
 }
 
@@ -121,8 +121,8 @@ uint64_t CountingQuotientFilter<ElementType>::_hash(ElementType value) const {
 **/
 template <>
 uint64_t CountingQuotientFilter<std::string>::_hash(std::string value) const {
-  //auto hash = xxh::xxhash<64, char>(value.data(), value.length(), _seed);
-  auto hash = murmur_hash2(value.data(), value.length(), _seed);
+  auto hash = xxh::xxhash<64, char>(value.data(), value.length(), _seed);
+  //auto hash = murmur_hash2(value.data(), value.length(), _seed);
   return static_cast<uint64_t>(hash);
 }
 
