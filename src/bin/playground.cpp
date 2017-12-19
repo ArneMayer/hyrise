@@ -99,14 +99,11 @@ void print_chunk_sizes(std::shared_ptr<const Table> table) {
 void create_quotient_filters(std::shared_ptr<Table> table, ColumnID column_id, uint8_t quotient_size,
     	                       uint8_t remainder_size) {
   if (remainder_size > 0 && quotient_size > 0) {
-    //std::cout << " > Populating quotient filter (" << static_cast<int>(quotient_size) << ", "
-    //                                               <<  static_cast<int>(remainder_size) << ")...";
     auto filter_insert_jobs = table->populate_quotient_filters(column_id, quotient_size, remainder_size);
     for (auto job : filter_insert_jobs) {
       job->schedule();
     }
     CurrentScheduler::wait_for_tasks(filter_insert_jobs);
-    //std::cout << "OK!" << std::endl;
   } else {
     table->delete_quotient_filters(column_id);
   }
