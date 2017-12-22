@@ -109,12 +109,12 @@ void create_quotient_filters(std::shared_ptr<Table> table, ColumnID column_id, u
   }
 }
 
-std::shared_ptr<AbstractOperator> generate_benchmark(uint8_t remainder_size, bool compressed, bool btree,
-                                                               int rows, int chunk_size, double pruning_ratio) {
+std::shared_ptr<AbstractOperator> generate_benchmark(std::string type, uint8_t remainder_size, bool compressed,
+                                                     bool btree, int rows, int chunk_size, double pruning_ratio) {
   auto chunk_count = static_cast<int>(std::ceil(rows / static_cast<double>(chunk_size)));
   auto prunable_chunks = static_cast<int>(chunk_count * pruning_ratio);
   auto quotient_size = static_cast<int>(std::ceil(std::log(chunk_size) / std::log(2)));
-  auto table_name = load_or_generate(rows, chunk_size, prunable_chunks, compressed);
+  auto table_name = load_or_generate(type, rows, chunk_size, prunable_chunks, compressed);
   auto table = StorageManager::get().get_table(table_name);
 
   create_quotient_filters(table, ColumnID{0}, quotient_size, remainder_size);
@@ -124,8 +124,15 @@ std::shared_ptr<AbstractOperator> generate_benchmark(uint8_t remainder_size, boo
     table->delete_btree_index(ColumnID{0});
   }
 
+  AllTypeVariant scan_value;
+  if (type == "string") {
+    scan_value = std::string("l_scan_value");
+  } else {
+    scan_value = 3000;
+  }
+
   auto get_table = std::make_shared<GetTable>(table_name);
-  auto table_scan = std::make_shared<TableScan>(get_table, ColumnID{0}, ScanType::OpEquals, std::string("l_scan_value"));
+  auto table_scan = std::make_shared<TableScan>(get_table, ColumnID{0}, ScanType::OpEquals, scan_value);
   get_table->execute();
 
   //print_table_layout(table_name);
@@ -160,22 +167,6 @@ void serialize_results_csv(std::shared_ptr<Table> table) {
   auto export_csv = std::make_shared<ExportCsv>(table_wrapper, file_name);
   export_csv->execute();
   std::cout << "OK!" << std::endl;
-}
-
-void serialize_results_json(nlohmann::json results) {
-  std::ofstream outfile;
-  //auto user_name = std::string("arne");
-  auto user_name = std::string("osboxes");
-  //auto user_name = std::string("Arne.Mayer");
-  outfile.open("/home/" + user_name + "/dev/MasterarbeitJupyter/benchmark_results.json");
-  //outfile.open ("results.json");
-  if (outfile.is_open()) {
-    outfile << results;
-    outfile.close();
-    std::cout << " > result written" << std::endl;
-  } else {
-    std::cout << " > could not write results to file" << std::endl;
-  }
 }
 
 /*
@@ -228,14 +219,14 @@ void tpcc_benchmark_series() {
 }
 */
 
-void run_benchmark(int remainder_size, bool dictionary, bool btree, int row_count, int chunk_size,
+void run_benchmark(std::string type, int remainder_size, bool dictionary, bool btree, int row_count, int chunk_size,
                    double pruning_ratio, int sample_size, std::shared_ptr<Table> results_table) {
   auto min_time = std::chrono::microseconds(0);
   auto max_time = std::chrono::microseconds(0);
   auto sum_time = std::chrono::microseconds(0);
 
   for (int i = 0; i < sample_size; i++) {
-    auto benchmark = generate_benchmark(remainder_size, dictionary, btree, row_count, chunk_size, pruning_ratio);
+    auto benchmark = generate_benchmark(type, remainder_size, dictionary, btree, row_count, chunk_size, pruning_ratio);
 
     clear_cache();
     auto start = std::chrono::steady_clock::now();
@@ -253,7 +244,8 @@ void run_benchmark(int remainder_size, bool dictionary, bool btree, int row_coun
   }
 
   auto avg_time = sum_time / sample_size;
-  std::cout << "row_count: " << row_count
+  std::cout << "type: " << type
+            << ", row_count: " << row_count
             << ", chunk_size: " << chunk_size
             << ", remainder_size: " << remainder_size
             << ", dictionary: " << dictionary
@@ -329,11 +321,12 @@ void dict_vs_filter_series() {
 }
 
 void benchmark_series() {
-  auto sample_size = 100;
+  auto sample_size = 1;
   auto row_counts = {10'000'000};
   auto remainder_sizes = {2, 4, 8, 16};
   auto chunk_sizes = {1'000'000};
   auto pruning_ratio = 0.5;
+  auto scan_type = std::string("int");
 
   std::cout << "------------------------" << std::endl;
   std::cout << "Benchmark configuration: " << std::endl;
@@ -357,23 +350,23 @@ void benchmark_series() {
       auto dictionary = false;
       auto btree = false;
       for (auto remainder_size : remainder_sizes) {
-        run_benchmark(remainder_size, dictionary, btree, row_count, chunk_size, pruning_ratio,
+        run_benchmark(scan_type, remainder_size, dictionary, btree, row_count, chunk_size, pruning_ratio,
                       sample_size, results_table);
       }
       auto remainder_size = 0;
       dictionary = false;
       btree = false;
-      run_benchmark(remainder_size, dictionary, btree, row_count, chunk_size, pruning_ratio,
+      run_benchmark(scan_type, remainder_size, dictionary, btree, row_count, chunk_size, pruning_ratio,
                     sample_size, results_table);
       remainder_size = 0;
       dictionary = true;
       btree = false;
-      run_benchmark(remainder_size, dictionary, btree, row_count, chunk_size, pruning_ratio,
+      run_benchmark(scan_type, remainder_size, dictionary, btree, row_count, chunk_size, pruning_ratio,
                     sample_size, results_table);
       remainder_size = 0;
       dictionary = false;
       btree = true;
-      run_benchmark(remainder_size, dictionary, btree, row_count, chunk_size, pruning_ratio,
+      run_benchmark(scan_type, remainder_size, dictionary, btree, row_count, chunk_size, pruning_ratio,
                     sample_size, results_table);
     }
   }

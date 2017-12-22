@@ -57,8 +57,7 @@ std::string random_string(int length, std::string except) {
   return result;
 }
 
-template <typename T>
-std::vector<AllTypeVariant> generate_row(int scan_column, T scan_column_value, int column_count) {
+std::vector<AllTypeVariant> generate_row(int scan_column, AllTypeVariant scan_column_value, int column_count) {
   auto row = std::vector<AllTypeVariant>(column_count);
   for (int i = 0; i < column_count; i++) {
     row[i] = 0;
@@ -143,21 +142,10 @@ std::string tpcc_load_or_generate(int warehouse_size, int chunk_size, std::strin
 }
 */
 
-std::string load_or_generate(int row_count, int chunk_size, int prunable_chunks, bool compressed) {
-  auto table_name = "bench_" + std::to_string(row_count) + "_"
-                                 + std::to_string(chunk_size) + "_"
-                                 + std::to_string(prunable_chunks) + "_"
-                                 + std::to_string(compressed);
-  auto loaded = load_table(table_name);
-  if (loaded) {
-    return table_name;
-  }
-
-  std::cout << " > Generating table " << table_name << "...";
-
+std::shared_ptr<Table> generate_table_string(int chunk_size, int row_count, int prunable_chunks) {
   const auto column_count = 1;
   const auto scan_column = 0;
-  const auto string_size = 3;
+  const auto string_size = 4;
   const auto scan_value = std::string("l_scan_value");
   const auto min_value  = std::string("a_") + random_string(string_size - 2, "");
   const auto max_value = std::string("z_") + random_string(string_size - 2, "");;
@@ -173,19 +161,78 @@ std::string load_or_generate(int row_count, int chunk_size, int prunable_chunks,
   for (int row_number = 0; row_number < row_count; row_number++) {
     // Ensure minimum value
     if (row_number % chunk_size == 0) {
-      table->append(generate_row<std::string>(scan_column, min_value, column_count));
+      table->append(generate_row(scan_column, min_value, column_count));
     // Ensure maximum value
     } else if (row_number % chunk_size == 1) {
-      table->append(generate_row<std::string>(scan_column, max_value, column_count));
+      table->append(generate_row(scan_column, max_value, column_count));
     // Ensure non-prunability
     } else if (row_number % chunk_size == 2) {
       if(static_cast<int>(row_number / chunk_size) >= prunable_chunks) {
-        table->append(generate_row<std::string>(scan_column, scan_value, column_count));
+        table->append(generate_row(scan_column, scan_value, column_count));
       }
     }
     else {
-      table->append(generate_row<std::string>(scan_column, random_string(string_size, scan_value), column_count));
+      table->append(generate_row(scan_column, random_string(string_size, scan_value), column_count));
     }
+  }
+
+  return table;
+}
+
+std::shared_ptr<Table> generate_table_int(int chunk_size, int row_count, int prunable_chunks) {
+  const auto column_count = 1;
+  const auto scan_column = 0;
+  const auto scan_value = 3000;
+  const auto min_value  = 0;
+  const auto max_value = 5000;
+
+  // Generate table header
+  auto table = std::make_shared<Table>(chunk_size);
+  table->add_column("column0", DataType::Int, false);
+  for (int i = 1; i < column_count; i++) {
+    table->add_column("column" + std::to_string(i), DataType::Int, false);
+  }
+
+  // Generate table data
+  for (int row_number = 0; row_number < row_count; row_number++) {
+    // Ensure minimum value
+    if (row_number % chunk_size == 0) {
+      table->append(generate_row(scan_column, min_value, column_count));
+    // Ensure maximum value
+    } else if (row_number % chunk_size == 1) {
+      table->append(generate_row(scan_column, max_value, column_count));
+    // Ensure non-prunability
+    } else if (row_number % chunk_size == 2) {
+      if(static_cast<int>(row_number / chunk_size) >= prunable_chunks) {
+        table->append(generate_row(scan_column, scan_value, column_count));
+      }
+    }
+    else {
+      table->append(generate_row(scan_column, random_int(min_value, max_value, scan_value), column_count));
+    }
+  }
+
+  return table;
+}
+
+std::string load_or_generate(std::string type, int row_count, int chunk_size, int prunable_chunks, bool compressed) {
+  auto table_name = "bench_" + type + "_"
+                             + std::to_string(row_count) + "_"
+                             + std::to_string(chunk_size) + "_"
+                             + std::to_string(prunable_chunks) + "_"
+                             + std::to_string(compressed);
+  auto loaded = load_table(table_name);
+  if (loaded) {
+    return table_name;
+  }
+
+  std::cout << " > Generating table " << table_name << "...";
+
+  std::shared_ptr<Table> table = nullptr;
+  if (type == "string") {
+    table = generate_table_string(chunk_size, row_count, prunable_chunks);
+  } else {
+    table = generate_table_int(chunk_size, row_count, prunable_chunks);
   }
 
   if (compressed) {
