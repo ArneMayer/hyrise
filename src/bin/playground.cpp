@@ -110,7 +110,7 @@ void create_quotient_filters(std::shared_ptr<Table> table, ColumnID column_id, u
 }
 
 std::shared_ptr<AbstractOperator> generate_benchmark(std::string type, uint8_t remainder_size, bool compressed,
-                                                     bool btree, int rows, int chunk_size, double pruning_ratio) {
+                                                     bool btree, bool art, int rows, int chunk_size, double pruning_ratio) {
   auto chunk_count = static_cast<int>(std::ceil(rows / static_cast<double>(chunk_size)));
   auto prunable_chunks = static_cast<int>(chunk_count * pruning_ratio);
   auto quotient_size = static_cast<int>(std::ceil(std::log(chunk_size) / std::log(2)));
@@ -122,6 +122,11 @@ std::shared_ptr<AbstractOperator> generate_benchmark(std::string type, uint8_t r
     table->populate_btree_index(ColumnID{0});
   } else {
     table->delete_btree_index(ColumnID{0});
+  }
+  if (art) {
+    table->populate_art_index(ColumnID{0});
+  } else {
+    table->delete_art_index(ColumnID{0});
   }
 
   AllTypeVariant scan_value;
@@ -219,14 +224,14 @@ void tpcc_benchmark_series() {
 }
 */
 
-void run_benchmark(std::string type, int remainder_size, bool dictionary, bool btree, int row_count, int chunk_size,
-                   double pruning_ratio, int sample_size, std::shared_ptr<Table> results_table) {
+void run_benchmark(std::string type, int remainder_size, bool dictionary, bool btree, bool art, int row_count,
+                   int chunk_size, double pruning_ratio, int sample_size, std::shared_ptr<Table> results_table) {
   auto min_time = std::chrono::microseconds(0);
   auto max_time = std::chrono::microseconds(0);
   auto sum_time = std::chrono::microseconds(0);
 
   for (int i = 0; i < sample_size; i++) {
-    auto benchmark = generate_benchmark(type, remainder_size, dictionary, btree, row_count, chunk_size, pruning_ratio);
+    auto benchmark = generate_benchmark(type, remainder_size, dictionary, btree, art, row_count, chunk_size, pruning_ratio);
 
     clear_cache();
     auto start = std::chrono::steady_clock::now();
@@ -240,7 +245,7 @@ void run_benchmark(std::string type, int remainder_size, bool dictionary, bool b
     if (duration > max_time) max_time = duration;
     sum_time += duration;
     results_table->append({row_count, chunk_size, pruning_ratio, remainder_size, static_cast<int>(dictionary),
-                           static_cast<int>(btree), duration.count()});
+                           static_cast<int>(btree), static_cast<int>(art), duration.count()});
   }
 
   auto avg_time = sum_time / sample_size;
@@ -250,6 +255,7 @@ void run_benchmark(std::string type, int remainder_size, bool dictionary, bool b
             << ", remainder_size: " << remainder_size
             << ", dictionary: " << dictionary
             << ", btree: " << btree
+            << ", art: " << art
             << ", pruning_ratio: " << pruning_ratio
             << ", min_time: " << min_time.count()
             << ", max_time: " << max_time.count()
@@ -321,7 +327,7 @@ void dict_vs_filter_series() {
 }
 
 void benchmark_series() {
-  auto sample_size = 1;
+  auto sample_size = 100;
   auto row_counts = {10'000'000};
   auto remainder_sizes = {2, 4, 8, 16};
   auto chunk_sizes = {1'000'000};
@@ -342,6 +348,7 @@ void benchmark_series() {
   results_table->add_column("remainder_size", DataType::Int, false);
   results_table->add_column("dictionary", DataType::Int, false);
   results_table->add_column("btree", DataType::Int, false);
+  results_table->add_column("art", DataType::Int, false);
   results_table->add_column("run_time", DataType::Int, false);
 
   // analyze_value_interval<int>(table_name, column_name);
@@ -349,24 +356,34 @@ void benchmark_series() {
     for (auto chunk_size : chunk_sizes) {
       auto dictionary = false;
       auto btree = false;
+      auto art = false;
       for (auto remainder_size : remainder_sizes) {
-        run_benchmark(scan_type, remainder_size, dictionary, btree, row_count, chunk_size, pruning_ratio,
+        run_benchmark(scan_type, remainder_size, dictionary, btree, art, row_count, chunk_size, pruning_ratio,
                       sample_size, results_table);
       }
       auto remainder_size = 0;
       dictionary = false;
       btree = false;
-      run_benchmark(scan_type, remainder_size, dictionary, btree, row_count, chunk_size, pruning_ratio,
+      art = false;
+      run_benchmark(scan_type, remainder_size, dictionary, btree, art, row_count, chunk_size, pruning_ratio,
                     sample_size, results_table);
       remainder_size = 0;
       dictionary = true;
       btree = false;
-      run_benchmark(scan_type, remainder_size, dictionary, btree, row_count, chunk_size, pruning_ratio,
+            art = false;
+      run_benchmark(scan_type, remainder_size, dictionary, btree, art, row_count, chunk_size, pruning_ratio,
                     sample_size, results_table);
       remainder_size = 0;
       dictionary = false;
       btree = true;
-      run_benchmark(scan_type, remainder_size, dictionary, btree, row_count, chunk_size, pruning_ratio,
+      art = false;
+      run_benchmark(scan_type, remainder_size, dictionary, btree, art, row_count, chunk_size, pruning_ratio,
+      sample_size, results_table);
+      remainder_size = 0;
+      dictionary = false;
+      btree = false;
+      art = true;
+      run_benchmark(scan_type, remainder_size, dictionary, btree, art, row_count, chunk_size, pruning_ratio,
                     sample_size, results_table);
     }
   }

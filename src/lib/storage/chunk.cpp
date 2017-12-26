@@ -10,6 +10,7 @@
 #include "base_column.hpp"
 #include "chunk.hpp"
 #include "index/base_index.hpp"
+#include "index/adaptive_radix_tree/adaptive_radix_tree_index.hpp"
 #include "index/counting_quotient_filter/counting_quotient_filter.hpp"
 #include "reference_column.hpp"
 #include "utils/assert.hpp"
@@ -228,6 +229,22 @@ std::shared_ptr<const BaseFilter> Chunk::get_filter(ColumnID column_id) const {
     return nullptr;
   } else {
     return result->second;
+  }
+}
+
+void Chunk::populate_art_index(ColumnID column_id) {
+  auto column = get_column(column_id);
+  auto index = std::make_shared<AdaptiveRadixTreeIndex>(std::vector({column}));
+  _indices.emplace_back(index);
+}
+
+void Chunk::delete_art_index(ColumnID column_id) {
+  auto column = get_column(column_id);
+  for (size_t i = 0; i < _indices.size(); i++) {
+    if (_indices[i]->is_index_for(std::vector({column}))) {
+      auto iterator = _indices.begin() + i;
+      _indices.erase(iterator);
+    }
   }
 }
 

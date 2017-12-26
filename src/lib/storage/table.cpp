@@ -224,6 +224,18 @@ void Table::delete_quotient_filters(ColumnID column_id) {
   }
 }
 
+void Table::populate_art_index(ColumnID column_id) {
+  for (auto chunk_id = ChunkID{0}; chunk_id < chunk_count(); ++chunk_id) {
+    get_chunk(chunk_id).populate_art_index(column_id);
+  }
+}
+
+void Table::delete_art_index(ColumnID column_id) {
+  for (auto chunk_id = ChunkID{0}; chunk_id < chunk_count(); ++chunk_id) {
+    get_chunk(chunk_id).delete_art_index(column_id);
+  }
+}
+
 void Table::populate_btree_index(ColumnID column_id) {
   auto result = _btree_indices.find(column_id);
   if (result == _btree_indices.end()) {

@@ -232,6 +232,9 @@ class Chunk : private Noncopyable {
   */
   std::shared_ptr<const BaseFilter> get_filter(ColumnID column_id) const;
 
+  void populate_art_index(ColumnID column_id);
+  void delete_art_index(ColumnID column_id);
+
  private:
   std::vector<std::shared_ptr<const BaseColumn>> get_columns_for_ids(const std::vector<ColumnID>& column_ids) const;
 
