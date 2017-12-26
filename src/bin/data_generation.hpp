@@ -15,6 +15,7 @@
 #include <iostream>
 #include <sstream>
 #include <vector>
+#include <limits>
 
 using namespace opossum;
 
@@ -142,8 +143,8 @@ std::string tpcc_load_or_generate(int warehouse_size, int chunk_size, std::strin
 }
 */
 
-std::shared_ptr<Table> generate_table_string(int chunk_size, int row_count, int prunable_chunks) {
-  const auto column_count = 1;
+std::shared_ptr<Table> generate_table_string(int chunk_size, int row_count, int prunable_chunks, double selectivity) {
+  const auto column_count = 5;
   const auto scan_column = 0;
   const auto string_size = 4;
   const auto scan_value = std::string("l_scan_value");
@@ -159,17 +160,19 @@ std::shared_ptr<Table> generate_table_string(int chunk_size, int row_count, int 
 
   // Generate table data
   for (int row_number = 0; row_number < row_count; row_number++) {
+    auto chunk_offset = row_number % chunk_size;
+    auto chunk_id = static_cast<int>(row_number / chunk_size);
+    auto prunable = chunk_id < prunable_chunks;
+
     // Ensure minimum value
-    if (row_number % chunk_size == 0) {
+    if (chunk_offset == 0) {
       table->append(generate_row(scan_column, min_value, column_count));
     // Ensure maximum value
-    } else if (row_number % chunk_size == 1) {
+    } else if (chunk_offset == 1) {
       table->append(generate_row(scan_column, max_value, column_count));
     // Ensure non-prunability
-    } else if (row_number % chunk_size == 2) {
-      if(static_cast<int>(row_number / chunk_size) >= prunable_chunks) {
+    } else if (!prunable && chunk_offset < chunk_size * selectivity + 1) {
         table->append(generate_row(scan_column, scan_value, column_count));
-      }
     }
     else {
       table->append(generate_row(scan_column, random_string(string_size, scan_value), column_count));
@@ -179,12 +182,17 @@ std::shared_ptr<Table> generate_table_string(int chunk_size, int row_count, int 
   return table;
 }
 
-std::shared_ptr<Table> generate_table_int(int chunk_size, int row_count, int prunable_chunks) {
-  const auto column_count = 1;
+std::shared_ptr<Table> generate_table_int(int chunk_size, int row_count, int prunable_chunks, double selectivity) {
+  const auto column_count = 10;
   const auto scan_column = 0;
-  const auto scan_value = 3000;
-  const auto min_value  = 0;
-  const auto max_value = 5000;
+  int scan_value = 1;
+  int min_value  = 0;
+  int max_value;
+  if (selectivity == 0.0) {
+    max_value = std::numeric_limits<int>::max();
+  } else {
+    max_value = static_cast<int>(1.0 / selectivity);
+  }
 
   // Generate table header
   auto table = std::make_shared<Table>(chunk_size);
@@ -195,31 +203,41 @@ std::shared_ptr<Table> generate_table_int(int chunk_size, int row_count, int pru
 
   // Generate table data
   for (int row_number = 0; row_number < row_count; row_number++) {
+    auto chunk_offset = row_number % chunk_size;
+    auto chunk_id = static_cast<int>(row_number / chunk_size);
+    auto prunable = chunk_id < prunable_chunks;
+
     // Ensure minimum value
-    if (row_number % chunk_size == 0) {
+    if (chunk_offset == 0) {
       table->append(generate_row(scan_column, min_value, column_count));
     // Ensure maximum value
-    } else if (row_number % chunk_size == 1) {
+    } else if (chunk_offset == 1) {
       table->append(generate_row(scan_column, max_value, column_count));
     // Ensure non-prunability
-    } else if (row_number % chunk_size == 2) {
-      if(static_cast<int>(row_number / chunk_size) >= prunable_chunks) {
-        table->append(generate_row(scan_column, scan_value, column_count));
-      }
+  } else if (chunk_offset == 2 && !prunable) {
+      table->append(generate_row(scan_column, scan_value, column_count));
     }
     else {
-      table->append(generate_row(scan_column, random_int(min_value, max_value, scan_value), column_count));
+      // Ensure prunability
+      if (prunable) {
+        table->append(generate_row(scan_column, random_int(min_value, max_value, scan_value), column_count));
+      } else {
+        table->append(generate_row(scan_column, random_int(min_value, max_value), column_count));
+      }
     }
   }
 
   return table;
 }
 
-std::string load_or_generate(std::string type, int row_count, int chunk_size, int prunable_chunks, bool compressed) {
+std::string load_or_generate(std::string type, int row_count, int chunk_size, int prunable_chunks, double selectivity,
+                             bool compressed) {
+  auto selectivity_label = static_cast<int>(selectivity * 10'000'000);
   auto table_name = "bench_" + type + "_"
                              + std::to_string(row_count) + "_"
                              + std::to_string(chunk_size) + "_"
                              + std::to_string(prunable_chunks) + "_"
+                             + std::to_string(selectivity_label) + "_"
                              + std::to_string(compressed);
   auto loaded = load_table(table_name);
   if (loaded) {
@@ -230,9 +248,9 @@ std::string load_or_generate(std::string type, int row_count, int chunk_size, in
 
   std::shared_ptr<Table> table = nullptr;
   if (type == "string") {
-    table = generate_table_string(chunk_size, row_count, prunable_chunks);
+    table = generate_table_string(chunk_size, row_count, prunable_chunks, selectivity);
   } else {
-    table = generate_table_int(chunk_size, row_count, prunable_chunks);
+    table = generate_table_int(chunk_size, row_count, prunable_chunks, selectivity);
   }
 
   if (compressed) {
