@@ -331,9 +331,9 @@ void dict_vs_filter_series() {
 }
 
 void benchmark_series() {
-  auto sample_size = 500;
+  auto sample_size = 100;
   auto row_counts = {10'000'000};
-  auto remainder_sizes = {0, 2, 4, 8, 16};
+  auto remainder_sizes = {0, 2, 4, 8};
   auto chunk_sizes = {1'000'000};
   auto pruning_rate = 0.5;
   auto selectivity = 1.0 / 3000.0;
@@ -341,9 +341,11 @@ void benchmark_series() {
 
   std::cout << "------------------------" << std::endl;
   std::cout << "Benchmark configuration: " << std::endl;
-  std::cout << "sample_size:    " << sample_size << std::endl;
-  std::cout << "table_name:     " << "bench" << std::endl;
-  std::cout << "column_name:    " << "column0" << std::endl;
+  std::cout << "sample_size:  " << sample_size << std::endl;
+  std::cout << "data:         " << "custom" << std::endl;
+  std::cout << "type:         " << scan_type << std::endl;
+  std::cout << "pruning rate: " << pruning_rate << std::endl;
+  std::cout << "selectivity:  " << selectivity << std::endl;
   std::cout << "------------------------" << std::endl;
 
   auto results_table = std::make_shared<Table>();
