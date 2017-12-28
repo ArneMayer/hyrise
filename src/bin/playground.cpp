@@ -343,7 +343,6 @@ void benchmark_series() {
   std::cout << "Benchmark configuration: " << std::endl;
   std::cout << "sample_size:  " << sample_size << std::endl;
   std::cout << "data:         " << "custom" << std::endl;
-  std::cout << "type:         " << scan_type << std::endl;
   std::cout << "pruning rate: " << pruning_rate << std::endl;
   std::cout << "selectivity:  " << selectivity << std::endl;
   std::cout << "------------------------" << std::endl;
