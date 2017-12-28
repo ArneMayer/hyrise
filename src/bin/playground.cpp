@@ -337,7 +337,7 @@ void benchmark_series() {
   auto chunk_sizes = {1'000'000};
   auto pruning_rate = 0.5;
   auto selectivity = 1.0 / 3000.0;
-  auto scan_type = std::string("int");
+  auto scan_types = {std::string("int"),std::string("string")};
 
   std::cout << "------------------------" << std::endl;
   std::cout << "Benchmark configuration: " << std::endl;
@@ -361,33 +361,35 @@ void benchmark_series() {
   results_table->add_column("run_time", DataType::Int, false);
 
   // analyze_value_interval<int>(table_name, column_name);
-  for (auto row_count : row_counts) {
-    for (auto chunk_size : chunk_sizes) {
-      auto dictionary = false;
-      auto btree = false;
-      auto art = false;
-      for (auto remainder_size : remainder_sizes) {
+  for (auto scan_type : scan_types) {}
+    for (auto row_count : row_counts) {
+      for (auto chunk_size : chunk_sizes) {
+        auto dictionary = false;
+        auto btree = false;
+        auto art = false;
+        for (auto remainder_size : remainder_sizes) {
+          run_benchmark(scan_type, remainder_size, dictionary, btree, art, row_count, chunk_size, pruning_rate,
+                        selectivity, sample_size, results_table);
+        }
+        auto remainder_size = 0;
+        dictionary = true;
+        btree = false;
+        art = false;
+        run_benchmark(scan_type, remainder_size, dictionary, btree, art, row_count, chunk_size, pruning_rate,
+                      selectivity, sample_size, results_table);
+        remainder_size = 0;
+        dictionary = false;
+        btree = true;
+        art = false;
+        run_benchmark(scan_type, remainder_size, dictionary, btree, art, row_count, chunk_size, pruning_rate,
+                      selectivity, sample_size, results_table);
+        remainder_size = 0;
+        dictionary = true;
+        btree = false;
+        art = true;
         run_benchmark(scan_type, remainder_size, dictionary, btree, art, row_count, chunk_size, pruning_rate,
                       selectivity, sample_size, results_table);
       }
-      auto remainder_size = 0;
-      dictionary = true;
-      btree = false;
-      art = false;
-      run_benchmark(scan_type, remainder_size, dictionary, btree, art, row_count, chunk_size, pruning_rate,
-                    selectivity, sample_size, results_table);
-      remainder_size = 0;
-      dictionary = false;
-      btree = true;
-      art = false;
-      run_benchmark(scan_type, remainder_size, dictionary, btree, art, row_count, chunk_size, pruning_rate,
-                    selectivity, sample_size, results_table);
-      remainder_size = 0;
-      dictionary = true;
-      btree = false;
-      art = true;
-      run_benchmark(scan_type, remainder_size, dictionary, btree, art, row_count, chunk_size, pruning_rate,
-                    selectivity, sample_size, results_table);
     }
   }
 
