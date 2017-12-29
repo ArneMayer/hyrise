@@ -370,6 +370,13 @@ void benchmark_series() {
           run_benchmark(scan_type, remainder_size, dictionary, btree, art, row_count, chunk_size, pruning_rate,
                         selectivity, sample_size, results_table);
         }
+        dictionary = true;
+        btree = false;
+        art = false;
+        for (auto remainder_size : remainder_sizes) {
+          run_benchmark(scan_type, remainder_size, dictionary, btree, art, row_count, chunk_size, pruning_rate,
+                        selectivity, sample_size, results_table);
+        }
         auto remainder_size = 0;
         dictionary = true;
         btree = false;
