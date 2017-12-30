@@ -1,7 +1,6 @@
 #pragma once
 
 #include "base_b_tree_index.hpp"
-#include "storage/index/base_index.hpp"
 #include "types.hpp"
 
 #include <btree_map.h>
@@ -21,14 +20,17 @@ class BTreeIndex : public BaseBTreeIndex {
   BTreeIndex& operator=(BTreeIndex&&) = default;
   virtual ~BTreeIndex() = default;
 
-  virtual const PosList& point_query_all_type(AllTypeVariant value) const;
-  const PosList& point_query(DataType value) const;
+  virtual Iterator lower_bound_all_type(AllTypeVariant value) const;
+  virtual Iterator upper_bound_all_type(AllTypeVariant value) const;
+
+  Iterator lower_bound(DataType value) const;
+  Iterator upper_bound(DataType value) const;
 
  private:
   void _bulk_insert(const Table& table, const ColumnID column_id);
 
-  std::shared_ptr<btree::btree_map<DataType, PosList>> _btree;
-  const PosList _empty_list = PosList();
+  std::shared_ptr<btree::btree_map<DataType, size_t>> _btree;
+  std::vector<RowID> _row_ids;
 };
 
 } // namespace opossum
