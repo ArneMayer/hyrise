@@ -228,8 +228,6 @@ void tpcc_benchmark_series() {
 void run_benchmark(std::string type, int remainder_size, bool dictionary, bool btree, bool art, int row_count,
                    int chunk_size, double pruning_rate, double selectivity, int sample_size,
                    std::shared_ptr<Table> results_table) {
-  auto min_time = std::chrono::microseconds(0);
-  auto max_time = std::chrono::microseconds(0);
   auto sum_time = std::chrono::microseconds(0);
 
   for (int i = 0; i < sample_size; i++) {
@@ -240,12 +238,6 @@ void run_benchmark(std::string type, int remainder_size, bool dictionary, bool b
     auto start = std::chrono::steady_clock::now();
     benchmark->execute();
     auto duration = std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::steady_clock::now()-start);
-    if (i == 0) {
-      min_time = duration;
-      max_time = duration;
-    }
-    if (duration < min_time) min_time = duration;
-    if (duration > max_time) max_time = duration;
     sum_time += duration;
     results_table->append({type, row_count, chunk_size, pruning_rate, selectivity, remainder_size,
                       static_cast<int>(dictionary), static_cast<int>(btree), static_cast<int>(art), duration.count()});
@@ -261,8 +253,6 @@ void run_benchmark(std::string type, int remainder_size, bool dictionary, bool b
             << ", art: " << art
             << ", pruning_rate: " << pruning_rate
             << ", selectivity: " << selectivity
-            << ", min_time: " << min_time.count()
-            << ", max_time: " << max_time.count()
             << ", avg_time: " << avg_time.count()
             << std::endl;
 }
@@ -331,11 +321,11 @@ void dict_vs_filter_series() {
 }
 
 void benchmark_series() {
-  auto sample_size = 100;
+  auto sample_size = 1;
   auto row_counts = {10'000'000};
   auto remainder_sizes = {0, 2, 4, 8};
   auto chunk_sizes = {1'000'000};
-  auto pruning_rate = 0.5;
+  auto pruning_rates = {1.0, 0.5};
   auto selectivity = 1.0 / 3000.0;
   auto scan_types = {std::string("int"), std::string("string")};
 
@@ -360,44 +350,36 @@ void benchmark_series() {
   results_table->add_column("run_time", DataType::Int, false);
 
   // analyze_value_interval<int>(table_name, column_name);
+  auto start = std::chrono::steady_clock::now();
   for (auto scan_type : scan_types) {
     for (auto row_count : row_counts) {
       for (auto chunk_size : chunk_sizes) {
-        auto dictionary = false;
-        auto btree = false;
-        auto art = false;
-        for (auto remainder_size : remainder_sizes) {
-          run_benchmark(scan_type, remainder_size, dictionary, btree, art, row_count, chunk_size, pruning_rate,
+        for (auto pruning_rate : pruning_rates) {
+          auto dictionary = false;
+          auto btree = false;
+          auto art = false;
+          for (auto remainder_size : remainder_sizes) {
+            run_benchmark(scan_type, remainder_size, dictionary=false, btree=false, art=false, row_count, chunk_size,
+                          pruning_rate, selectivity, sample_size, results_table);
+
+            run_benchmark(scan_type, remainder_size, dictionary=true, btree=false, art=false, row_count, chunk_size,
+                          pruning_rate, selectivity, sample_size, results_table);
+          }
+          auto remainder_size = 0;
+          run_benchmark(scan_type, remainder_size=0, dictionary=true, btree=false, art=false, row_count, chunk_size, pruning_rate,
                         selectivity, sample_size, results_table);
-        }
-        dictionary = true;
-        btree = false;
-        art = false;
-        for (auto remainder_size : remainder_sizes) {
-          run_benchmark(scan_type, remainder_size, dictionary, btree, art, row_count, chunk_size, pruning_rate,
+
+          run_benchmark(scan_type, remainder_size=0, dictionary=false, btree=true, art=false, row_count, chunk_size, pruning_rate,
                         selectivity, sample_size, results_table);
+
+          run_benchmark(scan_type, remainder_size=0, dictionary=true, btree=false, art=true, row_count, chunk_size,
+                        pruning_rate, selectivity, sample_size, results_table);
         }
-        auto remainder_size = 0;
-        dictionary = true;
-        btree = false;
-        art = false;
-        run_benchmark(scan_type, remainder_size, dictionary, btree, art, row_count, chunk_size, pruning_rate,
-                      selectivity, sample_size, results_table);
-        remainder_size = 0;
-        dictionary = false;
-        btree = true;
-        art = false;
-        run_benchmark(scan_type, remainder_size, dictionary, btree, art, row_count, chunk_size, pruning_rate,
-                      selectivity, sample_size, results_table);
-        remainder_size = 0;
-        dictionary = true;
-        btree = false;
-        art = true;
-        run_benchmark(scan_type, remainder_size, dictionary, btree, art, row_count, chunk_size, pruning_rate,
-                      selectivity, sample_size, results_table);
       }
     }
   }
+  auto duration = std::chrono::duration_cast<std::chrono::seconds>(std::chrono::steady_clock::now()-start);
+  std::cout << "Benchmark ran " << duration.count() << " seconds" << std::endl;
 
   serialize_results_csv(results_table);
   StorageManager::get().reset();
