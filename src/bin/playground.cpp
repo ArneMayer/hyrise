@@ -142,6 +142,7 @@ std::shared_ptr<AbstractOperator> generate_benchmark(std::string type, uint8_t r
   get_table->execute();
 
   //print_table_layout(table_name);
+  //analyze_value_interval<int>(table_name, column_name);
   //analyze_value_interval<int>(table_name, "column0");
   //std::cout << analyze_skippable_chunks(table_name, "column0", 3000) << " chunks skippable" << std::endl;
   return table_scan;
@@ -360,7 +361,6 @@ void benchmark_series() {
   results_table->add_column("art", DataType::Int, false);
   results_table->add_column("run_time", DataType::Int, false);
 
-  // analyze_value_interval<int>(table_name, column_name);
   for (auto row_count : row_counts) {
     for (auto chunk_size : chunk_sizes) {
       auto dictionary = false;
