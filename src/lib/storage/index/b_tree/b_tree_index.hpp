@@ -29,7 +29,7 @@ class BTreeIndex : public BaseBTreeIndex {
  private:
   void _bulk_insert(const Table& table, const ColumnID column_id);
 
-  std::shared_ptr<btree::btree_map<DataType, size_t>> _btree;
+  btree::btree_map<DataType, size_t> _btree;
   std::vector<RowID> _row_ids;
 };
 

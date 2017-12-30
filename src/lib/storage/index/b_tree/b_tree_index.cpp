@@ -13,38 +13,32 @@ namespace opossum {
 
 template <typename DataType>
 BTreeIndex<DataType>::BTreeIndex(const Table& table, const ColumnID column_id) : BaseBTreeIndex{table, column_id} {
-  _btree = std::make_shared<btree::btree_map<DataType, PosList>>();
   _bulk_insert(table, column_id);
 }
 
 template <typename DataType>
-const PosList& BTreeIndex<DataType>::point_query_all_type(AllTypeVariant all_type_value) const {
-  return point_query(type_cast<DataType>(all_type_value));
+BaseBTreeIndex::Iterator BTreeIndex<DataType>::lower_bound_all_type(AllTypeVariant value) const {
+  return lower_bound(type_cast<DataType>(value));
 }
 
 template <typename DataType>
-Iterator BTreeIndex<DataType>::lower_bound_all_type(AllTypeVariant value) const {
-  return lower_bound(type_cast<DataType>(all_type_value));
+BaseBTreeIndex::Iterator BTreeIndex<DataType>::upper_bound_all_type(AllTypeVariant value) const {
+  return upper_bound(type_cast<DataType>(value));
 }
 
 template <typename DataType>
-Iterator BTreeIndex<DataType>::upper_bound_all_type(AllTypeVariant value) const {
-  return upper_bound(type_cast<DataType>(all_type_value));
+BaseBTreeIndex::Iterator BTreeIndex<DataType>::lower_bound(DataType value) const {
+  return _row_ids.begin() + _btree.lower_bound(value)->second;
 }
 
 template <typename DataType>
-Iterator BTreeIndex<DataType>::lower_bound(DataType value) const {
-  return _row_ids.begin() + *_btree->lower_bound(value);
-}
-
-template <typename DataType>
-Iterator BTreeIndex<DataType>::upper_bound(DataType value) const {
-  return _row_ids.begin() + *_btree->upper_bound(value);
+BaseBTreeIndex::Iterator BTreeIndex<DataType>::upper_bound(DataType value) const {
+  return _row_ids.begin() + _btree.upper_bound(value)->second;
 }
 
 template <typename DataType>
 void BTreeIndex<DataType>::_bulk_insert(const Table& table, const ColumnID column_id) {
-  std::vector<std::pair<RowID, DataType> values;
+  std::vector<std::pair<RowID, DataType>> values;
 
   // Materialize
   for (auto chunk_id = ChunkID{0}; chunk_id < _table.chunk_count(); chunk_id++) {
@@ -60,7 +54,7 @@ void BTreeIndex<DataType>::_bulk_insert(const Table& table, const ColumnID colum
   }
 
   // Sort
-  std::sort(values.begin(), values.end(), [](const auto& a, const auto& b){return a.second < b.second});
+  std::sort(values.begin(), values.end(), [](const auto& a, const auto& b){ return a.second < b.second; });
   _row_ids.resize(values.size());
   for (size_t i = 0; i < values.size(); i++) {
     _row_ids[i] = values[i].first;
@@ -68,18 +62,13 @@ void BTreeIndex<DataType>::_bulk_insert(const Table& table, const ColumnID colum
 
   // Build index
   DataType current_value = values[0].second;
-  _btree[value] = 0;
+  _btree[current_value] = 0;
   for (size_t i = 0; i < values.size(); i++) {
     if (values[i].second != current_value) {
       current_value = values[i].second;
       _btree[current_value] = i;
     }
   }
-}
-
-template <typename DataType>
-std::vector<ChunkOffset>& BTreeIndex<DataType>::chunk_offsets() {
-  return _chunk_offsets;
 }
 
 EXPLICITLY_INSTANTIATE_DATA_TYPES(BTreeIndex);

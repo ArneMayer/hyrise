@@ -82,7 +82,12 @@ std::shared_ptr<const Table> TableScan::_on_execute() {
   if (btree_index && is_variant(_right_parameter)) {
     Chunk chunk_out;
     AllTypeVariant scan_value = boost::get<AllTypeVariant>(_right_parameter);
-    auto matches_out = std::make_shared<PosList>(btree_index->point_query_all_type(scan_value));
+    auto matches_out = std::make_shared<PosList>();
+    auto lower_bound = btree_index->lower_bound_all_type(scan_value);
+    auto upper_bound = btree_index->upper_bound_all_type(scan_value);
+    for (auto it = lower_bound; it != upper_bound; it++) {
+      matches_out->push_back(*it);
+    }
     for (ColumnID column_id{0u}; column_id < _in_table->column_count(); ++column_id) {
       auto ref_column_out = std::make_shared<ReferenceColumn>(_in_table, column_id, matches_out);
       chunk_out.add_column(ref_column_out);
