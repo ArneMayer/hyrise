@@ -321,7 +321,7 @@ void dict_vs_filter_series() {
 }
 
 void benchmark_series() {
-  auto sample_size = 1;
+  auto sample_size = 100;
   auto row_counts = {10'000'000};
   auto remainder_sizes = {0, 2, 4, 8};
   auto chunk_sizes = {1'000'000};
@@ -333,7 +333,6 @@ void benchmark_series() {
   std::cout << "Benchmark configuration: " << std::endl;
   std::cout << "sample_size:  " << sample_size << std::endl;
   std::cout << "data:         " << "custom" << std::endl;
-  std::cout << "pruning rate: " << pruning_rate << std::endl;
   std::cout << "selectivity:  " << selectivity << std::endl;
   std::cout << "------------------------" << std::endl;
 
