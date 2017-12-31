@@ -238,7 +238,8 @@ void Table::delete_art_index(ColumnID column_id) {
 
 void Table::populate_btree_index(ColumnID column_id) {
   auto result = _btree_indices.find(column_id);
-  if (result == _btree_indices.end()) {
+  if (result == _btree_indices.end() || result->second == nullptr) {
+    //std::cout << "creating btree" << std::endl;
     _btree_indices[column_id] = make_shared_by_data_type<BaseBTreeIndex, BTreeIndex>(column_type(column_id),
                                                                                      *this, column_id);
   }

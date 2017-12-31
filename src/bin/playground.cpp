@@ -22,12 +22,14 @@
 using namespace opossum;
 
 void clear_cache() {
+  //std::cout << "clearing cache" << std::endl;
   std::vector<int> clear = std::vector<int>();
   clear.resize(500 * 1000 * 1000, 42);
   for (uint i = 0; i < clear.size(); i++) {
     clear[i] += 1;
   }
   clear.resize(0);
+  //std::cout << "done clearing cache" << std::endl;
 }
 
 void print_table_layout(std::string table_name) {
@@ -357,6 +359,7 @@ void benchmark_series() {
           auto dictionary = false;
           auto btree = false;
           auto art = false;
+
           for (auto remainder_size : remainder_sizes) {
             run_benchmark(scan_type, remainder_size, dictionary=false, btree=false, art=false, row_count, chunk_size,
                           pruning_rate, selectivity, sample_size, results_table);
@@ -364,7 +367,9 @@ void benchmark_series() {
             run_benchmark(scan_type, remainder_size, dictionary=true, btree=false, art=false, row_count, chunk_size,
                           pruning_rate, selectivity, sample_size, results_table);
           }
+
           auto remainder_size = 0;
+
           run_benchmark(scan_type, remainder_size=0, dictionary=true, btree=false, art=false, row_count, chunk_size, pruning_rate,
                         selectivity, sample_size, results_table);
 
@@ -405,6 +410,6 @@ void benchmark_series() {
 
 int main() {
   benchmark_series();
-  dict_vs_filter_series();
+  //dict_vs_filter_series();
   return 0;
 }

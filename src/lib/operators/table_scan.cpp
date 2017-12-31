@@ -79,7 +79,10 @@ std::shared_ptr<const Table> TableScan::_on_execute() {
   jobs.reserve(_in_table->chunk_count());
 
   auto btree_index = _in_table->get_btree_index(_left_column_id);
+  //std::cout << "btree index: " << btree_index << std::endl;
+  //std::cout << "left column id " << _left_column_id << std::endl;
   if (btree_index && is_variant(_right_parameter)) {
+    //std::cout << "using btree" << std::endl;
     Chunk chunk_out;
     AllTypeVariant scan_value = boost::get<AllTypeVariant>(_right_parameter);
     auto matches_out = std::make_shared<PosList>();

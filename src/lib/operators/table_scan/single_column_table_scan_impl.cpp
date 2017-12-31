@@ -43,26 +43,15 @@ void SingleColumnTableScanImpl::handle_value_column(const BaseValueColumn& base_
   const auto& mapped_chunk_offsets = context->_mapped_chunk_offsets;
   const auto chunk_id = context->_chunk_id;
 
-  // ART scan
-  if (_scan_type == ScanType::OpEquals) {
-    auto type = ColumnIndexType::AdaptiveRadixTree;
-    auto index = _in_table->get_chunk(chunk_id).get_index(type, std::vector({_left_column_id}));
-    if (index != nullptr) {
-      std::vector<AllTypeVariant> value_vector;
-      value_vector.push_back(_right_value);
-      auto lower_bound = index->lower_bound(value_vector);
-      auto upper_bound = index->upper_bound(value_vector);
-      for (auto iterator = lower_bound; iterator != upper_bound; iterator++) {
-        matches_out.push_back(RowID{chunk_id, *iterator});
-      }
-      return;
-    }
-  }
-
   // Check whether this chunk needs to be looked at by performing a filter query
   // CQF is only supported for ScanType::OpEquals
   if (_scan_type == ScanType::OpEquals) {
     auto cqf = _in_table->get_chunk(chunk_id).get_filter(_left_column_id);
+    /*
+    if (cqf != nullptr) {
+      std::cout << "using value column cqf" << std::endl;
+    }
+    */
     if (cqf != nullptr && cqf->count_all_type(_right_value) == 0) {
       return;
     }
@@ -98,9 +87,9 @@ void SingleColumnTableScanImpl::handle_dictionary_column(const BaseDictionaryCol
 
   // ART scan
   if (_scan_type == ScanType::OpEquals) {
-    auto type = ColumnIndexType::AdaptiveRadixTree;
-    auto index = _in_table->get_chunk(chunk_id).get_index(type, std::vector({_left_column_id}));
+    auto index = _in_table->get_chunk(chunk_id).get_art_index(_left_column_id);
     if (index != nullptr) {
+      //std::cout << "using ART" << std::endl;
       std::vector<AllTypeVariant> value_vector;
       value_vector.push_back(_right_value);
       auto lower_bound = index->lower_bound(value_vector);
@@ -116,6 +105,11 @@ void SingleColumnTableScanImpl::handle_dictionary_column(const BaseDictionaryCol
   // CQF is only supported for ScanType::OpEquals
   if (_scan_type == ScanType::OpEquals) {
     auto cqf = _in_table->get_chunk(chunk_id).get_filter(_left_column_id);
+    /*
+    if (cqf != nullptr) {
+      std::cout << "using dict cqf" << std::endl;
+    }
+    */
     if (cqf != nullptr && cqf->count_all_type(_right_value) == 0) {
       return;
     }
