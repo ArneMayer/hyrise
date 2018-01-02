@@ -127,7 +127,6 @@ void save_table(std::shared_ptr<const Table> table, std::string file_name) {
   std::cout << "OK!" << std::endl;
 }
 
-/*
 std::string tpcc_load_or_generate(int warehouse_size, int chunk_size, std::string tpcc_table_name) {
   auto table_name = tpcc_table_name + "_" + std::to_string(warehouse_size) + "_" + std::to_string(chunk_size);
   auto loaded = load_table(table_name);
@@ -141,7 +140,6 @@ std::string tpcc_load_or_generate(int warehouse_size, int chunk_size, std::strin
 
   return table_name;
 }
-*/
 
 std::shared_ptr<Table> generate_table_string(int chunk_size, int row_count, int prunable_chunks, double selectivity) {
   const auto column_count = 5;
