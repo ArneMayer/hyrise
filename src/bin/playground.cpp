@@ -17,7 +17,6 @@
 #include "tpcc/tpcc_table_generator.hpp"
 #include "scheduler/abstract_task.hpp"
 #include "scheduler/current_scheduler.hpp"
-#include <json.hpp>
 
 using namespace opossum;
 
@@ -111,7 +110,7 @@ void create_quotient_filters(std::shared_ptr<Table> table, ColumnID column_id, u
   }
 }
 
-std::shared_ptr<AbstractOperator> generate_benchmark(std::string type, uint8_t remainder_size, bool compressed,
+std::shared_ptr<AbstractOperator> generate_custom_benchmark(std::string type, uint8_t remainder_size, bool compressed,
                                                      bool btree, bool art, int rows, int chunk_size,
                                                      double pruning_rate, double selectivity) {
   auto chunk_count = static_cast<int>(std::ceil(rows / static_cast<double>(chunk_size)));
@@ -149,8 +148,7 @@ std::shared_ptr<AbstractOperator> generate_benchmark(std::string type, uint8_t r
   return table_scan;
 }
 
-/*
-std::shared_ptr<AbstractOperator> generate_benchmark_tpcc(std::string tpcc_table_name, std::string column_name,
+std::shared_ptr<AbstractOperator> generate_tpcc_benchmark(std::string tpcc_table_name, std::string column_name,
                                                      uint8_t quotient_size, uint8_t remainder_size, int warehouse_size,
                                                      int chunk_size) {
   auto table_name = tpcc_load_or_generate(warehouse_size, chunk_size, tpcc_table_name);
@@ -162,14 +160,13 @@ std::shared_ptr<AbstractOperator> generate_benchmark_tpcc(std::string tpcc_table
   get_table->execute();
   return table_scan;
 }
-*/
 
-void serialize_results_csv(std::shared_ptr<Table> table) {
+void serialize_results_csv(std::string benchmark_name, std::shared_ptr<Table> table) {
   std::cout << "Writing results to csv...";
   //auto user_name = std::string("arne");
   //auto user_name = std::string("osboxes");
   auto user_name = std::string("Arne.Mayer");
-  auto file_name = "/home/" + user_name + "/dev/MasterarbeitJupyter/benchmark_results.csv";
+  auto file_name = "/home/" + user_name + "/dev/MasterarbeitJupyter/" + benchmark_name + "_results.csv";
   auto table_wrapper = std::make_shared<TableWrapper>(table);
   table_wrapper->execute();
   auto export_csv = std::make_shared<ExportCsv>(table_wrapper, file_name);
@@ -177,63 +174,42 @@ void serialize_results_csv(std::shared_ptr<Table> table) {
   std::cout << "OK!" << std::endl;
 }
 
-/*
-void tpcc_benchmark_series() {
-  auto tpcc_table_name = std::string("ORDER");
-  auto column_name = std::string("NO_O_ID");
-  auto warehouse_size = 100;
-  auto chunk_size = 100000;
-  auto quotient_size = 14;
-  //auto remainder_size = 8;
-  auto remainder_sizes = {0, 8, 16, 32};
-  //auto quotient_sizes = {0, 10, 16};
+void run_tpcc_benchmark(int sample_size, bool dictionary, bool art, bool btree, std::shared_ptr<Table> results_table) {
+  auto sum_time = std::chrono::microseconds(0);
 
-  auto results_table = std::make_shared<Table>();
-  results_table->add_column("row_count", "int", false);
-  results_table->add_column("chunk_size", "int", false);
-  results_table->add_column("quotient_size", "int", false);
-  results_table->add_column("remainder_size", "int", false);
-  results_table->add_column("run_time", "int", false);
-
-  std::cout << "------------------------" << std::endl;
-  std::cout << "Benchmark configuration: " << std::endl;
-  std::cout << "table_name:     " << tpcc_table_name << std::endl;
-  std::cout << "column_name:    " << column_name << std::endl;
-  std::cout << "row_count:      " << "?" << std::endl;
-  std::cout << "chunk_size:     " << chunk_size << std::endl;
-  std::cout << "quotient_size:  " << quotient_size << std::endl;
-  std::cout << "------------------------" << std::endl;
-
-  // analyze_value_interval<int>(table_name, column_name);
-  for (auto remainder_size : remainder_sizes) {
-    auto benchmark = generate_benchmark_tpcc(tpcc_table_name, column_name, quotient_size, remainder_size,
-                                        warehouse_size, chunk_size);
+  for (int i = 0; i < sample_size) {
+    auto benchmark = generate_tpcc_benchmark(tpcc_table_name, column_name, remainder_size, warehouse_size, chunk_size);
+    clear_cache();
     auto start = std::chrono::steady_clock::now();
     benchmark->execute();
     auto duration = std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::steady_clock::now() - start);
-    results["results"].push_back({
-      {"quotient_size", quotient_size},
-      {"remainder_size", remainder_size},
-      {"runtime", duration.count()}
-    });
-    std::cout << "quotient_size: " << quotient_size
-              << ", remainder_size: " << remainder_size
-              << ", runtime: " << duration.count()
-              << std::endl;
+    sum_time += duration;
+
+    results_table->append({tpcc_table_name, column_name, warehouse_size, chunk_size, remainder_size,
+                      static_cast<int>(dictionary), static_cast<int>(btree), static_cast<int>(art), duration.count()});
   }
 
-  serialize_results(results);
-  StorageManager::get().reset();
-}
-*/
 
-void run_benchmark(std::string type, int remainder_size, bool dictionary, bool btree, bool art, int row_count,
+  auto avg_time = sum_time / sample_size;
+  std::cout << "table: " << tpcc_table_name
+            << ", column: " << column_name
+            << ", warehouse_size: " << warehouse_size
+            << ", chunk_size: " < chunk_size
+            << ", remainder_size: " << remainder_size
+            << ", dictionary: " << dictionary
+            << ", btree: " << btree
+            << ", art: " << art
+            << ", avg_time: " << avg_time.count()
+            << std::endl;
+}
+
+void run_custom_benchmark(std::string type, int remainder_size, bool dictionary, bool btree, bool art, int row_count,
                    int chunk_size, double pruning_rate, double selectivity, int sample_size,
                    std::shared_ptr<Table> results_table) {
   auto sum_time = std::chrono::microseconds(0);
 
   for (int i = 0; i < sample_size; i++) {
-    auto benchmark = generate_benchmark(type, remainder_size, dictionary, btree, art, row_count, chunk_size,
+    auto benchmark = generate_custom_benchmark(type, remainder_size, dictionary, btree, art, row_count, chunk_size,
                                         pruning_rate, selectivity);
 
     clear_cache();
@@ -262,7 +238,6 @@ void run_benchmark(std::string type, int remainder_size, bool dictionary, bool b
 void dict_query_benchmark_string(std::vector<std::string>& dictionary, int n, int string_length) {
   auto value = random_string(string_length);
   for (int i = 0; i < n; i++) {
-    //clear_cache();
     std::binary_search(dictionary.begin(), dictionary.end(), value);
   }
 }
@@ -322,7 +297,42 @@ void dict_vs_filter_series() {
   std::cout << "int filter: " << duration.count() << std::endl;
 }
 
-void benchmark_series() {
+void tpcc_benchmark_series() {
+  auto tpcc_table_name = std::string("ORDER");
+  auto column_name = std::string("NO_O_ID");
+  auto warehouse_size = 100;
+  auto chunk_size = 100000;
+  auto remainder_sizes = {0, 2, 4, 8, 16};
+
+  auto results_table = std::make_shared<Table>();
+  results_table->add_column("warehouse_size", "int", false);
+  results_table->add_column("chunk_size", "int", false);
+  results_table->add_column("quotient_size", "int", false);
+  results_table->add_column("remainder_size", "int", false);
+  results_table->add_column("dictionary", "int", false);
+  results_table->add_column("btree", "int", false);
+  results_table->add_column("art", "int", false);
+  results_table->add_column("run_time", "int", false);
+
+  std::cout << "------------------------" << std::endl;
+  std::cout << "Benchmark configuration: " << std::endl;
+  std::cout << "table_name:     " << tpcc_table_name << std::endl;
+  std::cout << "column_name:    " << column_name << std::endl;
+  std::cout << "warehouse_size: " << warehouse_size << std::endl;
+  std::cout << "chunk_size:     " << chunk_size << std::endl;
+  std::cout << "------------------------" << std::endl;
+
+  // analyze_value_interval<int>(table_name, column_name);
+  for (auto remainder_size : remainder_sizes) {
+    run_tpcc_benchmark(tpcc_table_name, column_name, warehouse_size, chunk_size, remainder_size, dictionary,
+                       art, btree, results_table);
+  }
+
+  serialize_results(results);
+  StorageManager::get().reset();
+}
+
+void custom_benchmark_series() {
   auto sample_size = 100;
   auto row_counts = {10'000'000};
   auto remainder_sizes = {0, 2, 4, 8};
@@ -361,23 +371,23 @@ void benchmark_series() {
           auto art = false;
 
           for (auto remainder_size : remainder_sizes) {
-            run_benchmark(scan_type, remainder_size, dictionary=false, btree=false, art=false, row_count, chunk_size,
-                          pruning_rate, selectivity, sample_size, results_table);
+            run_custom_benchmark(scan_type, remainder_size, dictionary=false, btree=false, art=false, row_count,
+               chunk_size, pruning_rate, selectivity, sample_size, results_table);
 
-            run_benchmark(scan_type, remainder_size, dictionary=true, btree=false, art=false, row_count, chunk_size,
-                          pruning_rate, selectivity, sample_size, results_table);
+            run_custom_benchmark(scan_type, remainder_size, dictionary=true, btree=false, art=false, row_count,
+              chunk_size, pruning_rate, selectivity, sample_size, results_table);
           }
 
           auto remainder_size = 0;
 
-          run_benchmark(scan_type, remainder_size=0, dictionary=true, btree=false, art=false, row_count, chunk_size, pruning_rate,
-                        selectivity, sample_size, results_table);
+          run_custom_benchmark(scan_type, remainder_size=0, dictionary=true, btree=false, art=false, row_count,
+            chunk_size, pruning_rate, selectivity, sample_size, results_table);
 
-          run_benchmark(scan_type, remainder_size=0, dictionary=false, btree=true, art=false, row_count, chunk_size, pruning_rate,
-                        selectivity, sample_size, results_table);
+          run_custom_benchmark(scan_type, remainder_size=0, dictionary=false, btree=true, art=false, row_count,
+            chunk_size, pruning_rate,s selectivity, sample_size, results_table);
 
-          run_benchmark(scan_type, remainder_size=0, dictionary=true, btree=false, art=true, row_count, chunk_size,
-                        pruning_rate, selectivity, sample_size, results_table);
+          run_custom_benchmark(scan_type, remainder_size=0, dictionary=true, btree=false, art=true, row_count,
+            chunk_size, pruning_rate, selectivity, sample_size, results_table);
         }
       }
     }
@@ -385,7 +395,7 @@ void benchmark_series() {
   auto duration = std::chrono::duration_cast<std::chrono::seconds>(std::chrono::steady_clock::now()-start);
   std::cout << "Benchmark ran " << duration.count() << " seconds" << std::endl;
 
-  serialize_results_csv(results_table);
+  serialize_results_csv("custom", results_table);
   StorageManager::get().reset();
 }
 
@@ -409,7 +419,7 @@ void benchmark_series() {
 **/
 
 int main() {
-  benchmark_series();
+  custom_benchmark_series();
   //dict_vs_filter_series();
   return 0;
 }

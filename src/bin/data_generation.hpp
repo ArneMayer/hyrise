@@ -230,8 +230,8 @@ std::shared_ptr<Table> generate_table_int(int chunk_size, int row_count, int pru
   return table;
 }
 
-std::string load_or_generate(std::string type, int row_count, int chunk_size, int prunable_chunks, double selectivity,
-                             bool compressed) {
+std::string custom_load_or_generate(std::string type, int row_count, int chunk_size, int prunable_chunks,
+                                    double selectivity, bool compressed) {
   auto selectivity_label = static_cast<int>(selectivity * 10'000'000);
   auto table_name = "bench_" + type + "_"
                              + std::to_string(row_count) + "_"
