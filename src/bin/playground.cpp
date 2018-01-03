@@ -174,11 +174,12 @@ void serialize_results_csv(std::string benchmark_name, std::shared_ptr<Table> ta
   std::cout << "OK!" << std::endl;
 }
 
-void run_tpcc_benchmark(int sample_size, bool dictionary, bool art, bool btree, std::shared_ptr<Table> results_table) {
+void run_tpcc_benchmark(std::string table_name, std::string column_name, int remainder_size, bool dictionary,
+                        bool btree, bool art, int sample_size, std::shared_ptr<Table> results_table) {
   auto sum_time = std::chrono::microseconds(0);
 
   for (int i = 0; i < sample_size) {
-    auto benchmark = generate_tpcc_benchmark(tpcc_table_name, column_name, remainder_size, warehouse_size, chunk_size);
+    auto benchmark = generate_tpcc_benchmark(tpcc_table_name, column_name,  warehouse_size, chunk_size, remainder_size, dictionary, btree, art);
     clear_cache();
     auto start = std::chrono::steady_clock::now();
     benchmark->execute();
@@ -298,16 +299,18 @@ void dict_vs_filter_series() {
 }
 
 void tpcc_benchmark_series() {
+  auto sample_size = 100;
   auto tpcc_table_name = std::string("ORDER");
   auto column_name = std::string("NO_O_ID");
   auto warehouse_size = 100;
   auto chunk_size = 100000;
-  auto remainder_sizes = {0, 2, 4, 8, 16};
+  auto remainder_sizes = {0, 2, 4, 8};
 
   auto results_table = std::make_shared<Table>();
+  results_table->add_column("table_name", "string", false);
+  results_table->add_column("column_name", "string", false);
   results_table->add_column("warehouse_size", "int", false);
   results_table->add_column("chunk_size", "int", false);
-  results_table->add_column("quotient_size", "int", false);
   results_table->add_column("remainder_size", "int", false);
   results_table->add_column("dictionary", "int", false);
   results_table->add_column("btree", "int", false);
@@ -325,7 +328,7 @@ void tpcc_benchmark_series() {
   // analyze_value_interval<int>(table_name, column_name);
   for (auto remainder_size : remainder_sizes) {
     run_tpcc_benchmark(tpcc_table_name, column_name, warehouse_size, chunk_size, remainder_size, dictionary,
-                       art, btree, results_table);
+                       btree, art, sample_size, results_table);
   }
 
   serialize_results(results);
