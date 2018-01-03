@@ -1,7 +1,7 @@
 #pragma once
 
 #include "types.hpp"
-#include "storage/index/base_index.hpp"
+#include "all_type_variant.hpp"
 
 namespace opossum {
 
@@ -9,13 +9,16 @@ class Table;
 
 class BaseBTreeIndex : private Noncopyable {
  public:
+  using Iterator = std::vector<RowID>::const_iterator;
+
   BaseBTreeIndex() = delete;
   explicit BaseBTreeIndex(const Table& table, const ColumnID column_id);
   BaseBTreeIndex(BaseBTreeIndex&&) = default;
   BaseBTreeIndex& operator=(BaseBTreeIndex&&) = default;
   virtual ~BaseBTreeIndex() = default;
 
-  virtual const PosList& point_query_all_type(AllTypeVariant value) const = 0;
+  virtual Iterator lower_bound_all_type(AllTypeVariant value) const = 0;
+  virtual Iterator upper_bound_all_type(AllTypeVariant value) const = 0;
 
  protected:
   const Table& _table;

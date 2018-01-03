@@ -8,6 +8,8 @@
 #include "storage/iterables/attribute_vector_iterable.hpp"
 #include "storage/iterables/constant_value_iterable.hpp"
 #include "storage/iterables/create_iterable_from_column.hpp"
+#include "storage/index/base_index.hpp"
+#include "storage/index/column_index_type.hpp"
 
 #include "resolve_type.hpp"
 #include "type_comparison.hpp"
@@ -45,6 +47,11 @@ void SingleColumnTableScanImpl::handle_value_column(const BaseValueColumn& base_
   // CQF is only supported for ScanType::OpEquals
   if (_scan_type == ScanType::OpEquals) {
     auto cqf = _in_table->get_chunk(chunk_id).get_filter(_left_column_id);
+    /*
+    if (cqf != nullptr) {
+      std::cout << "using value column cqf" << std::endl;
+    }
+    */
     if (cqf != nullptr && cqf->count_all_type(_right_value) == 0) {
       return;
     }
@@ -78,10 +85,31 @@ void SingleColumnTableScanImpl::handle_dictionary_column(const BaseDictionaryCol
   const auto& mapped_chunk_offsets = context->_mapped_chunk_offsets;
   auto& left_column = static_cast<const BaseDictionaryColumn&>(base_column);
 
+  // ART scan
+  if (_scan_type == ScanType::OpEquals) {
+    auto index = _in_table->get_chunk(chunk_id).get_art_index(_left_column_id);
+    if (index != nullptr) {
+      //std::cout << "using ART" << std::endl;
+      std::vector<AllTypeVariant> value_vector;
+      value_vector.push_back(_right_value);
+      auto lower_bound = index->lower_bound(value_vector);
+      auto upper_bound = index->upper_bound(value_vector);
+      for (auto iterator = lower_bound; iterator != upper_bound; iterator++) {
+        matches_out.push_back(RowID{chunk_id, *iterator});
+      }
+      return;
+    }
+  }
+
   // Check whether this chunk needs to be looked at by performing a filter query
   // CQF is only supported for ScanType::OpEquals
   if (_scan_type == ScanType::OpEquals) {
     auto cqf = _in_table->get_chunk(chunk_id).get_filter(_left_column_id);
+    /*
+    if (cqf != nullptr) {
+      std::cout << "using dict cqf" << std::endl;
+    }
+    */
     if (cqf != nullptr && cqf->count_all_type(_right_value) == 0) {
       return;
     }

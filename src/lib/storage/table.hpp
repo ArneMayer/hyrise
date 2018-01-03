@@ -153,6 +153,8 @@ class Table : private Noncopyable {
   void populate_btree_index(ColumnID column_id);
   void delete_btree_index(ColumnID column_id);
   std::shared_ptr<const BaseBTreeIndex> get_btree_index(ColumnID column_id) const;
+  void populate_art_index(ColumnID column_id);
+  void delete_art_index(ColumnID column_id);
 
  protected:
   const uint32_t _max_chunk_size;

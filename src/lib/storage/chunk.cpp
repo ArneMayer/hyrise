@@ -10,6 +10,7 @@
 #include "base_column.hpp"
 #include "chunk.hpp"
 #include "index/base_index.hpp"
+#include "index/adaptive_radix_tree/adaptive_radix_tree_index.hpp"
 #include "index/counting_quotient_filter/counting_quotient_filter.hpp"
 #include "reference_column.hpp"
 #include "utils/assert.hpp"
@@ -214,6 +215,7 @@ std::shared_ptr<AbstractTask> Chunk::populate_quotient_filter(ColumnID column_id
   return std::make_shared<JobTask>([this, column_id, column_type, quotient_bits, remainder_bits]() {
     _quotient_filters[column_id] = make_shared_by_data_type<BaseFilter, CountingQuotientFilter>(column_type,
                                                                                         quotient_bits, remainder_bits);
+    //std::cout << "creating filter" << std::endl;
     _quotient_filters[column_id]->populate(get_column(column_id));
   });
 }
@@ -228,6 +230,39 @@ std::shared_ptr<const BaseFilter> Chunk::get_filter(ColumnID column_id) const {
     return nullptr;
   } else {
     return result->second;
+  }
+}
+
+std::shared_ptr<BaseIndex> Chunk::get_art_index(ColumnID column_id) const {
+  auto column = get_column(column_id);
+  for (size_t i = 0; i < _art_indices.size(); i++) {
+    if (_art_indices[i]->is_index_for(std::vector({column}))) {
+      return _art_indices[i];
+    }
+  }
+  return nullptr;
+}
+
+void Chunk::populate_art_index(ColumnID column_id) {
+  auto column = get_column(column_id);
+  // Dont create a new one if it is already there
+  for (size_t i = 0; i < _art_indices.size(); i++) {
+    if (_art_indices[i]->is_index_for(std::vector({column}))) {
+      return;
+    }
+  }
+  //std::cout << "creating art" << std::endl;
+  auto index = std::make_shared<AdaptiveRadixTreeIndex>(std::vector({column}));
+  _art_indices.emplace_back(index);
+}
+
+void Chunk::delete_art_index(ColumnID column_id) {
+  auto column = get_column(column_id);
+  for (size_t i = 0; i < _art_indices.size(); i++) {
+    if (_art_indices[i]->is_index_for(std::vector({column}))) {
+      auto iterator = _art_indices.begin() + i;
+      _art_indices.erase(iterator);
+    }
   }
 }
 

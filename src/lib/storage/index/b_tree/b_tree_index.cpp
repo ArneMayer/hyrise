@@ -13,28 +13,34 @@ namespace opossum {
 
 template <typename DataType>
 BTreeIndex<DataType>::BTreeIndex(const Table& table, const ColumnID column_id) : BaseBTreeIndex{table, column_id} {
-  _btree = std::make_shared<btree::btree_map<DataType, PosList>>();
   _bulk_insert(table, column_id);
 }
 
 template <typename DataType>
-const PosList& BTreeIndex<DataType>::point_query_all_type(AllTypeVariant all_type_value) const {
-  //DebugAssert(all_type_value.type() == typeid(DataType), "Value does not have the same type as the index elements");
-  return point_query(type_cast<DataType>(all_type_value));
+BaseBTreeIndex::Iterator BTreeIndex<DataType>::lower_bound_all_type(AllTypeVariant value) const {
+  return lower_bound(type_cast<DataType>(value));
 }
 
 template <typename DataType>
-const PosList& BTreeIndex<DataType>::point_query(DataType value) const {
-  auto result = _btree->find(value);
-  if (result != _btree->end()) {
-    return result->second;
-  } else {
-    return _empty_list;
-  }
+BaseBTreeIndex::Iterator BTreeIndex<DataType>::upper_bound_all_type(AllTypeVariant value) const {
+  return upper_bound(type_cast<DataType>(value));
+}
+
+template <typename DataType>
+BaseBTreeIndex::Iterator BTreeIndex<DataType>::lower_bound(DataType value) const {
+  return _row_ids.begin() + _btree.lower_bound(value)->second;
+}
+
+template <typename DataType>
+BaseBTreeIndex::Iterator BTreeIndex<DataType>::upper_bound(DataType value) const {
+  return _row_ids.begin() + _btree.upper_bound(value)->second;
 }
 
 template <typename DataType>
 void BTreeIndex<DataType>::_bulk_insert(const Table& table, const ColumnID column_id) {
+  std::vector<std::pair<RowID, DataType>> values;
+
+  // Materialize
   for (auto chunk_id = ChunkID{0}; chunk_id < _table.chunk_count(); chunk_id++) {
     auto& chunk = _table.get_chunk(chunk_id);
     auto column = chunk.get_column(_column_id);
@@ -42,9 +48,26 @@ void BTreeIndex<DataType>::_bulk_insert(const Table& table, const ColumnID colum
       auto iterable_left = create_iterable_from_column<DataType>(typed_column);
       iterable_left.for_each([&](const auto& value) {
         if (value.is_null()) return;
-        (*_btree)[value.value()].push_back(RowID{chunk_id , value.chunk_offset()});
+        values.push_back(std::make_pair(RowID{chunk_id , value.chunk_offset()}, value.value()));
       });
     });
+  }
+
+  // Sort
+  std::sort(values.begin(), values.end(), [](const auto& a, const auto& b){ return a.second < b.second; });
+  _row_ids.resize(values.size());
+  for (size_t i = 0; i < values.size(); i++) {
+    _row_ids[i] = values[i].first;
+  }
+
+  // Build index
+  DataType current_value = values[0].second;
+  _btree[current_value] = 0;
+  for (size_t i = 0; i < values.size(); i++) {
+    if (values[i].second != current_value) {
+      current_value = values[i].second;
+      _btree[current_value] = i;
+    }
   }
 }
 
