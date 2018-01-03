@@ -178,8 +178,12 @@ void run_tpcc_benchmark(std::string table_name, std::string column_name, int rem
   auto sum_time = std::chrono::microseconds(0);
 
   for (int i = 0; i < sample_size) {
+<<<<<<< HEAD
     auto benchmark = generate_tpcc_benchmark(tpcc_table_name, column_name, warehouse_size, chunk_size, remainder_size,
                                              dictionary, art, btree);
+=======
+    auto benchmark = generate_tpcc_benchmark(tpcc_table_name, column_name,  warehouse_size, chunk_size, remainder_size, dictionary, btree, art);
+>>>>>>> 36dba130e31d568576d26183046601e6ec7b114d
     clear_cache();
     auto start = std::chrono::steady_clock::now();
     benchmark->execute();
