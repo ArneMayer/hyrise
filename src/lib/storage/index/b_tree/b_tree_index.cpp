@@ -28,12 +28,22 @@ BaseBTreeIndex::Iterator BTreeIndex<DataType>::upper_bound_all_type(AllTypeVaria
 
 template <typename DataType>
 BaseBTreeIndex::Iterator BTreeIndex<DataType>::lower_bound(DataType value) const {
-  return _row_ids.begin() + _btree.lower_bound(value)->second;
+  auto result = _btree.lower_bound(value);
+  if (result == _btree.end()) {
+    return _row_ids.end();
+  } else {
+    return _row_ids.begin() + result->second;
+  }
 }
 
 template <typename DataType>
 BaseBTreeIndex::Iterator BTreeIndex<DataType>::upper_bound(DataType value) const {
-  return _row_ids.begin() + _btree.upper_bound(value)->second;
+  auto result = _btree.upper_bound(value);
+  if (result == _btree.end()) {
+    return _row_ids.end();
+  } else {
+    return _row_ids.begin() + result->second;
+  }
 }
 
 template <typename DataType>

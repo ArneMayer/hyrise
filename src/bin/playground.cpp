@@ -352,7 +352,7 @@ void dict_vs_filter_series() {
 
 void tpcc_benchmark_series() {
   auto sample_size = 100;
-  auto tpcc_table_name = std::string("ORDER_LINE");
+  auto tpcc_table_name = std::string("ORDER-LINE");
   auto column_name = std::string("OL_I_ID");
   auto warehouse_size = 10;
   auto chunk_size = 100000;
@@ -503,7 +503,7 @@ void analyze_all_tpcc_tables() {
 }
 
 int main() {
-  //custom_benchmark_series();
+  custom_benchmark_series();
   tpcc_benchmark_series();
   //dict_vs_filter_series();
   //analyze_all_tpcc_tables()
