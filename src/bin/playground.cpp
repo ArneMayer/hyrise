@@ -421,10 +421,10 @@ void run_benchmark(int remainder_size, bool dictionary, bool btree, int row_coun
 }
 
 void best_case_benchmark_series() {
-  auto sample_size = 100;
-  auto row_counts = {10'000'000};
-  auto remainder_sizes = {2, 4, 8, 16};
-  auto chunk_sizes = {1'000'000};
+  auto sample_size = 1;
+  auto row_counts = {100'000};
+  //auto remainder_sizes = {2, 4, 8, 16};
+  auto chunk_sizes = {100'000};
   auto pruning_ratio = 0.5;
 
   std::cout << "------------------------" << std::endl;
@@ -448,6 +448,7 @@ void best_case_benchmark_series() {
     for (auto chunk_size : chunk_sizes) {
       auto dictionary = false;
       auto btree = false;
+      /*
       for (auto remainder_size : remainder_sizes) {
         run_benchmark(remainder_size, dictionary, btree, row_count, chunk_size, pruning_ratio,
                       sample_size, results_table);
@@ -461,8 +462,8 @@ void best_case_benchmark_series() {
       dictionary = true;
       btree = false;
       run_benchmark(remainder_size, dictionary, btree, row_count, chunk_size, pruning_ratio,
-                    sample_size, results_table);
-      remainder_size = 0;
+                    sample_size, results_table);*/
+      auto remainder_size = 0;
       dictionary = false;
       btree = true;
       run_benchmark(remainder_size, dictionary, btree, row_count, chunk_size, pruning_ratio,

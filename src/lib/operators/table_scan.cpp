@@ -80,6 +80,7 @@ std::shared_ptr<const Table> TableScan::_on_execute() {
 
   auto btree_index = _in_table->get_btree_index(_left_column_id);
   if (btree_index && is_variant(_right_parameter)) {
+    std::cout << "using btree scan" << std::endl;
     Chunk chunk_out;
     AllTypeVariant scan_value = boost::get<AllTypeVariant>(_right_parameter);
     auto matches_out = std::make_shared<PosList>(btree_index->point_query_all_type(scan_value));
