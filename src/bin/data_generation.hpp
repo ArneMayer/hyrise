@@ -10,6 +10,7 @@
 #include "operators/import_binary.hpp"
 #include "operators/export_binary.hpp"
 #include "operators/table_wrapper.hpp"
+#include "tpcc/tpcc_table_generator.hpp"
 
 #include <string>
 #include <iostream>
@@ -66,79 +67,6 @@ std::vector<AllTypeVariant> generate_row(int scan_column, AllTypeVariant scan_co
   row[scan_column] = scan_column_value;
 
   return row;
-}
-
-std::shared_ptr<CountingQuotientFilter<int>> generate_filter_int(int size, int quotient_size, int remainder_size) {
-  auto filter = std::make_shared<CountingQuotientFilter<int>>(quotient_size, remainder_size);
-  for(int i = 0; i < size; i++) {
-    filter->insert(random_int(0, 100000));
-  }
-  return filter;
-}
-
-std::shared_ptr<CountingQuotientFilter<std::string>> generate_filter_string(int size, int string_length, int quotient_size, int remainder_size) {
-  auto filter = std::make_shared<CountingQuotientFilter<std::string>>(quotient_size, remainder_size);
-  for(int i = 0; i < size; i++) {
-    filter->insert(random_string(string_length));
-  }
-  return filter;
-}
-
-std::vector<int> generate_dictionary_int(int size) {
-  std::vector<int> v;
-  for (int i = 0; i < size; i++) {
-    v.push_back(random_int(0, 100000));
-  }
-  std::sort (v.begin(), v.end());
-  return v;
-}
-
-std::vector<std::string> generate_dictionary_string(int size, int string_length) {
-  std::vector<std::string> v;
-  for(int i = 0; i < size; i++) {
-    v.push_back(random_string(string_length));
-  }
-  std::sort (v.begin(), v.end());
-  return v;
-}
-
-bool load_table(std::string table_name) {
-  if (StorageManager::get().has_table(table_name)) {
-    return true;
-  }
-  bool file_exists = std::ifstream(table_name).good();
-  if (file_exists) {
-    std::cout << " > Loading table " << table_name << " from disk" << "...";
-    auto import = std::make_shared<ImportBinary>(table_name, table_name);
-    import->execute();
-    std::cout << "OK!" << std::endl;
-    return true;
-  } else {
-    return false;
-  }
-}
-
-void save_table(std::shared_ptr<const Table> table, std::string file_name) {
-  std::cout << " > Saving table " << file_name << " to disk" << "...";
-  auto table_wrapper = std::make_shared<TableWrapper>(table);
-  table_wrapper->execute();
-  auto export_operator = std::make_shared<ExportBinary>(table_wrapper, file_name);
-  export_operator->execute();
-  std::cout << "OK!" << std::endl;
-}
-
-std::string tpcc_load_or_generate(std::string tpcc_table_name, int warehouse_size, int chunk_size) {
-  auto table_name = tpcc_table_name + "_" + std::to_string(warehouse_size) + "_" + std::to_string(chunk_size);
-  auto loaded = load_table(table_name);
-  if (!loaded) {
-    std::cout << " > Generating table " << table_name << "...";
-    auto table = tpcc::TpccTableGenerator::generate_tpcc_table(tpcc_table_name, chunk_size, warehouse_size);
-    StorageManager::get().add_table(table_name, table);
-    std::cout << "OK!" << std::endl;
-    save_table(table, table_name);
-  }
-
-  return table_name;
 }
 
 std::shared_ptr<Table> generate_table_string(int chunk_size, int row_count, int prunable_chunks, double selectivity) {
@@ -228,6 +156,65 @@ std::shared_ptr<Table> generate_table_int(int chunk_size, int row_count, int pru
   return table;
 }
 
+std::shared_ptr<CountingQuotientFilter<int>> generate_filter_int(int size, int quotient_size, int remainder_size) {
+  auto filter = std::make_shared<CountingQuotientFilter<int>>(quotient_size, remainder_size);
+  for(int i = 0; i < size; i++) {
+    filter->insert(random_int(0, 100000));
+  }
+  return filter;
+}
+
+std::shared_ptr<CountingQuotientFilter<std::string>> generate_filter_string(int size, int string_length, int quotient_size, int remainder_size) {
+  auto filter = std::make_shared<CountingQuotientFilter<std::string>>(quotient_size, remainder_size);
+  for(int i = 0; i < size; i++) {
+    filter->insert(random_string(string_length));
+  }
+  return filter;
+}
+
+std::vector<int> generate_dictionary_int(int size) {
+  std::vector<int> v;
+  for (int i = 0; i < size; i++) {
+    v.push_back(random_int(0, 100000));
+  }
+  std::sort (v.begin(), v.end());
+  return v;
+}
+
+std::vector<std::string> generate_dictionary_string(int size, int string_length) {
+  std::vector<std::string> v;
+  for(int i = 0; i < size; i++) {
+    v.push_back(random_string(string_length));
+  }
+  std::sort (v.begin(), v.end());
+  return v;
+}
+
+bool load_table(std::string table_name) {
+  if (StorageManager::get().has_table(table_name)) {
+    return true;
+  }
+  bool file_exists = std::ifstream(table_name).good();
+  if (file_exists) {
+    std::cout << " > Loading table " << table_name << " from disk" << "...";
+    auto import = std::make_shared<ImportBinary>(table_name, table_name);
+    import->execute();
+    std::cout << "OK!" << std::endl;
+    return true;
+  } else {
+    return false;
+  }
+}
+
+void save_table(std::shared_ptr<const Table> table, std::string file_name) {
+  std::cout << " > Saving table " << file_name << " to disk" << "...";
+  auto table_wrapper = std::make_shared<TableWrapper>(table);
+  table_wrapper->execute();
+  auto export_operator = std::make_shared<ExportBinary>(table_wrapper, file_name);
+  export_operator->execute();
+  std::cout << "OK!" << std::endl;
+}
+
 std::string custom_load_or_generate(std::string type, int row_count, int chunk_size, int prunable_chunks,
                                     double selectivity, bool compressed) {
   auto selectivity_label = static_cast<int>(selectivity * 10'000'000);
@@ -257,6 +244,27 @@ std::string custom_load_or_generate(std::string type, int row_count, int chunk_s
 
   StorageManager::get().add_table(table_name, table);
 
+  std::cout << "OK!" << std::endl;
+  save_table(table, table_name);
+
+  return table_name;
+}
+
+std::string tpcc_load_or_generate(std::string tpcc_table_name, int warehouse_size, int chunk_size, bool compressed) {
+  auto table_name = tpcc_table_name + "_" + std::to_string(warehouse_size) + "_" + std::to_string(chunk_size);
+  auto loaded = load_table(table_name);
+  if (loaded) {
+    return table_name;
+  }
+
+  std::cout << " > Generating table " << table_name << "...";
+  auto table = tpcc::TpccTableGenerator::generate_tpcc_table(tpcc_table_name, chunk_size, warehouse_size);
+
+  if (compressed) {
+    DictionaryCompression::compress_table(*table);
+  }
+
+  StorageManager::get().add_table(table_name, table);
   std::cout << "OK!" << std::endl;
   save_table(table, table_name);
 

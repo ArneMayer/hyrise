@@ -14,21 +14,86 @@
 #include "operators/export_csv.hpp"
 #include "operators/table_wrapper.hpp"
 #include "storage/storage_manager.hpp"
-#include "tpcc/tpcc_table_generator.hpp"
 #include "scheduler/abstract_task.hpp"
 #include "scheduler/current_scheduler.hpp"
+#include "resolve_type.hpp"
+#include "storage/iterables/create_iterable_from_column.hpp"
 
 using namespace opossum;
 
 void clear_cache() {
-  //std::cout << "clearing cache" << std::endl;
   std::vector<int> clear = std::vector<int>();
   clear.resize(500 * 1000 * 1000, 42);
   for (uint i = 0; i < clear.size(); i++) {
     clear[i] += 1;
   }
   clear.resize(0);
-  //std::cout << "done clearing cache" << std::endl;
+}
+
+template <typename T>
+std::pair<T, T> analyze_value_interval(std::string table_name, std::string column_name, ChunkID chunk_id) {
+  auto table = opossum::StorageManager::get().get_table(table_name);
+  auto column_id = table->column_id_by_name(column_name);
+  auto& chunk = table->get_chunk(chunk_id);
+  auto column = chunk.get_column(column_id);
+
+  auto min_value = table->get_value<T>(column_id, 0);
+  auto max_value = table->get_value<T>(column_id, 0);
+  bool initialized = false;
+
+  // Find min and max values
+  resolve_column_type<T>(*column, [&](const auto& typed_column) {
+    auto iterable_left = create_iterable_from_column<T>(typed_column);
+    iterable_left.for_each([&](const auto& value) {
+      if (value.is_null()) return;
+      if (!initialized) {
+        min_value = value.value();
+        max_value = value.value();
+        initialized = true;
+      }
+      if (value.value() < min_value) {
+        min_value = value.value();
+      }
+      if (value.value() > max_value) {
+        max_value = value.value();
+      }
+    });
+  });
+
+  return std::make_pair(min_value, max_value);
+}
+
+void analyze_value_interval(std::string table_name, std::string column_name) {
+  //std::cout << " > Analyzing " << table_name << "::" << column_name << std::endl;
+  auto table = opossum::StorageManager::get().get_table(table_name);
+  auto column_id = table->column_id_by_name(column_name);
+  auto column_type = table->column_type(column_id);
+
+  for (auto chunk_id = opossum::ChunkID{0}; chunk_id < table->chunk_count(); chunk_id++) {
+    if (column_type == DataType::Int) {
+      auto interval = analyze_value_interval<int>(table_name, column_name, chunk_id);
+      std::cout << "[" << interval.first << ", " << interval.second << "], ";
+    } else if (column_type == DataType::Double) {
+      auto interval = analyze_value_interval<double>(table_name, column_name, chunk_id);
+      std::cout << "[" << interval.first << ", " << interval.second << "], ";
+    } else if (column_type == DataType::String) {
+      auto interval = analyze_value_interval<std::string>(table_name, column_name, chunk_id);
+      std::cout << "[" << interval.first << ", " << interval.second << "], ";
+    }
+  }
+  std::cout << std::endl;
+}
+
+std::string data_type_to_string(DataType data_type) {
+  if (data_type == DataType::Int) {
+    return "int";
+  } else if (data_type == DataType::Double) {
+    return "double";
+  } else if (data_type == DataType::String) {
+    return "string";
+  } else {
+    return "unknown";
+  }
 }
 
 void print_table_layout(std::string table_name) {
@@ -40,37 +105,11 @@ void print_table_layout(std::string table_name) {
   for (auto column_id = ColumnID{0}; column_id < table->column_count(); column_id++) {
     auto column_name = table->column_name(column_id);
     auto column_type = table->column_type(column_id);
-    std::cout << "(" << static_cast<int>(column_type) << ") " << column_name << ", ";
+    std::cout << "(" << data_type_to_string(column_type) << ") " << column_name << ": ";
+    analyze_value_interval(table_name, column_name);
   }
   std::cout << std::endl;
   std::cout << "------------------------" << std::endl;
-}
-
-template <typename T>
-void analyze_value_interval(std::string table_name, std::string column_name) {
-  std::cout << " > Analyzing " << table_name << "::" << column_name << std::endl;
-  auto table = opossum::StorageManager::get().get_table(table_name);
-  auto column_id = table->column_id_by_name(column_name);
-
-  size_t row_number_prefix = 0;
-  for (auto chunk_id = opossum::ChunkID{0}; chunk_id < table->chunk_count(); chunk_id++) {
-    uint32_t chunk_size = table->get_chunk(chunk_id).size();
-    auto min_value = table->get_value<T>(column_id, 0);
-    auto max_value = table->get_value<T>(column_id, 0);
-    // Find the min and max values
-    for (auto chunk_offset = opossum::ChunkOffset{0}; chunk_offset < chunk_size; chunk_offset++) {
-      auto value = table->get_value<T>(column_id, row_number_prefix + chunk_offset);
-      //std::cout << value << std::endl;
-      if (value < min_value) {
-        min_value = value;
-      }
-      if (value > max_value) {
-        max_value = value;
-      }
-    }
-    row_number_prefix += chunk_size;
-    std::cout << "Chunk " << chunk_id << ": [" << min_value << ", " << max_value << "]" << std::endl;
-  }
 }
 
 int analyze_skippable_chunks(std::string table_name, std::string column_name, AllTypeVariant scan_value) {
@@ -149,11 +188,23 @@ std::shared_ptr<AbstractOperator> generate_custom_benchmark(std::string type, ui
 }
 
 std::shared_ptr<AbstractOperator> generate_tpcc_benchmark(std::string tpcc_table_name, std::string column_name,
-                                                     int warehouse_size, int chunk_size, uint8_t remainder_size) {
-  auto table_name = tpcc_load_or_generate(tpcc_table_name, warehouse_size, chunk_size);
+                                                          int warehouse_size, int chunk_size, uint8_t remainder_size,
+                                                          bool dictionary, bool btree, bool art) {
+  auto table_name = tpcc_load_or_generate(tpcc_table_name, warehouse_size, chunk_size, dictionary);
   auto table = StorageManager::get().get_table(table_name);
   auto column_id = table->column_id_by_name(column_name);
+  auto quotient_size = static_cast<int>(std::ceil(std::log(chunk_size) / std::log(2)));
   create_quotient_filters(table, column_id, quotient_size, remainder_size);
+  if (btree) {
+    table->populate_btree_index(ColumnID{0});
+  } else {
+    table->delete_btree_index(ColumnID{0});
+  }
+  if (art) {
+    table->populate_art_index(ColumnID{0});
+  } else {
+    table->delete_art_index(ColumnID{0});
+  }
   auto get_table = std::make_shared<GetTable>(table_name);
   auto table_scan = std::make_shared<TableScan>(get_table, column_id, ScanType::OpEquals, 3000);
   get_table->execute();
@@ -173,12 +224,13 @@ void serialize_results_csv(std::string benchmark_name, std::shared_ptr<Table> ta
   std::cout << "OK!" << std::endl;
 }
 
-void run_tpcc_benchmark(std::string table_name, std::string column_name, int remainder_size, bool dictionary,
-                        bool btree, bool art, int sample_size, std::shared_ptr<Table> results_table) {
+void run_tpcc_benchmark(std::string table_name, std::string column_name, int warehouse_size, int chunk_size,
+                        int remainder_size, bool dictionary, bool btree, bool art, int sample_size,
+                        std::shared_ptr<Table> results_table) {
   auto sum_time = std::chrono::microseconds(0);
 
-  for (int i = 0; i < sample_size) {
-    auto benchmark = generate_tpcc_benchmark(tpcc_table_name, column_name, warehouse_size, chunk_size, remainder_size,
+  for (int i = 0; i < sample_size; i++) {
+    auto benchmark = generate_tpcc_benchmark(table_name, column_name, warehouse_size, chunk_size, remainder_size,
                                              dictionary, art, btree);
     clear_cache();
     auto start = std::chrono::steady_clock::now();
@@ -186,16 +238,16 @@ void run_tpcc_benchmark(std::string table_name, std::string column_name, int rem
     auto duration = std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::steady_clock::now() - start);
     sum_time += duration;
 
-    results_table->append({tpcc_table_name, column_name, warehouse_size, chunk_size, remainder_size,
+    results_table->append({table_name, column_name, warehouse_size, chunk_size, remainder_size,
                       static_cast<int>(dictionary), static_cast<int>(btree), static_cast<int>(art), duration.count()});
   }
 
 
   auto avg_time = sum_time / sample_size;
-  std::cout << "table: " << tpcc_table_name
+  std::cout << "table: " << table_name
             << ", column: " << column_name
             << ", warehouse_size: " << warehouse_size
-            << ", chunk_size: " < chunk_size
+            << ", chunk_size: " << chunk_size
             << ", remainder_size: " << remainder_size
             << ", dictionary: " << dictionary
             << ", btree: " << btree
@@ -300,38 +352,53 @@ void dict_vs_filter_series() {
 
 void tpcc_benchmark_series() {
   auto sample_size = 100;
-  auto tpcc_table_name = std::string("ORDER");
-  auto column_name = std::string("NO_O_ID");
-  auto warehouse_size = 100;
+  auto tpcc_table_name = std::string("ORDER_LINE");
+  auto column_name = std::string("OL_I_ID");
+  auto warehouse_size = 10;
   auto chunk_size = 100000;
   auto remainder_sizes = {0, 2, 4, 8};
 
   auto results_table = std::make_shared<Table>();
-  results_table->add_column("table_name", "string", false);
-  results_table->add_column("column_name", "string", false);
-  results_table->add_column("warehouse_size", "int", false);
-  results_table->add_column("chunk_size", "int", false);
-  results_table->add_column("remainder_size", "int", false);
-  results_table->add_column("dictionary", "int", false);
-  results_table->add_column("btree", "int", false);
-  results_table->add_column("art", "int", false);
-  results_table->add_column("run_time", "int", false);
+  results_table->add_column("table_name", DataType::String, false);
+  results_table->add_column("column_name", DataType::String, false);
+  results_table->add_column("warehouse_size", DataType::Int, false);
+  results_table->add_column("chunk_size", DataType::Int, false);
+  results_table->add_column("remainder_size", DataType::Int, false);
+  results_table->add_column("dictionary", DataType::Int, false);
+  results_table->add_column("btree", DataType::Int, false);
+  results_table->add_column("art", DataType::Int, false);
+  results_table->add_column("run_time", DataType::Int, false);
 
   std::cout << "------------------------" << std::endl;
   std::cout << "Benchmark configuration: " << std::endl;
+  std::cout << "data:           " << "tpcc" << std::endl;
   std::cout << "table_name:     " << tpcc_table_name << std::endl;
   std::cout << "column_name:    " << column_name << std::endl;
   std::cout << "warehouse_size: " << warehouse_size << std::endl;
   std::cout << "chunk_size:     " << chunk_size << std::endl;
   std::cout << "------------------------" << std::endl;
 
-  // analyze_value_interval<int>(table_name, column_name);
-  for (auto remainder_size : remainder_sizes) {
-    run_tpcc_benchmark(tpcc_table_name, column_name, warehouse_size, chunk_size, remainder_size, dictionary,
-                       btree, art, sample_size, results_table);
-  }
+  auto start = std::chrono::steady_clock::now();
 
-  serialize_results(results);
+  // analyze_value_interval<int>(table_name, column_name);
+  auto dictionary = false;
+  auto art = false;
+  auto btree = false;
+  for (auto remainder_size : remainder_sizes) {
+    run_tpcc_benchmark(tpcc_table_name, column_name, warehouse_size, chunk_size, remainder_size, dictionary=false,
+                       btree=false, art=false, sample_size, results_table);
+    run_tpcc_benchmark(tpcc_table_name, column_name, warehouse_size, chunk_size, remainder_size, dictionary=true,
+                       btree=false, art=false, sample_size, results_table);
+  }
+  auto remainder_size = 0;
+  run_tpcc_benchmark(tpcc_table_name, column_name, warehouse_size, chunk_size, remainder_size=0, dictionary=false,
+                     btree=true, art=false, sample_size, results_table);
+  run_tpcc_benchmark(tpcc_table_name, column_name, warehouse_size, chunk_size, remainder_size=0, dictionary=true,
+                     btree=false, art=true, sample_size, results_table);
+  auto duration = std::chrono::duration_cast<std::chrono::seconds>(std::chrono::steady_clock::now()-start);
+  std::cout << "Benchmark ran " << duration.count() << " seconds" << std::endl;
+
+  serialize_results_csv("tpcc", results_table);
   StorageManager::get().reset();
 }
 
@@ -372,23 +439,15 @@ void custom_benchmark_series() {
           auto dictionary = false;
           auto btree = false;
           auto art = false;
-
           for (auto remainder_size : remainder_sizes) {
             run_custom_benchmark(scan_type, remainder_size, dictionary=false, btree=false, art=false, row_count,
                chunk_size, pruning_rate, selectivity, sample_size, results_table);
-
             run_custom_benchmark(scan_type, remainder_size, dictionary=true, btree=false, art=false, row_count,
               chunk_size, pruning_rate, selectivity, sample_size, results_table);
           }
-
           auto remainder_size = 0;
-
-          run_custom_benchmark(scan_type, remainder_size=0, dictionary=true, btree=false, art=false, row_count,
-            chunk_size, pruning_rate, selectivity, sample_size, results_table);
-
           run_custom_benchmark(scan_type, remainder_size=0, dictionary=false, btree=true, art=false, row_count,
-            chunk_size, pruning_rate,s selectivity, sample_size, results_table);
-
+            chunk_size, pruning_rate, selectivity, sample_size, results_table);
           run_custom_benchmark(scan_type, remainder_size=0, dictionary=true, btree=false, art=true, row_count,
             chunk_size, pruning_rate, selectivity, sample_size, results_table);
         }
@@ -421,8 +480,34 @@ void custom_benchmark_series() {
 * - this is the case when the scan value is out of the min/max range
 **/
 
+void analyze_all_tpcc_tables() {
+  auto tpcc_table_names = {std::string("ORDER"),
+                           std::string("ITEM"),
+                           std::string("WAREHOUSE"),
+                           std::string("STOCK"),
+                           std::string("DISTRICT"),
+                           std::string("CUSTOMER"),
+                           std::string("HISTORY"),
+                           std::string("NEW-ORDER"),
+                           std::string("ORDER-LINE")
+                          };
+  auto warehouse_size = 3;
+  auto chunk_size = 100000;
+  auto dictionary = false;
+
+  for (auto tpcc_table_name : tpcc_table_names) {
+    auto table_name = tpcc_load_or_generate(tpcc_table_name, warehouse_size, chunk_size, dictionary);
+    auto table = StorageManager::get().get_table(table_name);
+    print_table_layout(table_name);
+  }
+}
+
 int main() {
-  custom_benchmark_series();
+  //custom_benchmark_series();
+  tpcc_benchmark_series();
   //dict_vs_filter_series();
+  //analyze_all_tpcc_tables()
+
+
   return 0;
 }
