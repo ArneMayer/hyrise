@@ -149,9 +149,8 @@ std::shared_ptr<AbstractOperator> generate_custom_benchmark(std::string type, ui
 }
 
 std::shared_ptr<AbstractOperator> generate_tpcc_benchmark(std::string tpcc_table_name, std::string column_name,
-                                                     uint8_t quotient_size, uint8_t remainder_size, int warehouse_size,
-                                                     int chunk_size) {
-  auto table_name = tpcc_load_or_generate(warehouse_size, chunk_size, tpcc_table_name);
+                                                     int warehouse_size, int chunk_size, uint8_t remainder_size) {
+  auto table_name = tpcc_load_or_generate(tpcc_table_name, warehouse_size, chunk_size);
   auto table = StorageManager::get().get_table(table_name);
   auto column_id = table->column_id_by_name(column_name);
   create_quotient_filters(table, column_id, quotient_size, remainder_size);
@@ -178,7 +177,8 @@ void run_tpcc_benchmark(int sample_size, bool dictionary, bool art, bool btree, 
   auto sum_time = std::chrono::microseconds(0);
 
   for (int i = 0; i < sample_size) {
-    auto benchmark = generate_tpcc_benchmark(tpcc_table_name, column_name, remainder_size, warehouse_size, chunk_size);
+    auto benchmark = generate_tpcc_benchmark(tpcc_table_name, column_name, warehouse_size, chunk_size, remainder_size,
+                                             dictionary, art, btree);
     clear_cache();
     auto start = std::chrono::steady_clock::now();
     benchmark->execute();

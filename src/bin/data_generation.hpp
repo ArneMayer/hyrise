@@ -127,7 +127,7 @@ void save_table(std::shared_ptr<const Table> table, std::string file_name) {
   std::cout << "OK!" << std::endl;
 }
 
-std::string tpcc_load_or_generate(int warehouse_size, int chunk_size, std::string tpcc_table_name) {
+std::string tpcc_load_or_generate(std::string tpcc_table_name, int warehouse_size, int chunk_size) {
   auto table_name = tpcc_table_name + "_" + std::to_string(warehouse_size) + "_" + std::to_string(chunk_size);
   auto loaded = load_table(table_name);
   if (!loaded) {
@@ -144,7 +144,7 @@ std::string tpcc_load_or_generate(int warehouse_size, int chunk_size, std::strin
 std::shared_ptr<Table> generate_table_string(int chunk_size, int row_count, int prunable_chunks, double selectivity) {
   const auto column_count = 5;
   const auto scan_column = 0;
-  const auto string_size = 4;
+  const auto string_size = 16;
   const auto scan_value = std::string("l_scan_value");
   const auto min_value  = std::string("a_") + random_string(string_size - 2, "");
   const auto max_value = std::string("z_") + random_string(string_size - 2, "");;
