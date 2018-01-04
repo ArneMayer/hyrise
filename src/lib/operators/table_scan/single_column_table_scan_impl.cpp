@@ -47,12 +47,13 @@ void SingleColumnTableScanImpl::handle_value_column(const BaseValueColumn& base_
   // CQF is only supported for ScanType::OpEquals
   if (_scan_type == ScanType::OpEquals) {
     auto cqf = _in_table->get_chunk(chunk_id).get_filter(_left_column_id);
-    /*
+
     if (cqf != nullptr) {
-      std::cout << "using value column cqf" << std::endl;
+      //std::cout << "using value column cqf" << std::endl;
     }
-    */
+
     if (cqf != nullptr && cqf->count_all_type(_right_value) == 0) {
+      //std::cout << "skip!" << std::endl;
       return;
     }
   }
@@ -105,12 +106,13 @@ void SingleColumnTableScanImpl::handle_dictionary_column(const BaseDictionaryCol
   // CQF is only supported for ScanType::OpEquals
   if (_scan_type == ScanType::OpEquals) {
     auto cqf = _in_table->get_chunk(chunk_id).get_filter(_left_column_id);
-    /*
+
     if (cqf != nullptr) {
-      std::cout << "using dict cqf" << std::endl;
+      //std::cout << "using dict cqf" << std::endl;
     }
-    */
+
     if (cqf != nullptr && cqf->count_all_type(_right_value) == 0) {
+      //std::cout << "skip!" << std::endl;
       return;
     }
   }

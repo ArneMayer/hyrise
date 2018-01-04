@@ -219,11 +219,11 @@ std::string custom_load_or_generate(std::string type, int row_count, int chunk_s
                                     double selectivity, bool compressed) {
   auto selectivity_label = static_cast<int>(selectivity * 10'000'000);
   auto table_name = "custom_" + type + "_"
-                             + std::to_string(row_count) + "_"
-                             + std::to_string(chunk_size) + "_"
-                             + std::to_string(prunable_chunks) + "_"
-                             + std::to_string(selectivity_label) + "_"
-                             + std::to_string(compressed);
+                              + std::to_string(row_count) + "_"
+                              + std::to_string(chunk_size) + "_"
+                              + std::to_string(prunable_chunks) + "_"
+                              + std::to_string(selectivity_label) + "_"
+                              + std::to_string(compressed);
   auto loaded = load_table(table_name);
   if (loaded) {
     return table_name;
@@ -251,7 +251,10 @@ std::string custom_load_or_generate(std::string type, int row_count, int chunk_s
 }
 
 std::string tpcc_load_or_generate(std::string tpcc_table_name, int warehouse_size, int chunk_size, bool compressed) {
-  auto table_name = tpcc_table_name + "_" + std::to_string(warehouse_size) + "_" + std::to_string(chunk_size);
+  auto table_name = tpcc_table_name + "_"
+                            + std::to_string(warehouse_size) + "_"
+                            + std::to_string(chunk_size) + "_"
+                            + std::to_string(compressed);
   auto loaded = load_table(table_name);
   if (loaded) {
     return table_name;
