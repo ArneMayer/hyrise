@@ -261,7 +261,7 @@ std::string tpcc_load_or_generate(std::string tpcc_table_name, int warehouse_siz
   }
 
   std::cout << " > Generating table " << table_name << "..." << std::flush;
-  auto table = tpcc::TpccTableGenerator::generate_tpcc_table(tpcc_table_name, chunk_size, warehouse_size);
+  auto table = tpcc::TpccTableGenerator::generate_tpcc_table(tpcc_table_name, chunk_size, warehouse_size, false);
 
   if (compressed) {
     DictionaryCompression::compress_table(*table);
