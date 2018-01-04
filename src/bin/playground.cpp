@@ -112,7 +112,7 @@ void print_table_layout(std::string table_name) {
   std::cout << "------------------------" << std::endl;
 }
 
-int analyze_skippable_chunks(std::string table_name, std::string column_name, AllTypeVariant scan_value) {
+int analyze_skippable_chunks_filter(std::string table_name, std::string column_name, AllTypeVariant scan_value) {
   auto table = StorageManager::get().get_table(table_name);
   auto column_id = table->column_id_by_name(column_name);
 
@@ -120,12 +120,36 @@ int analyze_skippable_chunks(std::string table_name, std::string column_name, Al
   for (auto chunk_id = ChunkID{0}; chunk_id < table->chunk_count(); chunk_id++) {
     auto& chunk = table->get_chunk(chunk_id);
     auto filter = chunk.get_filter(column_id);
-    if (filter == nullptr) {
-    } else if(filter->count_all_type(scan_value) == 0) {
+    if (filter != nullptr && filter->count_all_type(scan_value) == 0) {
       skippable_count++;
     }
   }
 
+  return skippable_count;
+}
+
+template <typename T>
+int analyze_skippable_chunks_actual(std::string table_name, std::string column_name, T scan_value) {
+  auto table = StorageManager::get().get_table(table_name);
+  auto column_id = table->column_id_by_name(column_name);
+
+  auto skippable_count = 0;
+  for (auto chunk_id = ChunkID{0}; chunk_id < table->chunk_count(); chunk_id++) {
+    auto& chunk = table->get_chunk(chunk_id);
+    auto column = chunk.get_column(column_id);
+    bool skippable = true;
+    resolve_column_type<T>(*column, [&](const auto& typed_column) {
+      auto iterable_left = create_iterable_from_column<T>(typed_column);
+      iterable_left.for_each([&](const auto& value) {
+        if (!value.is_null() && value.value() == scan_value) {
+          skippable = false;
+        }
+      });
+    });
+    if (skippable) {
+      skippable_count++;
+    }
+  }
   return skippable_count;
 }
 
@@ -196,14 +220,14 @@ std::shared_ptr<AbstractOperator> generate_tpcc_benchmark(std::string tpcc_table
   auto quotient_size = static_cast<int>(std::ceil(std::log(chunk_size) / std::log(2)));
   create_quotient_filters(table, column_id, quotient_size, remainder_size);
   if (btree) {
-    table->populate_btree_index(ColumnID{0});
+    table->populate_btree_index(column_id);
   } else {
-    table->delete_btree_index(ColumnID{0});
+    table->delete_btree_index(column_id);
   }
   if (art) {
-    table->populate_art_index(ColumnID{0});
+    table->populate_art_index(column_id);
   } else {
-    table->delete_art_index(ColumnID{0});
+    table->delete_art_index(column_id);
   }
   auto get_table = std::make_shared<GetTable>(table_name);
   auto table_scan = std::make_shared<TableScan>(get_table, column_id, ScanType::OpEquals, 3000);
@@ -503,11 +527,19 @@ void analyze_all_tpcc_tables() {
 }
 
 int main() {
-  custom_benchmark_series();
+  //custom_benchmark_series();
   tpcc_benchmark_series();
   //dict_vs_filter_series();
   //analyze_all_tpcc_tables()
 
-
+/*
+  auto table_name = tpcc_load_or_generate("ORDER-LINE", 3, 100'000, false);
+  auto table = StorageManager::get().get_table(table_name);
+  create_quotient_filters(table, table->column_id_by_name("OL_I_ID"), 17, 4);
+  std::cout << "Actually prunable: " << analyze_skippable_chunks_actual<int>(table_name, "OL_I_ID", 3000)
+            << "/" << table->chunk_count() << std::endl;
+  std::cout << "Filter prunable: " << analyze_skippable_chunks_filter(table_name, "OL_I_ID", 3000)
+            << "/" << table->chunk_count() << std::endl;
   return 0;
+  */
 }
