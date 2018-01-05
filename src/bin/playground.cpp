@@ -395,6 +395,7 @@ void tpcc_benchmark_series() {
 
   std::cout << "------------------------" << std::endl;
   std::cout << "Benchmark configuration: " << std::endl;
+  std::cout << "sample_size:  " << sample_size << std::endl;
   std::cout << "data:           " << "tpcc" << std::endl;
   std::cout << "table_name:     " << tpcc_table_name << std::endl;
   std::cout << "column_name:    " << column_name << std::endl;
