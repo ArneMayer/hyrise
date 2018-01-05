@@ -255,7 +255,7 @@ void run_tpcc_benchmark(std::string table_name, std::string column_name, int war
 
   for (int i = 0; i < sample_size; i++) {
     auto benchmark = generate_tpcc_benchmark(table_name, column_name, warehouse_size, chunk_size, remainder_size,
-                                             dictionary, art, btree);
+                                             dictionary, btree, art);
     clear_cache();
     auto start = std::chrono::steady_clock::now();
     benchmark->execute();
@@ -375,7 +375,7 @@ void dict_vs_filter_series() {
 }
 
 void tpcc_benchmark_series() {
-  auto sample_size = 10;
+  auto sample_size = 100;
   auto tpcc_table_name = std::string("ORDER-LINE");
   auto column_name = std::string("OL_I_ID");
   auto warehouse_size = 10;
