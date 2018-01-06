@@ -222,14 +222,16 @@ std::string custom_load_or_generate(std::string type, int row_count, int chunk_s
                               + std::to_string(row_count) + "_"
                               + std::to_string(chunk_size) + "_"
                               + std::to_string(prunable_chunks) + "_"
-                              + std::to_string(selectivity_label) + "_"
-                              + std::to_string(compressed);
+                              + std::to_string(selectivity_label) + "_";
+  auto compressed_name = table_name + std::to_string(true);
+  auto uncompressed_name = table_name + std::to_string(false);
+  table_name = table_name + std::to_string(compressed);
   auto loaded = load_table(table_name);
   if (loaded) {
     return table_name;
   }
 
-  std::cout << " > Generating table " << table_name << "...";
+  std::cout << " > Generating table " << uncompressed_name << "...";
 
   std::shared_ptr<Table> table = nullptr;
   if (type == "string") {
@@ -238,14 +240,19 @@ std::string custom_load_or_generate(std::string type, int row_count, int chunk_s
     table = generate_table_int(chunk_size, row_count, prunable_chunks, selectivity);
   }
 
-  if (compressed) {
-    DictionaryCompression::compress_table(*table);
-  }
-
-  StorageManager::get().add_table(table_name, table);
-
+  // Save uncompressed
   std::cout << "OK!" << std::endl;
-  save_table(table, table_name);
+  save_table(table, uncompressed_name);
+
+  // Save compressed
+  std::cout << " > Generating table " << compressed_name << "...";
+  DictionaryCompression::compress_table(*table);
+  std::cout << "OK!" << std::endl;
+  save_table(table, compressed_name);
+
+  table = nullptr;
+
+  load_table(table_name);
 
   return table_name;
 }
@@ -253,23 +260,31 @@ std::string custom_load_or_generate(std::string type, int row_count, int chunk_s
 std::string tpcc_load_or_generate(std::string tpcc_table_name, int warehouse_size, int chunk_size, bool compressed) {
   auto table_name = tpcc_table_name + "_"
                             + std::to_string(warehouse_size) + "_"
-                            + std::to_string(chunk_size) + "_"
-                            + std::to_string(compressed);
+                            + std::to_string(chunk_size) + "_";
+  auto compressed_name = table_name + std::to_string(true);
+  auto uncompressed_name = table_name + std::to_string(false);
+  table_name = table_name + std::to_string(compressed);
+
   auto loaded = load_table(table_name);
   if (loaded) {
     return table_name;
   }
 
-  std::cout << " > Generating table " << table_name << "..." << std::flush;
+  // Save uncompressed
+  std::cout << " > Generating table " << uncompressed_name << "..." << std::flush;
   auto table = tpcc::TpccTableGenerator::generate_tpcc_table(tpcc_table_name, chunk_size, warehouse_size, false);
-
-  if (compressed) {
-    DictionaryCompression::compress_table(*table);
-  }
-
-  StorageManager::get().add_table(table_name, table);
   std::cout << "OK!" << std::endl;
-  save_table(table, table_name);
+  save_table(table, uncompressed_name);
+
+  // Save compressed
+  std::cout << " > Generating table " << compressed_name << "..." << std::flush;
+  DictionaryCompression::compress_table(*table);
+  std::cout << "OK!" << std::endl;
+  save_table(table, compressed_name);
+
+  table = nullptr;
+
+  load_table(table_name);
 
   return table_name;
 }

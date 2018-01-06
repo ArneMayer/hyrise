@@ -528,7 +528,7 @@ void analyze_all_tpcc_tables() {
 }
 
 int main() {
-  //custom_benchmark_series();
+  custom_benchmark_series();
   tpcc_benchmark_series();
   //dict_vs_filter_series();
   //analyze_all_tpcc_tables()
