@@ -77,6 +77,18 @@ typedef struct __attribute__ ((__packed__)) qfblock {
 #endif
 } qfblock;
 
+uint64_t memory_consumption(const quotient_filter& filter) {
+  uint64_t memory = 0;
+  //std::cout << "nblocks: " << filter.nblocks << std::endl;
+  //std::cout << "METADATA_WORDS_PER_BLOCK: " << METADATA_WORD8S_PER_BLOCK8 << std::endl;
+  //std::cout << "SLOTS_PER_BLOCK8: " << SLOTS_PER_BLOCK8 << std::endl;
+  memory += filter.nblocks * (sizeof(uint8_t) + 2 * sizeof(uint64_t*));
+  memory += filter.nblocks * sizeof(uint64_t) * 2 * METADATA_WORD8S_PER_BLOCK8;
+  memory += filter.nblocks * sizeof(uint8_t) * (SLOTS_PER_BLOCK8);
+
+  return memory;
+}
+
 static inline int popcnt(uint64_t val)
 {
 	asm("popcnt %[val], %[val]"

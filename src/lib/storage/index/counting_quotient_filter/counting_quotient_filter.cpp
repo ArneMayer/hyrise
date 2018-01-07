@@ -129,22 +129,17 @@ uint64_t CountingQuotientFilter<std::string>::_hash(std::string value) const {
 template <typename ElementType>
 uint64_t CountingQuotientFilter<ElementType>::memory_consumption() const {
   uint64_t memory_consumption = 0;
-
   if (_remainder_bits == 2) {
-    //auto& filter = _quotient_filter2.value();
-    //memory_consumption += sizeof(filter);
-    //memory_consumption += filter.nblocks * sizeof(gqf2::qfblock);
-
+    memory_consumption += gqf2::memory_consumption(_quotient_filter2.value());
   } else if (_remainder_bits == 4) {
-    //_quotient_filter4.value()
+    memory_consumption += gqf4::memory_consumption(_quotient_filter4.value());
   } else if (_remainder_bits == 8) {
-  //  _quotient_filter8.value()
+    memory_consumption += gqf8::memory_consumption(_quotient_filter8.value());
   } else if (_remainder_bits == 16) {
-  //  _quotient_filter16.value()
+    memory_consumption += gqf16::memory_consumption(_quotient_filter16.value());
   } else {
-  //  _quotient_filter32.value()
+    memory_consumption += gqf32::memory_consumption(_quotient_filter32.value());
   }
-
   return memory_consumption;
 }
 
