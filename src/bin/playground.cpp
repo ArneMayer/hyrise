@@ -264,7 +264,7 @@ void run_tpcc_benchmark(std::string table_name, std::string column_name, int war
     auto duration = std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::steady_clock::now() - start);
     sum_time += duration;
     if (size == -1) {
-      size = table->ma_memory_consumption(table->column_id_by_name(column_name));
+      size = table->ma_memory_consumption(table->column_id_by_name(column_name)) / 1000;
     }
     results_table->append({table_name, column_name, warehouse_size, chunk_size, remainder_size,
                       static_cast<int>(dictionary), static_cast<int>(btree), static_cast<int>(art),
@@ -303,7 +303,7 @@ void run_custom_benchmark(std::string type, int remainder_size, bool dictionary,
     auto duration = std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::steady_clock::now()-start);
     sum_time += duration;
     if (size == -1) {
-      size = table->ma_memory_consumption(ColumnID{0});
+      size = table->ma_memory_consumption(ColumnID{0}) / 1000;
     }
     results_table->append({type, row_count, chunk_size, pruning_rate, selectivity, remainder_size,
                            static_cast<int>(dictionary), static_cast<int>(btree), static_cast<int>(art),
