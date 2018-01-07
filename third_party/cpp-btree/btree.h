@@ -517,16 +517,6 @@ class btree_node {
   };
 
  public:
-   /*
-  uint64_t memory_consumption() const {
-    uint64_t memory = sizeof(root_fields);
-    for (size_t i = 0; i < kNodeValues + 1; i++) {
-      auto child = children[i];
-      if (child != nullptr) {
-        memory += child->memory_consumption();
-      }
-    }
-  }*/
 
   // Getter/setter for whether this is a leaf node or not. This value doesn't
   // change after the node is created.
