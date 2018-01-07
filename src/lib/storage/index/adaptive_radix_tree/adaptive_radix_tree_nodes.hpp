@@ -34,6 +34,7 @@ class ARTNode : private Noncopyable {
   virtual Iterator upper_bound(const AdaptiveRadixTreeIndex::BinaryComparable& key, size_t depth) const = 0;
   virtual Iterator begin() const = 0;
   virtual Iterator end() const = 0;
+  virtual uint64_t memory_consumption() const = 0;
 };
 
 /**
@@ -56,6 +57,7 @@ class ARTNode4 final : public ARTNode {
   Iterator upper_bound(const AdaptiveRadixTreeIndex::BinaryComparable& key, size_t depth) const override;
   Iterator begin() const override;
   Iterator end() const override;
+  virtual uint64_t memory_consumption() const override;
 
  private:
   /**
@@ -90,6 +92,7 @@ class ARTNode16 final : public ARTNode {
   Iterator upper_bound(const AdaptiveRadixTreeIndex::BinaryComparable& key, size_t depth) const override;
   Iterator begin() const override;
   Iterator end() const override;
+  virtual uint64_t memory_consumption() const override;
 
  private:
   Iterator _delegate_to_child(
@@ -122,6 +125,7 @@ class ARTNode48 final : public ARTNode {
   Iterator upper_bound(const AdaptiveRadixTreeIndex::BinaryComparable& key, size_t depth) const override;
   Iterator begin() const override;
   Iterator end() const override;
+  virtual uint64_t memory_consumption() const override;
 
  private:
   Iterator _delegate_to_child(
@@ -145,6 +149,7 @@ class ARTNode256 final : public ARTNode {
   Iterator upper_bound(const AdaptiveRadixTreeIndex::BinaryComparable& key, size_t depth) const override;
   Iterator begin() const override;
   Iterator end() const override;
+  virtual uint64_t memory_consumption() const override;
 
  private:
   Iterator _delegate_to_child(
@@ -190,6 +195,7 @@ class Leaf final : public ARTNode {
   Iterator upper_bound(const AdaptiveRadixTreeIndex::BinaryComparable&, size_t) const override;
   Iterator begin() const override;
   Iterator end() const override;
+  virtual uint64_t memory_consumption() const override;
 
  private:
   Iterator _begin;

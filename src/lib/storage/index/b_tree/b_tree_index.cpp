@@ -48,7 +48,9 @@ BaseBTreeIndex::Iterator BTreeIndex<DataType>::upper_bound(DataType value) const
 
 template <typename DataType>
 uint64_t BTreeIndex<DataType>::memory_consumption() const {
-  return 0;
+  return sizeof(std::vector<RowID>) +
+         sizeof(RowID) * _row_ids.size() +
+         _btree.bytes_used();
 }
 
 template <typename DataType>

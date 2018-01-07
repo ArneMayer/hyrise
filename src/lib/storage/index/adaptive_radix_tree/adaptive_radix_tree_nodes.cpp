@@ -98,6 +98,16 @@ BaseIndex::Iterator ARTNode4::end() const {
   return {};
 }
 
+uint64_t ARTNode4::memory_consumption() const {
+  uint64_t memory = sizeof(_partial_keys) + sizeof(_children);
+  for (auto child : _children) {
+    if (child != nullptr) {
+      memory += child->memory_consumption();
+    }
+  }
+  return memory;
+}
+
 /**
  *
  * ARTNode16 has two arrays of length 16, very similar to ARTNode4:
@@ -196,6 +206,16 @@ BaseIndex::Iterator ARTNode16::end() const {
     // there exists a child with partial_key 255u
     return _children[partial_key_pos]->end();
   }
+}
+
+uint64_t ARTNode16::memory_consumption() const {
+  uint64_t memory = sizeof(_partial_keys) + sizeof(_children);
+  for (auto child : _children) {
+    if (child != nullptr) {
+      memory += child->memory_consumption();
+    }
+  }
+  return memory;
 }
 
 /**
@@ -299,6 +319,16 @@ BaseIndex::Iterator ARTNode48::end() const {
   return {};
 }
 
+uint64_t ARTNode48::memory_consumption() const {
+  uint64_t memory = sizeof(_index_to_child) + sizeof(_children);
+  for (auto child : _children) {
+    if (child != nullptr) {
+      memory += child->memory_consumption();
+    }
+  }
+  return memory;
+}
+
 /**
  *
  * ARTNode256 has only one array: _children; which stores pointers to the children and can be directly addressed.
@@ -386,6 +416,16 @@ BaseIndex::Iterator ARTNode256::end() const {
   return {};
 }
 
+uint64_t ARTNode256::memory_consumption() const {
+  uint64_t memory = sizeof(_children);
+  for (auto child : _children) {
+    if (child != nullptr) {
+      memory += child->memory_consumption();
+    }
+  }
+  return memory;
+}
+
 Leaf::Leaf(BaseIndex::Iterator& lower, BaseIndex::Iterator& upper) : _begin(lower), _end(upper) {}
 
 BaseIndex::Iterator Leaf::lower_bound(const AdaptiveRadixTreeIndex::BinaryComparable&, size_t) const { return _begin; }
@@ -395,5 +435,9 @@ BaseIndex::Iterator Leaf::upper_bound(const AdaptiveRadixTreeIndex::BinaryCompar
 BaseIndex::Iterator Leaf::begin() const { return _begin; }
 
 BaseIndex::Iterator Leaf::end() const { return _end; }
+
+uint64_t Leaf::memory_consumption() const {
+  return sizeof(_begin) + sizeof(_end);
+}
 
 }  // namespace opossum

@@ -147,7 +147,13 @@ bool operator==(const AdaptiveRadixTreeIndex::BinaryComparable& left,
 }
 
 uint64_t AdaptiveRadixTreeIndex::memory_consumption() const {
-  return 0;
+  uint64_t memory = 0;
+  memory += sizeof(std::vector<ChunkOffset>) + sizeof(std::shared_ptr<ARTNode>);
+  memory += _chunk_offsets.size() * sizeof(ChunkOffset);
+  if (_root != nullptr) {
+    memory += _root->memory_consumption();
+  }
+  return memory;
 }
 
 }  // namespace opossum

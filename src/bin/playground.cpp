@@ -173,10 +173,9 @@ void create_quotient_filters(std::shared_ptr<Table> table, ColumnID column_id, u
   }
 }
 
-std::pair<std::shared_ptr<AbstractOperator>, uint64_t> generate_custom_benchmark(std::string type,
-                                                uint8_t remainder_size, bool compressed, bool btree, bool art, int rows,
-                                                int chunk_size, double pruning_rate, double selectivity) {
-
+std::pair<std::shared_ptr<AbstractOperator>, std::shared_ptr<const Table>> generate_custom_benchmark(
+              std::string type, uint8_t remainder_size, bool compressed, bool btree, bool art, int rows, int chunk_size,
+                                                                         double pruning_rate, double selectivity) {
   auto chunk_count = static_cast<int>(std::ceil(rows / static_cast<double>(chunk_size)));
   auto prunable_chunks = static_cast<int>(chunk_count * pruning_rate);
   auto quotient_size = static_cast<int>(std::ceil(std::log(chunk_size) / std::log(2)));
@@ -209,12 +208,12 @@ std::pair<std::shared_ptr<AbstractOperator>, uint64_t> generate_custom_benchmark
   //print_table_layout(table_name);
   //analyze_value_interval<int>(table_name, "column0");
   //std::cout << analyze_skippable_chunks(table_name, "column0", 3000) << " chunks skippable" << std::endl;
-  return std::make_pair(table_scan, table->ma_memory_consumption(ColumnID{0}));
+  return std::make_pair(table_scan, table);
 }
 
-std::pair<std::shared_ptr<AbstractOperator>, uint64_t> generate_tpcc_benchmark(std::string tpcc_table_name,
-                                                        std::string column_name, int warehouse_size, int chunk_size,
-                                                        uint8_t remainder_size, bool dictionary, bool btree, bool art) {
+std::pair<std::shared_ptr<AbstractOperator>, std::shared_ptr<const Table>> generate_tpcc_benchmark(
+      std::string tpcc_table_name, std::string column_name, int warehouse_size, int chunk_size, uint8_t remainder_size,
+                                                                                bool dictionary, bool btree, bool art) {
   auto table_name = tpcc_load_or_generate(tpcc_table_name, warehouse_size, chunk_size, dictionary);
   auto table = StorageManager::get().get_table(table_name);
   auto column_id = table->column_id_by_name(column_name);
@@ -233,7 +232,7 @@ std::pair<std::shared_ptr<AbstractOperator>, uint64_t> generate_tpcc_benchmark(s
   auto get_table = std::make_shared<GetTable>(table_name);
   auto table_scan = std::make_shared<TableScan>(get_table, column_id, ScanType::OpEquals, 3000);
   get_table->execute();
-  return std::make_pair(table_scan, table->ma_memory_consumption(column_id));
+  return std::make_pair(table_scan, table);
 }
 
 void serialize_results_csv(std::string benchmark_name, std::shared_ptr<Table> table) {
@@ -253,22 +252,23 @@ void run_tpcc_benchmark(std::string table_name, std::string column_name, int war
                         int remainder_size, bool dictionary, bool btree, bool art, int sample_size,
                         std::shared_ptr<Table> results_table) {
   auto sum_time = std::chrono::microseconds(0);
-
-  uint64_t size = 0;
+  int size = -1;
   for (int i = 0; i < sample_size; i++) {
     auto benchmark = generate_tpcc_benchmark(table_name, column_name, warehouse_size, chunk_size, remainder_size,
                                              dictionary, btree, art);
     auto query = benchmark.first;
-    size = benchmark.second;
+    auto table = benchmark.second;
     clear_cache();
     auto start = std::chrono::steady_clock::now();
     query->execute();
     auto duration = std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::steady_clock::now() - start);
     sum_time += duration;
-
+    if (size == -1) {
+      size = table->ma_memory_consumption(table->column_id_by_name(column_name));
+    }
     results_table->append({table_name, column_name, warehouse_size, chunk_size, remainder_size,
-                      static_cast<int>(dictionary), static_cast<int>(btree), static_cast<int>(art), static_cast<int>(size),
-                      duration.count()});
+                      static_cast<int>(dictionary), static_cast<int>(btree), static_cast<int>(art),
+                      static_cast<int>(size), duration.count()});
   }
 
 
@@ -291,20 +291,23 @@ void run_custom_benchmark(std::string type, int remainder_size, bool dictionary,
                    std::shared_ptr<Table> results_table) {
   auto sum_time = std::chrono::microseconds(0);
 
-  uint64_t size = 0;
+  int size = -1;
   for (int i = 0; i < sample_size; i++) {
     auto benchmark = generate_custom_benchmark(type, remainder_size, dictionary, btree, art, row_count, chunk_size,
                                         pruning_rate, selectivity);
     auto query = benchmark.first;
-    size = benchmark.second;
+    auto table = benchmark.second;
     clear_cache();
     auto start = std::chrono::steady_clock::now();
     query->execute();
     auto duration = std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::steady_clock::now()-start);
     sum_time += duration;
+    if (size == -1) {
+      size = table->ma_memory_consumption(ColumnID{0});
+    }
     results_table->append({type, row_count, chunk_size, pruning_rate, selectivity, remainder_size,
-                           static_cast<int>(dictionary), static_cast<int>(btree), static_cast<int>(art), static_cast<int>(size),
-                           duration.count()});
+                           static_cast<int>(dictionary), static_cast<int>(btree), static_cast<int>(art),
+                           static_cast<int>(size), duration.count()});
   }
 
   auto avg_time = sum_time / sample_size;
@@ -544,7 +547,6 @@ struct mystruct {
 };
 
 int main() {
-  std::cout << "sizeof(mystruct)" << sizeof(mystruct) << std::endl;
   custom_benchmark_series();
   tpcc_benchmark_series();
   //dict_vs_filter_series();
