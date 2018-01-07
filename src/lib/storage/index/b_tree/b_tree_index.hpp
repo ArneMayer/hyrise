@@ -22,6 +22,7 @@ class BTreeIndex : public BaseBTreeIndex {
 
   virtual Iterator lower_bound_all_type(AllTypeVariant value) const;
   virtual Iterator upper_bound_all_type(AllTypeVariant value) const;
+  virtual uint64_t memory_consumption() const;
 
   Iterator lower_bound(DataType value) const;
   Iterator upper_bound(DataType value) const;

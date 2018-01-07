@@ -19,6 +19,7 @@ class BaseBTreeIndex : private Noncopyable {
 
   virtual Iterator lower_bound_all_type(AllTypeVariant value) const = 0;
   virtual Iterator upper_bound_all_type(AllTypeVariant value) const = 0;
+  virtual uint64_t memory_consumption() const = 0;
 
  protected:
   const Table& _table;

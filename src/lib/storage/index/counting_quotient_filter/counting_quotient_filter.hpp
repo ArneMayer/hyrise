@@ -31,8 +31,8 @@ class CountingQuotientFilter : public BaseFilter {
   void insert(ElementType value);
   void populate(std::shared_ptr<const BaseColumn> column) override;
   uint64_t count(ElementType value) const;
-  uint64_t count_all_type(AllTypeVariant value) const;
-  uint64_t memory_consumption() const;
+  uint64_t count_all_type(AllTypeVariant value) const final;
+  uint64_t memory_consumption() const final;
 
  private:
   std::optional<gqf2::quotient_filter> _quotient_filter2;

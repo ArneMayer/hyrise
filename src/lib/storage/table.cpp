@@ -12,6 +12,7 @@
 #include "types.hpp"
 #include "utils/assert.hpp"
 #include "value_column.hpp"
+#include "index/adaptive_radix_tree/adaptive_radix_tree_index.hpp"
 
 namespace opossum {
 
@@ -256,6 +257,39 @@ std::shared_ptr<const BaseBTreeIndex> Table::get_btree_index(ColumnID column_id)
   } else {
     return result->second;
   }
+}
+
+uint64_t Table::ma_memory_consumption(ColumnID column_id) const {
+  auto memory_consumption = 0;
+  auto btree = get_btree_index(column_id);
+
+  if (btree != nullptr) {
+    memory_consumption += btree->memory_consumption();
+  }
+
+  for (auto chunk_id = ChunkID{0}; chunk_id < chunk_count(); chunk_id++) {
+    auto& chunk = get_chunk(chunk_id);
+
+    // Filter
+    auto filter = chunk.get_filter(column_id);
+    if (filter != nullptr) {
+      memory_consumption += filter->memory_consumption();
+    }
+
+    // ART
+    auto art = std::dynamic_pointer_cast<AdaptiveRadixTreeIndex>(chunk.get_art_index(column_id));
+    if (art != nullptr) {
+      memory_consumption += art->memory_consumption();
+    }
+
+    // Diciontary
+    auto dictionary_column = std::dynamic_pointer_cast<const BaseDictionaryColumn>(chunk.get_column(column_id));
+    if (dictionary_column != nullptr) {
+      memory_consumption += dictionary_column->dictionary_memory_consumption();
+    }
+  }
+
+  return memory_consumption;
 }
 
 }  // namespace opossum

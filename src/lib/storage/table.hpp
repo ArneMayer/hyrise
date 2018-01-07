@@ -156,6 +156,8 @@ class Table : private Noncopyable {
   void populate_art_index(ColumnID column_id);
   void delete_art_index(ColumnID column_id);
 
+  uint64_t ma_memory_consumption(ColumnID column_id) const;
+
  protected:
   const uint32_t _max_chunk_size;
   std::vector<Chunk> _chunks;

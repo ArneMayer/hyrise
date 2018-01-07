@@ -47,6 +47,11 @@ BaseBTreeIndex::Iterator BTreeIndex<DataType>::upper_bound(DataType value) const
 }
 
 template <typename DataType>
+uint64_t BTreeIndex<DataType>::memory_consumption() const {
+  return 0;
+}
+
+template <typename DataType>
 void BTreeIndex<DataType>::_bulk_insert(const Table& table, const ColumnID column_id) {
   std::vector<std::pair<RowID, DataType>> values;
 

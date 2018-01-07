@@ -45,6 +45,8 @@ class AdaptiveRadixTreeIndex : public BaseIndex {
 
   virtual ~AdaptiveRadixTreeIndex() = default;
 
+  virtual uint64_t memory_consumption() const;
+
   /**
    *All keys in the ART have to be binary comparable in the sense that if the most significant differing bit between
    *BinaryComparable a and BinaryComparable b is greater for a <=> a > b.

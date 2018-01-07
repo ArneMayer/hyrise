@@ -118,6 +118,7 @@ class BaseIndex : private Noncopyable {
   virtual Iterator _cbegin() const = 0;
   virtual Iterator _cend() const = 0;
   virtual std::vector<std::shared_ptr<const BaseColumn>> _get_index_columns() const = 0;
+  virtual uint64_t memory_consumption() const = 0;
 
  private:
   const ColumnIndexType _type;

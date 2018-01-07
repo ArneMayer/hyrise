@@ -146,4 +146,8 @@ bool operator==(const AdaptiveRadixTreeIndex::BinaryComparable& left,
   return true;
 }
 
+uint64_t AdaptiveRadixTreeIndex::memory_consumption() const {
+  return 0;
+}
+
 }  // namespace opossum
