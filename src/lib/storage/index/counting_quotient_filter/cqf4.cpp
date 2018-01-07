@@ -82,8 +82,8 @@ uint64_t memory_consumption(const quotient_filter& filter) {
   //std::cout << "nblocks: " << filter.nblocks << std::endl;
   //std::cout << "METADATA_WORDS_PER_BLOCK: " << METADATA_WORD4S_PER_BLOCK4 << std::endl;
   //std::cout << "SLOTS_PER_BLOCK4: " << SLOTS_PER_BLOCK4 << std::endl;
-  memory += filter.nblocks * (sizeof(uint8_t) + 2 * sizeof(uint64_t*));
-  memory += filter.nblocks * sizeof(uint64_t) * 2 * METADATA_WORD4S_PER_BLOCK4;
+  memory += filter.nblocks * sizeof(uint8_t); // offset
+  memory += filter.nblocks * sizeof(uint64_t) * 2 * METADATA_WORD4S_PER_BLOCK4; // occupieds and runends
   memory += filter.nblocks * sizeof(uint8_t) * (SLOTS_PER_BLOCK4 * BITS_PER_SLOT4 / 8);
 
   return memory;

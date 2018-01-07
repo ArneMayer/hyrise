@@ -539,7 +539,12 @@ void analyze_all_tpcc_tables() {
   }
 }
 
+struct mystruct {
+  uint8_t array[100];
+};
+
 int main() {
+  std::cout << "sizeof(mystruct)" << sizeof(mystruct) << std::endl;
   custom_benchmark_series();
   tpcc_benchmark_series();
   //dict_vs_filter_series();
