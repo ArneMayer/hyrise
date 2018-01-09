@@ -13,11 +13,16 @@
 #include "operators/table_scan.hpp"
 #include "operators/export_csv.hpp"
 #include "operators/table_wrapper.hpp"
+#include "operators/print.hpp"
 #include "storage/storage_manager.hpp"
 #include "scheduler/abstract_task.hpp"
 #include "scheduler/current_scheduler.hpp"
 #include "resolve_type.hpp"
 #include "storage/iterables/create_iterable_from_column.hpp"
+
+#include <stdlib.h>
+#include <pwd.h>
+#include <stdio.h>
 
 using namespace opossum;
 
@@ -235,12 +240,23 @@ std::pair<std::shared_ptr<AbstractOperator>, std::shared_ptr<const Table>> gener
   return std::make_pair(table_scan, table);
 }
 
+/**
+* Gets the linux user name of the current user.
+**/
+std::string getUserName()
+{
+  uid_t uid = geteuid();
+  struct passwd *pw = getpwuid(uid);
+  if (pw) {
+    return std::string(pw->pw_name);
+  }
+
+  return "";
+}
+
 void serialize_results_csv(std::string benchmark_name, std::shared_ptr<Table> table) {
   std::cout << "Writing results to csv...";
-  //auto user_name = std::string("arne");
-  //auto user_name = std::string("osboxes");
-  auto user_name = std::string("Arne.Mayer");
-  auto file_name = "/home/" + user_name + "/dev/MasterarbeitJupyter/" + benchmark_name + "_results.csv";
+  auto file_name = "/home/" + getUserName() + "/dev/MasterarbeitJupyter/" + benchmark_name + "_results.csv";
   auto table_wrapper = std::make_shared<TableWrapper>(table);
   table_wrapper->execute();
   auto export_csv = std::make_shared<ExportCsv>(table_wrapper, file_name);
@@ -269,6 +285,8 @@ void run_tpcc_benchmark(std::string table_name, std::string column_name, int war
     results_table->append({table_name, column_name, warehouse_size, chunk_size, remainder_size,
                       static_cast<int>(dictionary), static_cast<int>(btree), static_cast<int>(art),
                       static_cast<int>(size), duration.count()});
+    auto print = std::make_shared<Print>(query);
+    print->execute();
   }
 
 
@@ -388,7 +406,7 @@ void dict_vs_filter_series() {
 }
 
 void tpcc_benchmark_series() {
-  auto sample_size = 5;
+  auto sample_size = 3;
   auto tpcc_table_name = std::string("ORDER-LINE");
   auto column_name = std::string("OL_I_ID");
   auto warehouse_size = 10;
@@ -442,7 +460,7 @@ void tpcc_benchmark_series() {
 }
 
 void custom_benchmark_series() {
-  auto sample_size = 5;
+  auto sample_size = 3;
   auto row_counts = {10'000'000};
   auto remainder_sizes = {0, 2, 4, 8};
   auto chunk_sizes = {1'000'000};
@@ -542,14 +560,52 @@ void analyze_all_tpcc_tables() {
   }
 }
 
-struct mystruct {
-  uint8_t array[100];
-};
+void filter_cardinality_estimation_series() {
+  int sample_size = 100'000;
+  int distinct_values = 3000;
+  double variance = 500.0;
+  auto remainder_sizes = {2, 4, 8};
+
+  auto results_table = std::make_shared<Table>();
+  results_table->add_column("sample_size", DataType::Int, false);
+  results_table->add_column("distinct_values", DataType::Int, false);
+  results_table->add_column("variance", DataType::Double, false);
+  results_table->add_column("remainder_size", DataType::Int, false);
+  results_table->add_column("value", DataType::Int, false);
+  results_table->add_column("actual_count", DataType::Int, false);
+  results_table->add_column("filter_count", DataType::Int, false);
+
+  auto distribution = generate_normal_distribution(sample_size, distinct_values, variance);
+
+  for (auto remainder_size : remainder_sizes) {
+    auto over_estimation = 0;
+    int quotient_size = static_cast<int>(std::ceil(std::log2(sample_size)));
+    auto filter = CountingQuotientFilter<int>(quotient_size, remainder_size);
+    for (int i = 0; i < distinct_values; i++) {
+      filter.insert(i, distribution[i]);
+    }
+
+    for (int i = 0; i < distinct_values; i++) {
+      auto actual_count = static_cast<int>(distribution[i]);
+      auto filter_count = static_cast<int>(filter.count(i));
+      results_table->append({sample_size, distinct_values, variance, remainder_size, i, actual_count, filter_count});
+      if (filter_count > actual_count) {
+        std::cout << i << ": " << actual_count << ", "<< filter_count << std::endl;
+        over_estimation += filter_count - actual_count;
+      }
+    }
+    std::cout << "total over estimation: " << over_estimation << std::endl;
+  }
+
+  serialize_results_csv("filter_cardinality_estimation", results_table);
+}
 
 int main() {
-  custom_benchmark_series();
-  tpcc_benchmark_series();
+  //custom_benchmark_series();
+  //tpcc_benchmark_series();
   //dict_vs_filter_series();
+  filter_cardinality_estimation_series();
+
   //analyze_all_tpcc_tables()
 
 /*

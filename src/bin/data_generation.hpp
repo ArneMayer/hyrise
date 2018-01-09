@@ -20,6 +20,8 @@
 
 using namespace opossum;
 
+const double PI = 3.141592653589793238463;
+
 int random_int(int min, int max) {
   DebugAssert(min <= max, "min value must be <= max value");
 
@@ -287,4 +289,20 @@ std::string tpcc_load_or_generate(std::string tpcc_table_name, int warehouse_siz
   load_table(table_name);
 
   return table_name;
+}
+
+double normal(double expectation, double variance, double x) {
+  auto variance_sq = std::pow(variance, 2);
+  return 1.0 / std::sqrt(2 * PI * variance_sq) * std::exp(-std::pow(x - expectation, 2) / (2 * variance_sq));
+}
+
+std::vector<uint> generate_normal_distribution(int sample_size, int distinct_values, double variance) {
+  auto distribution = std::vector<uint>(distinct_values);
+  double expectation = distinct_values / 2.0;
+  for (int i = 0; i < distinct_values; i++) {
+    auto value = normal(expectation, variance, static_cast<double>(i)) * sample_size;
+    distribution[i] = static_cast<int>(value);
+  }
+
+  return distribution;
 }

@@ -284,7 +284,7 @@ uint64_t Table::ma_memory_consumption(ColumnID column_id) const {
 
     // Diciontary
     auto dictionary_column = std::dynamic_pointer_cast<const BaseDictionaryColumn>(chunk.get_column(column_id));
-    if (dictionary_column != nullptr) {
+    if (dictionary_column != nullptr && art == nullptr) {
       memory_consumption += dictionary_column->dictionary_memory_consumption();
     }
   }
