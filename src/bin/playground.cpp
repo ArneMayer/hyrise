@@ -406,7 +406,7 @@ void dict_vs_filter_series() {
 }
 
 void tpcc_benchmark_series() {
-  auto sample_size = 3;
+  auto sample_size = 100;
   auto tpcc_table_name = std::string("ORDER-LINE");
   auto column_name = std::string("OL_I_ID");
   auto warehouse_size = 10;
@@ -460,7 +460,7 @@ void tpcc_benchmark_series() {
 }
 
 void custom_benchmark_series() {
-  auto sample_size = 3;
+  auto sample_size = 100;
   auto row_counts = {10'000'000};
   auto remainder_sizes = {0, 2, 4, 8};
   auto chunk_sizes = {1'000'000};
@@ -602,9 +602,9 @@ void filter_cardinality_estimation_series() {
 
 int main() {
   //custom_benchmark_series();
-  //tpcc_benchmark_series();
-  //dict_vs_filter_series();
-  filter_cardinality_estimation_series();
+  tpcc_benchmark_series();
+  dict_vs_filter_series();
+  //filter_cardinality_estimation_series();
 
   //analyze_all_tpcc_tables()
 
