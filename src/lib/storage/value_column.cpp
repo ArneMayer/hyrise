@@ -199,6 +199,21 @@ std::shared_ptr<BaseColumn> ValueColumn<T>::copy_using_allocator(const Polymorph
   }
 }
 
+template <typename T>
+uint64_t ValueColumn<T>::memory_consumption() const {
+  return _values.size() * sizeof(T);
+}
+
+template <>
+uint64_t ValueColumn<std::string>::memory_consumption() const {
+  uint64_t memory = 0;
+  for (size_t i = 0; i < _values.size(); i++) {
+    memory += sizeof(std::string);
+    memory += _values[i].size();
+  }
+  return memory;
+}
+
 EXPLICITLY_INSTANTIATE_DATA_TYPES(ValueColumn);
 
 }  // namespace opossum

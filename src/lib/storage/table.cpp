@@ -261,8 +261,9 @@ std::shared_ptr<const BaseBTreeIndex> Table::get_btree_index(ColumnID column_id)
 
 uint64_t Table::ma_memory_consumption(ColumnID column_id) const {
   auto memory_consumption = 0;
-  auto btree = get_btree_index(column_id);
 
+  // B-Tree
+  auto btree = get_btree_index(column_id);
   if (btree != nullptr) {
     memory_consumption += btree->memory_consumption();
   }
@@ -282,10 +283,16 @@ uint64_t Table::ma_memory_consumption(ColumnID column_id) const {
       memory_consumption += art->memory_consumption();
     }
 
-    // Diciontary
+    // Diciontary Column
     auto dictionary_column = std::dynamic_pointer_cast<const BaseDictionaryColumn>(chunk.get_column(column_id));
-    if (dictionary_column != nullptr && art == nullptr) {
-      memory_consumption += dictionary_column->dictionary_memory_consumption();
+    if (dictionary_column != nullptr) {
+      memory_consumption += dictionary_column->memory_consumption();
+    }
+
+    // Value Column
+    auto value_column = std::dynamic_pointer_cast<const BaseValueColumn>(chunk.get_column(column_id));
+    if (value_column != nullptr) {
+      memory_consumption += value_column->memory_consumption();
     }
   }
 

@@ -23,6 +23,6 @@ class BaseDictionaryColumn : public BaseColumn {
   virtual ValueID upper_bound(const AllTypeVariant& value) const = 0;
   virtual size_t unique_values_count() const = 0;
   virtual std::shared_ptr<const BaseAttributeVector> attribute_vector() const = 0;
-  virtual uint64_t dictionary_memory_consumption() const = 0;
+  virtual uint64_t memory_consumption() const = 0;
 };
 }  // namespace opossum

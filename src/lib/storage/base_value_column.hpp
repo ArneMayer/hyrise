@@ -21,5 +21,6 @@ class BaseValueColumn : public BaseColumn {
    */
   virtual const pmr_concurrent_vector<bool>& null_values() const = 0;
   virtual pmr_concurrent_vector<bool>& null_values() = 0;
+  virtual uint64_t memory_consumption() const = 0;
 };
 }  // namespace opossum

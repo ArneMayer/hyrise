@@ -86,7 +86,7 @@ class DictionaryColumn : public BaseDictionaryColumn {
   // Copies a DictionaryColumn using a new allocator. This is useful for placing it on a new NUMA node.
   std::shared_ptr<BaseColumn> copy_using_allocator(const PolymorphicAllocator<size_t>& alloc) const override;
 
-  uint64_t dictionary_memory_consumption() const final;
+  uint64_t memory_consumption() const final;
 
  protected:
   std::shared_ptr<pmr_vector<T>> _dictionary;

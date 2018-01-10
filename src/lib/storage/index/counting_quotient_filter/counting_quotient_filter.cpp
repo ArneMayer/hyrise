@@ -140,6 +140,7 @@ uint64_t CountingQuotientFilter<ElementType>::memory_consumption() const {
   } else {
     memory_consumption += gqf32::memory_consumption(_quotient_filter32.value());
   }
+  //std::cout << "Filter: " << memory_consumption << " bytes" << std::endl;
   return memory_consumption;
 }
 

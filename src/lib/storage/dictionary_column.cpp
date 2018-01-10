@@ -177,19 +177,20 @@ std::shared_ptr<BaseColumn> DictionaryColumn<T>::copy_using_allocator(const Poly
 }
 
 template <>
-uint64_t DictionaryColumn<std::string>::dictionary_memory_consumption() const {
+uint64_t DictionaryColumn<std::string>::memory_consumption() const {
   uint64_t memory = 0;
   for (size_t i = 0; i < _dictionary->size(); i++) {
     memory += sizeof(std::string);
-    memory += (*_dictionary)[i].length() * sizeof(char);
+    memory += (*_dictionary)[i].size();
   }
+  memory += _attribute_vector->size() * _attribute_vector->width();
 
   return memory;
 }
 
 template <typename T>
-uint64_t DictionaryColumn<T>::dictionary_memory_consumption() const {
-  return _dictionary->size() * sizeof(T);
+uint64_t DictionaryColumn<T>::memory_consumption() const {
+  return _dictionary->size() * sizeof(T) + _attribute_vector->size() * _attribute_vector->width();
 }
 
 EXPLICITLY_INSTANTIATE_DATA_TYPES(DictionaryColumn);

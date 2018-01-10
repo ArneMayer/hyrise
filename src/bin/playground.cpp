@@ -269,6 +269,7 @@ void run_tpcc_benchmark(std::string table_name, std::string column_name, int war
                         std::shared_ptr<Table> results_table) {
   auto sum_time = std::chrono::microseconds(0);
   int size = -1;
+  uint64_t row_count = 0;
   for (int i = 0; i < sample_size; i++) {
     auto benchmark = generate_tpcc_benchmark(table_name, column_name, warehouse_size, chunk_size, remainder_size,
                                              dictionary, btree, art);
@@ -282,18 +283,18 @@ void run_tpcc_benchmark(std::string table_name, std::string column_name, int war
     if (size == -1) {
       size = table->ma_memory_consumption(table->column_id_by_name(column_name)) / 1000;
     }
-    results_table->append({table_name, column_name, warehouse_size, chunk_size, remainder_size,
+    row_count = table->row_count();
+    results_table->append({table_name, column_name, static_cast<int>(row_count), chunk_size, remainder_size,
                       static_cast<int>(dictionary), static_cast<int>(btree), static_cast<int>(art),
-                      static_cast<int>(size), duration.count()});
-    auto print = std::make_shared<Print>(query);
-    print->execute();
+                      size, duration.count()});
+    //auto print = std::make_shared<Print>(query);
+    //print->execute();
   }
-
 
   auto avg_time = sum_time / sample_size;
   std::cout << "table: " << table_name
             << ", column: " << column_name
-            << ", warehouse_size: " << warehouse_size
+            << ", row_count: " << row_count
             << ", chunk_size: " << chunk_size
             << ", remainder_size: " << remainder_size
             << ", dictionary: " << dictionary
@@ -406,7 +407,7 @@ void dict_vs_filter_series() {
 }
 
 void tpcc_benchmark_series() {
-  auto sample_size = 100;
+  auto sample_size = 2;
   auto tpcc_table_name = std::string("ORDER-LINE");
   auto column_name = std::string("OL_I_ID");
   auto warehouse_size = 10;
@@ -416,7 +417,7 @@ void tpcc_benchmark_series() {
   auto results_table = std::make_shared<Table>();
   results_table->add_column("table_name", DataType::String, false);
   results_table->add_column("column_name", DataType::String, false);
-  results_table->add_column("warehouse_size", DataType::Int, false);
+  results_table->add_column("row_count", DataType::Int, false);
   results_table->add_column("chunk_size", DataType::Int, false);
   results_table->add_column("remainder_size", DataType::Int, false);
   results_table->add_column("dictionary", DataType::Int, false);
@@ -460,7 +461,7 @@ void tpcc_benchmark_series() {
 }
 
 void custom_benchmark_series() {
-  auto sample_size = 100;
+  auto sample_size = 2;
   auto row_counts = {10'000'000};
   auto remainder_sizes = {0, 2, 4, 8};
   auto chunk_sizes = {1'000'000};
@@ -564,37 +565,55 @@ void filter_cardinality_estimation_series() {
   int sample_size = 100'000;
   int distinct_values = 3000;
   double variance = 500.0;
-  auto remainder_sizes = {2, 4, 8};
+  auto remainder_sizes = {2, 4, 8, 16, 32};
 
   auto results_table = std::make_shared<Table>();
   results_table->add_column("sample_size", DataType::Int, false);
   results_table->add_column("distinct_values", DataType::Int, false);
   results_table->add_column("variance", DataType::Double, false);
+  results_table->add_column("quotient_size", DataType::Int, false);
   results_table->add_column("remainder_size", DataType::Int, false);
   results_table->add_column("value", DataType::Int, false);
   results_table->add_column("actual_count", DataType::Int, false);
   results_table->add_column("filter_count", DataType::Int, false);
 
   auto distribution = generate_normal_distribution(sample_size, distinct_values, variance);
+  int quotient_size = static_cast<int>(std::ceil(std::log2(sample_size))) - 2;
+  std::cout << "quotient_size: " << quotient_size << std::endl;
+  std::cout << "number_of_slots: " << std::pow(2, quotient_size) << std::endl;
+  std::cout << std::endl;
 
   for (auto remainder_size : remainder_sizes) {
-    auto over_estimation = 0;
-    int quotient_size = static_cast<int>(std::ceil(std::log2(sample_size)));
+    std::cout << "remainder_size: " << remainder_size << std::endl;
     auto filter = CountingQuotientFilter<int>(quotient_size, remainder_size);
     for (int i = 0; i < distinct_values; i++) {
       filter.insert(i, distribution[i]);
     }
 
+    auto over_estimation = 0;
+    auto under_estimation = 0;
+    auto false_negatives = 0;
     for (int i = 0; i < distinct_values; i++) {
       auto actual_count = static_cast<int>(distribution[i]);
       auto filter_count = static_cast<int>(filter.count(i));
-      results_table->append({sample_size, distinct_values, variance, remainder_size, i, actual_count, filter_count});
+      results_table->append({sample_size, distinct_values, variance, quotient_size, remainder_size, i, actual_count, filter_count});
       if (filter_count > actual_count) {
-        std::cout << i << ": " << actual_count << ", "<< filter_count << std::endl;
+        //std::cout << i << ": " << actual_count << ", "<< filter_count << std::endl;
+        //std::cout << (filter_count - actual_count) << ", ";
         over_estimation += filter_count - actual_count;
       }
+      if (filter_count < actual_count) {
+        under_estimation += actual_count - filter_count;
+      }
+      if (filter_count == 0 && actual_count > 0) {
+        false_negatives++;
+      }
     }
+    //std::cout << std::endl;
     std::cout << "total over estimation: " << over_estimation << std::endl;
+    std::cout << "total under estimation: " << under_estimation << std::endl;
+    std::cout << "false negatives: " << false_negatives << std::endl;
+    std::cout << std::endl;
   }
 
   serialize_results_csv("filter_cardinality_estimation", results_table);
@@ -602,9 +621,9 @@ void filter_cardinality_estimation_series() {
 
 int main() {
   //custom_benchmark_series();
-  tpcc_benchmark_series();
-  dict_vs_filter_series();
-  //filter_cardinality_estimation_series();
+  //tpcc_benchmark_series();
+  //dict_vs_filter_series();
+  filter_cardinality_estimation_series();
 
   //analyze_all_tpcc_tables()
 
