@@ -562,12 +562,12 @@ void analyze_all_tpcc_tables() {
 }
 
 void cardinality_misestimation_series() {
-  int sample_size = 30'0000;
+  int sample_size = 300'000;
   int value_count = 100'000;
   int distinct_values = 3000;
   double variance = 500.0;
   //auto remainder_sizes = {2, 4, 8};
-  auto remainder_size = 2;
+  auto remainder_size = 8;
 
   auto over_estimation = std::map<int, int>();
 
@@ -582,7 +582,7 @@ void cardinality_misestimation_series() {
   results_table->add_column("occurrences", DataType::Int, false);
 
   auto distribution = generate_normal_distribution(value_count, distinct_values, variance);
-  auto quotient_size = static_cast<int>(std::ceil(std::log2(value_count)));
+  auto quotient_size = static_cast<int>(std::ceil(std::log2(value_count))) - 3;
   auto filter = std::make_shared<CountingQuotientFilter<int>>(quotient_size, remainder_size);
   int under_estimation = 0;
   for (int sample = 0; sample < sample_size; sample++) {
@@ -590,6 +590,10 @@ void cardinality_misestimation_series() {
       distribution = generate_normal_distribution(value_count, distinct_values, variance);
       filter = std::make_shared<CountingQuotientFilter<int>>(quotient_size, remainder_size);
       for (int i = 0; i < distinct_values; i++) {
+        /*for (size_t count = 0; count < distribution[i]; count++) {
+          //filter->insert(i, distribution[i]);
+          filter->insert(i);
+        }*/
         filter->insert(i, distribution[i]);
       }
     }
