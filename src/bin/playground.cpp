@@ -566,10 +566,8 @@ void cardinality_misestimation_series() {
   int value_count = 100'000;
   int distinct_values = 3000;
   double variance = 500.0;
-  //auto remainder_sizes = {2, 4, 8};
-  auto remainder_size = 8;
-
-  auto over_estimation = std::map<int, int>();
+  auto quotient_sizes = {14, 15, 16, 17};
+  auto remainder_sizes = {2, 4, 8, 16};
 
   auto results_table = std::make_shared<Table>();
   results_table->add_column("sample_size", DataType::Int, false);
@@ -581,46 +579,67 @@ void cardinality_misestimation_series() {
   results_table->add_column("over_estimation", DataType::Int, false);
   results_table->add_column("occurrences", DataType::Int, false);
 
-  auto distribution = generate_normal_distribution(value_count, distinct_values, variance);
-  auto quotient_size = static_cast<int>(std::ceil(std::log2(value_count))) - 3;
-  auto filter = std::make_shared<CountingQuotientFilter<int>>(quotient_size, remainder_size);
-  int under_estimation = 0;
-  for (int sample = 0; sample < sample_size; sample++) {
-    if (sample % distinct_values == 0) {
-      distribution = generate_normal_distribution(value_count, distinct_values, variance);
-      filter = std::make_shared<CountingQuotientFilter<int>>(quotient_size, remainder_size);
-      for (int i = 0; i < distinct_values; i++) {
-        /*for (size_t count = 0; count < distribution[i]; count++) {
-          //filter->insert(i, distribution[i]);
-          filter->insert(i);
-        }*/
-        filter->insert(i, distribution[i]);
+  for (auto quotient_size : quotient_sizes) {
+    for (auto remainder_size : remainder_sizes) {
+      auto over_estimation = std::map<int, int>();
+      auto distribution = std::vector<uint>();
+      std::shared_ptr<CountingQuotientFilter<int>> filter = nullptr;
+      auto sum_error = 0;
+      auto under_estimation = 0;
+      auto filter_too_small = false;
+      for (int sample = 0; sample < sample_size; sample++) {
+        if (sample % distinct_values == 0) {
+          distribution = generate_normal_distribution(value_count, distinct_values, variance);
+          filter = std::make_shared<CountingQuotientFilter<int>>(quotient_size, remainder_size);
+          for (int i = 0; i < distinct_values; i++) {
+            if (filter->is_full()) {
+              filter_too_small = true;
+              break;
+            } else {
+              filter->insert(i, distribution[i]);
+            }
+          }
+        }
+
+        if (filter_too_small) {
+          break;
+        }
+
+        auto actual_count = distribution[sample % distinct_values];
+        auto filter_count = filter->count(sample % distinct_values);
+        if (filter_count < actual_count) {
+          under_estimation++;
+        }
+        over_estimation[filter_count - actual_count]++;
+        sum_error += filter_count - actual_count;
+      }
+
+      if (filter_too_small) {
+        continue;
+      }
+
+      for (auto pair : over_estimation) {
+        results_table->append({sample_size, value_count, distinct_values, variance, quotient_size,
+                               remainder_size, pair.first, pair.second});
+      }
+
+      std::cout << "quotient_size: " << quotient_size;
+      std::cout << ", remainder_size: " << remainder_size;
+      std::cout << ", error: " << sum_error << std::endl;
+      if (under_estimation > 0) {
+        std::cout << "UNDERCOUNTS: " << under_estimation << std::endl;
       }
     }
-
-    auto actual_count = distribution[sample % distinct_values];
-    auto filter_count = filter->count(sample % distinct_values);
-    if (filter_count < actual_count) {
-      under_estimation++;
-    }
-    over_estimation[filter_count - actual_count]++;
   }
-
-  for (auto pair : over_estimation) {
-    std::cout << pair.first << ": " << pair.second << std::endl;
-    results_table->append({sample_size, value_count, distinct_values, variance, quotient_size,
-                           remainder_size, pair.first, pair.second});
-  }
-
-  std::cout << "Underestimation " << under_estimation << std::endl;
-
+  serialize_results_csv("cardinality_misestimation", results_table);
 }
 
 void filter_cardinality_estimation_series() {
   int value_count = 100'000;
   int distinct_values = 3000;
   double variance = 500.0;
-  auto remainder_sizes = {2, 4, 8};
+  auto remainder_sizes = {2, 4, 8, 16};
+  auto quotient_sizes = {12, 13, 14, 15, 16, 17};
 
   auto results_table = std::make_shared<Table>();
   results_table->add_column("value_count", DataType::Int, false);
@@ -633,42 +652,50 @@ void filter_cardinality_estimation_series() {
   results_table->add_column("filter_count", DataType::Int, false);
 
   auto distribution = generate_normal_distribution(value_count, distinct_values, variance);
-  int quotient_size = static_cast<int>(std::ceil(std::log2(value_count)));
-  std::cout << "quotient_size: " << quotient_size << std::endl;
-  std::cout << "number_of_slots: " << std::pow(2, quotient_size) << std::endl;
-  std::cout << std::endl;
 
-  for (auto remainder_size : remainder_sizes) {
-    std::cout << "remainder_size: " << remainder_size << std::endl;
-    auto filter = CountingQuotientFilter<int>(quotient_size, remainder_size);
-    for (int i = 0; i < distinct_values; i++) {
-      filter.insert(i, distribution[i]);
-    }
+  for (auto quotient_size : quotient_sizes) {
+    for (auto remainder_size : remainder_sizes) {
+      auto filter = CountingQuotientFilter<int>(quotient_size, remainder_size);
+      auto filter_too_small = false;
+      for (int i = 0; i < distinct_values; i++) {
+        if (filter.is_full()) {
+          filter_too_small = true;
+        } else {
+          filter.insert(i, distribution[i]);
+        }
+      }
+      if (filter_too_small) {
+        continue;
+      }
 
-    auto over_estimation = 0;
-    auto under_estimation = 0;
-    auto false_negatives = 0;
-    for (int i = 0; i < distinct_values; i++) {
-      auto actual_count = static_cast<int>(distribution[i]);
-      auto filter_count = static_cast<int>(filter.count(i));
-      results_table->append({value_count, distinct_values, variance, quotient_size, remainder_size, i, actual_count, filter_count});
-      if (filter_count > actual_count) {
-        //std::cout << i << ": " << actual_count << ", "<< filter_count << std::endl;
-        //std::cout << (filter_count - actual_count) << ", ";
-        over_estimation += filter_count - actual_count;
+      auto over_estimation = 0;
+      auto under_estimation = 0;
+      auto false_negatives = 0;
+      for (int i = 0; i < distinct_values; i++) {
+        auto actual_count = static_cast<int>(distribution[i]);
+        auto filter_count = static_cast<int>(filter.count(i));
+        results_table->append({value_count, distinct_values, variance, quotient_size, remainder_size,
+                               i, actual_count, filter_count});
+        if (filter_count > actual_count) {
+          over_estimation += filter_count - actual_count;
+        }
+        if (filter_count < actual_count) {
+          under_estimation += actual_count - filter_count;
+          //std::cout << filter_count << "/" << actual_count << std::endl;
+          std::cout << filter.load_factor() << std::endl;
+        }
+        if (filter_count == 0 && actual_count > 0) {
+          false_negatives++;
+        }
       }
-      if (filter_count < actual_count) {
-        under_estimation += actual_count - filter_count;
-      }
-      if (filter_count == 0 && actual_count > 0) {
-        false_negatives++;
+
+      std::cout << "quotient_size: " << quotient_size;
+      std::cout << ", remainder_size: " << remainder_size;
+      std::cout << ", error: " << over_estimation << std::endl;
+      if (under_estimation > 0) {
+        std::cout << "UNDERCOUNTS: " << under_estimation << std::endl;
       }
     }
-    //std::cout << std::endl;
-    std::cout << "total over estimation: " << over_estimation << std::endl;
-    std::cout << "total under estimation: " << under_estimation << std::endl;
-    std::cout << "false negatives: " << false_negatives << std::endl;
-    std::cout << std::endl;
   }
 
   serialize_results_csv("filter_cardinality_estimation", results_table);

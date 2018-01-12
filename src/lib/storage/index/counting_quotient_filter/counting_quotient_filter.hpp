@@ -33,6 +33,8 @@ class CountingQuotientFilter : public BaseFilter {
   uint64_t count(ElementType value) const;
   uint64_t count_all_type(AllTypeVariant value) const final;
   uint64_t memory_consumption() const final;
+  double load_factor() const final;
+  bool is_full() const final;
 
  private:
   std::optional<gqf2::quotient_filter> _quotient_filter2;

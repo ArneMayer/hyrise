@@ -63,6 +63,7 @@ CountingQuotientFilter<ElementType>::~CountingQuotientFilter() {
 
 template <typename ElementType>
 void CountingQuotientFilter<ElementType>::insert(ElementType element, uint64_t count) {
+  //std::cout << "load factor: " << load_factor() << std::endl;
   uint64_t bitmask = static_cast<uint64_t>(std::pow(2, _hash_bits)) - 1;
   uint64_t hash = bitmask & _hash(element);
   for (uint64_t i = 0; i < count; i++) {
@@ -129,6 +130,17 @@ uint64_t CountingQuotientFilter<std::string>::_hash(std::string value) const {
 }
 
 template <typename ElementType>
+void CountingQuotientFilter<ElementType>::populate(std::shared_ptr<const BaseColumn> column) {
+  resolve_column_type<ElementType>(*column, [&](const auto& typed_column) {
+    auto iterable_left = create_iterable_from_column<ElementType>(typed_column);
+    iterable_left.for_each([&](const auto& value) {
+      if (value.is_null()) return;
+      insert(value.value());
+    });
+  });
+}
+
+template <typename ElementType>
 uint64_t CountingQuotientFilter<ElementType>::memory_consumption() const {
   uint64_t memory_consumption = 0;
   if (_remainder_bits == 2) {
@@ -147,14 +159,23 @@ uint64_t CountingQuotientFilter<ElementType>::memory_consumption() const {
 }
 
 template <typename ElementType>
-void CountingQuotientFilter<ElementType>::populate(std::shared_ptr<const BaseColumn> column) {
-  resolve_column_type<ElementType>(*column, [&](const auto& typed_column) {
-    auto iterable_left = create_iterable_from_column<ElementType>(typed_column);
-    iterable_left.for_each([&](const auto& value) {
-      if (value.is_null()) return;
-      insert(value.value());
-    });
-  });
+double CountingQuotientFilter<ElementType>::load_factor() const {
+  if (_remainder_bits == 2) {
+    return _quotient_filter2.value().noccupied_slots / static_cast<double>(_quotient_filter2.value().nslots);
+  } else if (_remainder_bits == 4) {
+    return _quotient_filter4.value().noccupied_slots / static_cast<double>(_quotient_filter4.value().nslots);
+  } else if (_remainder_bits == 8) {
+    return _quotient_filter8.value().noccupied_slots / static_cast<double>(_quotient_filter8.value().nslots);
+  } else if (_remainder_bits == 16) {
+    return _quotient_filter16.value().noccupied_slots / static_cast<double>(_quotient_filter16.value().nslots);
+  } else {
+    return _quotient_filter32.value().noccupied_slots / static_cast<double>(_quotient_filter32.value().nslots);
+  }
+}
+
+template <typename ElementType>
+bool CountingQuotientFilter<ElementType>::is_full() const {
+  return load_factor() >= 1.0;
 }
 
 EXPLICITLY_INSTANTIATE_DATA_TYPES(CountingQuotientFilter);
