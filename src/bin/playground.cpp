@@ -562,7 +562,7 @@ void analyze_all_tpcc_tables() {
 }
 
 void cardinality_misestimation_series() {
-  int sample_size = 300'000;
+  int sample_size = 3'000'000;
   int value_count = 100'000;
   int distinct_values = 3000;
   double variance = 500.0;
