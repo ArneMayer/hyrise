@@ -174,21 +174,21 @@ std::shared_ptr<CountingQuotientFilter<std::string>> generate_filter_string(int 
   return filter;
 }
 
-std::vector<int> generate_dictionary_int(int size) {
-  std::vector<int> v;
+std::shared_ptr<std::vector<int>> generate_dictionary_int(int size) {
+  auto v = std::make_shared<std::vector<int>>();
   for (int i = 0; i < size; i++) {
-    v.push_back(random_int(0, 100000));
+    v->push_back(random_int(0, 100000));
   }
-  std::sort (v.begin(), v.end());
+  std::sort(v->begin(), v->end());
   return v;
 }
 
-std::vector<std::string> generate_dictionary_string(int size, int string_length) {
-  std::vector<std::string> v;
+std::shared_ptr<std::vector<std::string>> generate_dictionary_string(int size, int string_length) {
+  auto v = std::make_shared<std::vector<std::string>>();
   for(int i = 0; i < size; i++) {
-    v.push_back(random_string(string_length));
+    v->push_back(random_string(string_length));
   }
-  std::sort (v.begin(), v.end());
+  std::sort(v->begin(), v->end());
   return v;
 }
 
