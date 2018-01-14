@@ -296,12 +296,21 @@ double normal(double expectation, double variance, double x) {
   return 1.0 / std::sqrt(2 * PI * variance_sq) * std::exp(-std::pow(x - expectation, 2) / (2 * variance_sq));
 }
 
-std::vector<uint> generate_normal_distribution(int sample_size, int distinct_values, double variance) {
+std::vector<uint> generate_normal_distribution(int value_cont, int distinct_values, double variance) {
   auto distribution = std::vector<uint>(distinct_values);
   double expectation = distinct_values / 2.0;
   for (int i = 0; i < distinct_values; i++) {
-    auto value = normal(expectation, variance, static_cast<double>(i)) * sample_size;
-    distribution[i] = static_cast<int>(value);
+    auto value = normal(expectation, variance, static_cast<double>(i)) * value_cont;
+    distribution[i] = static_cast<uint>(value);
+  }
+
+  return distribution;
+}
+
+std::vector<uint> generate_uniform_distribution(int value_cont, int distinct_values) {
+  auto distribution = std::vector<uint>(distinct_values);
+  for (int i = 0; i < distinct_values; i++) {
+    distribution[i] = static_cast<uint>(value_cont / distinct_values);
   }
 
   return distribution;

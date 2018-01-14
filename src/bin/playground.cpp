@@ -561,35 +561,48 @@ void analyze_all_tpcc_tables() {
   }
 }
 
-void cardinality_misestimation_series() {
-  int sample_size = 3'000'000;
+void cardinality_misestimation_series(std::string data) {
+  //int sample_size = 300'000'000;
+  int sample_size = 300'000;
   int value_count = 100'000;
   int distinct_values = 3000;
-  double variance = 500.0;
-  auto quotient_sizes = {14, 15, 16, 17};
+  auto quotient_sizes = {12, 13, 14, 15, 16, 17};
   auto remainder_sizes = {2, 4, 8, 16};
+
+  std::cout << " >> Cardinality Misestimation Series" << std::endl;
+  std::cout << "sample size: " << sample_size << std::endl;
+  std::cout << "data: " << data << std::endl;
 
   auto results_table = std::make_shared<Table>();
   results_table->add_column("sample_size", DataType::Int, false);
   results_table->add_column("value_count", DataType::Int, false);
   results_table->add_column("distinct_values", DataType::Int, false);
-  results_table->add_column("variance", DataType::Double, false);
+  results_table->add_column("data", DataType::String, false);
   results_table->add_column("quotient_size", DataType::Int, false);
   results_table->add_column("remainder_size", DataType::Int, false);
   results_table->add_column("over_estimation", DataType::Int, false);
   results_table->add_column("occurrences", DataType::Int, false);
 
+  std::vector<uint> distribution;
+  if (data == "normal") {
+    double variance = 500.0;
+    distribution = generate_normal_distribution(value_count, distinct_values, variance);
+  } else if (data == "uniform") {
+    distribution = generate_uniform_distribution(value_count, distinct_values);
+  } else {
+    throw std::invalid_argument("data: " + data);
+  }
+
   for (auto quotient_size : quotient_sizes) {
     for (auto remainder_size : remainder_sizes) {
       auto over_estimation = std::map<int, int>();
-      auto distribution = std::vector<uint>();
       std::shared_ptr<CountingQuotientFilter<int>> filter = nullptr;
       auto sum_error = 0;
       auto under_estimation = 0;
       auto filter_too_small = false;
+
       for (int sample = 0; sample < sample_size; sample++) {
         if (sample % distinct_values == 0) {
-          distribution = generate_normal_distribution(value_count, distinct_values, variance);
           filter = std::make_shared<CountingQuotientFilter<int>>(quotient_size, remainder_size);
           for (int i = 0; i < distinct_values; i++) {
             if (filter->is_full()) {
@@ -619,7 +632,7 @@ void cardinality_misestimation_series() {
       }
 
       for (auto pair : over_estimation) {
-        results_table->append({sample_size, value_count, distinct_values, variance, quotient_size,
+        results_table->append({sample_size, value_count, distinct_values, data, quotient_size,
                                remainder_size, pair.first, pair.second});
       }
 
@@ -631,27 +644,37 @@ void cardinality_misestimation_series() {
       }
     }
   }
-  serialize_results_csv("cardinality_misestimation", results_table);
+  serialize_results_csv("cardinality_misestimation_" + data, results_table);
 }
 
-void filter_cardinality_estimation_series() {
+void filter_cardinality_estimation_series(std::string data) {
   int value_count = 100'000;
   int distinct_values = 3000;
-  double variance = 500.0;
   auto remainder_sizes = {2, 4, 8, 16};
   auto quotient_sizes = {12, 13, 14, 15, 16, 17};
+
+  std::cout << " >> Single Filter Test" << std::endl;
+  std::cout << "data: " << data << std::endl;
 
   auto results_table = std::make_shared<Table>();
   results_table->add_column("value_count", DataType::Int, false);
   results_table->add_column("distinct_values", DataType::Int, false);
-  results_table->add_column("variance", DataType::Double, false);
+  results_table->add_column("data", DataType::String, false);
   results_table->add_column("quotient_size", DataType::Int, false);
   results_table->add_column("remainder_size", DataType::Int, false);
   results_table->add_column("value", DataType::Int, false);
   results_table->add_column("actual_count", DataType::Int, false);
   results_table->add_column("filter_count", DataType::Int, false);
 
-  auto distribution = generate_normal_distribution(value_count, distinct_values, variance);
+  std::vector<uint> distribution;
+  if (data == "normal") {
+    double variance = 500.0;
+    distribution = generate_normal_distribution(value_count, distinct_values, variance);
+  } else if (data == "uniform") {
+    distribution = generate_uniform_distribution(value_count, distinct_values);
+  } else {
+    throw std::invalid_argument("data: " + data);
+  }
 
   for (auto quotient_size : quotient_sizes) {
     for (auto remainder_size : remainder_sizes) {
@@ -670,22 +693,16 @@ void filter_cardinality_estimation_series() {
 
       auto over_estimation = 0;
       auto under_estimation = 0;
-      auto false_negatives = 0;
       for (int i = 0; i < distinct_values; i++) {
         auto actual_count = static_cast<int>(distribution[i]);
         auto filter_count = static_cast<int>(filter.count(i));
-        results_table->append({value_count, distinct_values, variance, quotient_size, remainder_size,
+        results_table->append({value_count, distinct_values, data, quotient_size, remainder_size,
                                i, actual_count, filter_count});
         if (filter_count > actual_count) {
           over_estimation += filter_count - actual_count;
         }
         if (filter_count < actual_count) {
           under_estimation += actual_count - filter_count;
-          //std::cout << filter_count << "/" << actual_count << std::endl;
-          std::cout << filter.load_factor() << std::endl;
-        }
-        if (filter_count == 0 && actual_count > 0) {
-          false_negatives++;
         }
       }
 
@@ -698,26 +715,17 @@ void filter_cardinality_estimation_series() {
     }
   }
 
-  serialize_results_csv("filter_cardinality_estimation", results_table);
+  serialize_results_csv("filter_cardinality_estimation_" + data, results_table);
 }
 
 int main() {
   //custom_benchmark_series();
   //tpcc_benchmark_series();
   //dict_vs_filter_series();
-  //filter_cardinality_estimation_series();
-  cardinality_misestimation_series();
+  filter_cardinality_estimation_series("normal");
+  cardinality_misestimation_series("normal");
+  filter_cardinality_estimation_series("uniform");
+  cardinality_misestimation_series("uniform");
 
   //analyze_all_tpcc_tables()
-
-/*
-  auto table_name = tpcc_load_or_generate("ORDER-LINE", 3, 100'000, false);
-  auto table = StorageManager::get().get_table(table_name);
-  create_quotient_filters(table, table->column_id_by_name("OL_I_ID"), 17, 4);
-  std::cout << "Actually prunable: " << analyze_skippable_chunks_actual<int>(table_name, "OL_I_ID", 3000)
-            << "/" << table->chunk_count() << std::endl;
-  std::cout << "Filter prunable: " << analyze_skippable_chunks_filter(table_name, "OL_I_ID", 3000)
-            << "/" << table->chunk_count() << std::endl;
-  return 0;
-  */
 }
