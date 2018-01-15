@@ -833,7 +833,7 @@ int main() {
   //custom_benchmark_series();
   //tpcc_benchmark_series();
   dict_vs_filter_series_cached();
-  //dict_vs_filter_series_uncached();
+  dict_vs_filter_series_uncached();
   //filter_cardinality_estimation_series("normal");
   //cardinality_misestimation_series("normal");
   //filter_cardinality_estimation_series("uniform");
