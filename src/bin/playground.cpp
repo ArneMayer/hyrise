@@ -697,7 +697,7 @@ void cardinality_misestimation_series(std::string distribution_type, int distinc
 
   std::vector<uint> distribution;
   if (distribution_type == "normal") {
-    double variance = 500.0;
+    double variance = double variance = distinct_values / 6.0;
     distribution = generate_normal_distribution(value_count, distinct_values, variance);
   } else if (distribution_type == "uniform") {
     distribution = generate_uniform_distribution(value_count, distinct_values);
@@ -780,7 +780,7 @@ void filter_cardinality_estimation_series(std::string distribution_type, int dis
 
   std::vector<uint> distribution;
   if (distribution_type == "normal") {
-    double variance = 1000.0;
+    double variance = distinct_values / 6.0;
     distribution = generate_normal_distribution(value_count, distinct_values, variance);
   } else if (distribution_type == "uniform") {
     distribution = generate_uniform_distribution(value_count, distinct_values);
