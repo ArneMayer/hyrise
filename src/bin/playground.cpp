@@ -345,29 +345,29 @@ void run_custom_benchmark(std::string type, int remainder_size, bool dictionary,
 }
 
 void dict_query_benchmark_string(std::shared_ptr<std::vector<std::string>> dictionary, int n, int string_length) {
+  auto value = random_string(string_length);
   for (int i = 0; i < n; i++) {
-    auto value = random_string(string_length);
     std::binary_search(dictionary->begin(), dictionary->end(), value);
   }
 }
 
 void filter_query_benchmark_string(std::shared_ptr<CountingQuotientFilter<std::string>> filter, int n, int string_length) {
+  auto value = random_string(string_length);
   for (int i = 0; i < n; i++) {
-    auto value = random_string(string_length);
     filter->count(value);
   }
 }
 
 void dict_query_benchmark_int(std::shared_ptr<std::vector<int>> dictionary, int n) {
+  auto value = random_int(0, 100000);
   for (int i = 0; i < n; i++) {
-    auto value = random_int(0, 100000);
     std::binary_search(dictionary->begin(), dictionary->end(), value);
   }
 }
 
 void filter_query_benchmark_int(std::shared_ptr<CountingQuotientFilter<int>> filter, int n) {
+  auto value = random_int(0, 100000);
   for (int i = 0; i < n; i++) {
-    auto value = random_int(0, 100000);
     filter->count(value);
   }
 }
