@@ -832,12 +832,12 @@ void filter_cardinality_estimation_series(std::string data) {
 int main() {
   //custom_benchmark_series();
   //tpcc_benchmark_series();
-  dict_vs_filter_series_cached();
-  dict_vs_filter_series_uncached();
-  //filter_cardinality_estimation_series("normal");
-  //cardinality_misestimation_series("normal");
-  //filter_cardinality_estimation_series("uniform");
-  //cardinality_misestimation_series("uniform");
+  //dict_vs_filter_series_cached();
+  //dict_vs_filter_series_uncached();
+  filter_cardinality_estimation_series("normal");
+  cardinality_misestimation_series("normal");
+  filter_cardinality_estimation_series("uniform");
+  cardinality_misestimation_series("uniform");
 
   //analyze_all_tpcc_tables()
 }
