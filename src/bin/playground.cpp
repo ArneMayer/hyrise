@@ -672,17 +672,18 @@ void analyze_all_tpcc_tables() {
   }
 }
 
-void cardinality_misestimation_series(std::string data) {
+void cardinality_misestimation_series(std::string distribution_type, int distinct_values) {
   int sample_size = 30'000'000;
   //int sample_size = 300'000;
   int value_count = 100'000;
-  int distinct_values = 3000;
   auto quotient_sizes = {12, 13, 14, 15, 16, 17};
   auto remainder_sizes = {2, 4, 8, 16};
+  auto data = distribution_type + std::to_string(distinct_values);
 
   std::cout << " >> Cardinality Misestimation Series" << std::endl;
   std::cout << "sample size: " << sample_size << std::endl;
-  std::cout << "data: " << data << std::endl;
+  std::cout << "distinct values: " << distinct_values << std::endl;
+  std::cout << "data distribution: " << distribution_type << std::endl;
 
   auto results_table = std::make_shared<Table>();
   results_table->add_column("sample_size", DataType::Int, false);
@@ -695,10 +696,10 @@ void cardinality_misestimation_series(std::string data) {
   results_table->add_column("occurrences", DataType::Int, false);
 
   std::vector<uint> distribution;
-  if (data == "normal") {
+  if (distribution_type == "normal") {
     double variance = 500.0;
     distribution = generate_normal_distribution(value_count, distinct_values, variance);
-  } else if (data == "uniform") {
+  } else if (distribution_type == "uniform") {
     distribution = generate_uniform_distribution(value_count, distinct_values);
   } else {
     throw std::invalid_argument("data: " + data);
@@ -758,11 +759,11 @@ void cardinality_misestimation_series(std::string data) {
   serialize_results_csv("cardinality_misestimation_" + data, results_table);
 }
 
-void filter_cardinality_estimation_series(std::string data) {
+void filter_cardinality_estimation_series(std::string distribution_type, int distinct_values) {
   int value_count = 100'000;
-  int distinct_values = 3000;
   auto remainder_sizes = {2, 4, 8, 16};
   auto quotient_sizes = {12, 13, 14, 15, 16, 17};
+  auto data = distribution_type + std::to_string(distinct_values);
 
   std::cout << " >> Single Filter Test" << std::endl;
   std::cout << "data: " << data << std::endl;
@@ -778,10 +779,10 @@ void filter_cardinality_estimation_series(std::string data) {
   results_table->add_column("filter_count", DataType::Int, false);
 
   std::vector<uint> distribution;
-  if (data == "normal") {
-    double variance = 500.0;
+  if (distribution_type == "normal") {
+    double variance = 1000.0;
     distribution = generate_normal_distribution(value_count, distinct_values, variance);
-  } else if (data == "uniform") {
+  } else if (distribution_type == "uniform") {
     distribution = generate_uniform_distribution(value_count, distinct_values);
   } else {
     throw std::invalid_argument("data: " + data);
@@ -834,10 +835,18 @@ int main() {
   //tpcc_benchmark_series();
   //dict_vs_filter_series_cached();
   //dict_vs_filter_series_uncached();
-  filter_cardinality_estimation_series("normal");
-  cardinality_misestimation_series("normal");
-  filter_cardinality_estimation_series("uniform");
-  cardinality_misestimation_series("uniform");
+  filter_cardinality_estimation_series("normal", 3'000);
+  filter_cardinality_estimation_series("normal", 10'000);
+  filter_cardinality_estimation_series("normal", 25'000);
+  filter_cardinality_estimation_series("normal", 50'000);
+
+  cardinality_misestimation_series("normal", 3'000);
+  cardinality_misestimation_series("normal", 10'000);
+  cardinality_misestimation_series("normal", 25'000);
+  cardinality_misestimation_series("normal", 50'000);
+
+  filter_cardinality_estimation_series("uniform", 3000);
+  cardinality_misestimation_series("uniform", 3000);
 
   //analyze_all_tpcc_tables()
 }
