@@ -701,6 +701,8 @@ void cardinality_misestimation_series(std::string distribution_type, int distinc
     distribution = generate_normal_distribution(value_count, distinct_values, variance);
   } else if (distribution_type == "uniform") {
     distribution = generate_uniform_distribution(value_count, distinct_values);
+  } else if (distribution_type == "zipf") {
+    distribution = generate_zipfian_distribution(value_count, distinct_values);
   } else {
     throw std::invalid_argument("data: " + data);
   }
@@ -784,6 +786,8 @@ void filter_cardinality_estimation_series(std::string distribution_type, int dis
     distribution = generate_normal_distribution(value_count, distinct_values, variance);
   } else if (distribution_type == "uniform") {
     distribution = generate_uniform_distribution(value_count, distinct_values);
+  } else if (distribution_type == "zipf") {
+    distribution = generate_zipfian_distribution(value_count, distinct_values);
   } else {
     throw std::invalid_argument("data: " + data);
   }
@@ -835,18 +839,21 @@ int main() {
   //tpcc_benchmark_series();
   //dict_vs_filter_series_cached();
   //dict_vs_filter_series_uncached();
-  filter_cardinality_estimation_series("normal", 3'000);
-  filter_cardinality_estimation_series("normal", 10'000);
-  filter_cardinality_estimation_series("normal", 25'000);
-  filter_cardinality_estimation_series("normal", 50'000);
+  //filter_cardinality_estimation_series("normal", 3'000);
+  //filter_cardinality_estimation_series("normal", 10'000);
+  //filter_cardinality_estimation_series("normal", 25'000);
+  //filter_cardinality_estimation_series("normal", 50'000);
 
-  cardinality_misestimation_series("normal", 3'000);
-  cardinality_misestimation_series("normal", 10'000);
-  cardinality_misestimation_series("normal", 25'000);
-  cardinality_misestimation_series("normal", 50'000);
+  //cardinality_misestimation_series("normal", 3'000);
+  //cardinality_misestimation_series("normal", 10'000);
+  //cardinality_misestimation_series("normal", 25'000);
+  //cardinality_misestimation_series("normal", 50'000);
 
-  filter_cardinality_estimation_series("uniform", 3000);
-  cardinality_misestimation_series("uniform", 3000);
+  //filter_cardinality_estimation_series("uniform", 3000);
+  //cardinality_misestimation_series("uniform", 3000);
+
+  filter_cardinality_estimation_series("zipf", 3000);
+  cardinality_misestimation_series("zipf", 3000);
 
   //analyze_all_tpcc_tables()
 }
