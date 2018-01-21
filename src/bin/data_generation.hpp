@@ -296,7 +296,7 @@ double normal(double expectation, double variance, double x) {
   return 1.0 / std::sqrt(2 * PI * variance_sq) * std::exp(-std::pow(x - expectation, 2) / (2 * variance_sq));
 }
 
-std::vector<int> generate_zipfian_distribution(int value_count, distinct_values) {
+std::vector<uint> generate_zipfian_distribution(int value_count, distinct_values) {
   auto distribution = std::vector<uint>(distinct_values);
   for (int i = 0; i < distinct_values; i++) {
     distribution[i] = value_count / (static_cast<double>(i) + std::log(1.78 * value_count));
