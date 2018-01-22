@@ -285,9 +285,48 @@ std::string tpcc_load_or_generate(std::string tpcc_table_name, int warehouse_siz
   save_table(table, compressed_name);
 
   table = nullptr;
-
   load_table(table_name);
+  return table_name;
+}
 
+std::string acdoca_load_or_generate(int row_count, bool compressed) {
+  if (row_count != 100'000'000) {
+    DebugAssert("row count has to be 100M");
+  }
+
+  auto table_name = "acdoca_" + std::to_string(row_count) + "_" + std::to_string(chunk_size) + "_"
+  auto compressed_name = table_name + std::to_string(true);
+  auto uncompressed_name = table_name + std::to_string(false);
+  table_name = table_name + std::to_string(compressed);
+
+  auto loaded = load_table(table_name);
+  if (loaded) {
+    return table_name;
+  }
+
+  // Save uncompressed
+  std::cout << " > Generating table " << uncompressed_name << "..." << std::flush;
+  auto file = "/mnt/data2/acdoca/acdoca100M.csv";
+  auto import = std::make_shared<CsvImport>(file, bale);
+  auto import_table = import->execute();
+
+  // iterate
+  auto table = std::make_shared<Table>(chunk_size);
+  std::cout << "OK!" << std::endl;
+  save_table(table, uncompressed_name);
+
+  //for (auto chunk_id = ChunkID{0}; chunk_id < table->chunk_count(); chunk_id++) {
+    // copy over
+  //}
+
+  // Save compressed
+  std::cout << " > Generating table " << compressed_name << "..." << std::flush;
+  DictionaryCompression::compress_table(*table);
+  std::cout << "OK!" << std::endl;
+  save_table(table, compressed_name);
+
+  table.reset();
+  load_table(table_name);
   return table_name;
 }
 
