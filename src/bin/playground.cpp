@@ -30,9 +30,12 @@
 */
 
 int main() {
+  print_table_layout(acdoca_load_or_generate(100'000'000, 100'000, false));
+
+
   //custom_benchmark_series();
   //tpcc_benchmark_series();
-  acdoca_benchmark_series();
+  //acdoca_benchmark_series();
   //dict_vs_filter_series_cached();
   //dict_vs_filter_series_uncached();
   //filter_cardinality_estimation_series("normal", 3'000);
