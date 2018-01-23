@@ -1,9 +1,14 @@
+#pragma once
+
 #include "utils.hpp"
 
-#include "storage/table.hpp"
-#include "storage/index/counting_qotient_filter/counting_quotient_filter.hpp"
 #include "types.hpp"
+#include "storage/table.hpp"
+#include "storage/index/counting_quotient_filter/counting_quotient_filter.hpp"
+#include "scheduler/abstract_task.hpp"
+#include "scheduler/current_scheduler.hpp"
 #include "operators/table_scan.hpp"
+#include "operators/get_table.hpp"
 
 using namespace opossum;
 
@@ -83,11 +88,12 @@ std::pair<std::shared_ptr<AbstractOperator>, std::shared_ptr<const Table>> gener
 }
 
 std::pair<std::shared_ptr<AbstractOperator>, std::shared_ptr<const Table>> generate_acdoca_benchmark(
-                        int row_count, int chunk_size, uint8_t remainder_size, bool dictionary, bool btree, bool art) {
+    std::string column_name, int row_count, int chunk_size, int quotient_size,
+    int remainder_size, bool dictionary, bool btree, bool art) {
   auto table_name = acdoca_load_or_generate(row_count, chunk_size, dictionary);
   auto table = StorageManager::get().get_table(table_name);
   auto column_id = table->column_id_by_name("column_name");
-  auto quotient_size = static_cast<int>(std::ceil(std::log(chunk_size) / std::log(2)));
+  //auto quotient_size = static_cast<int>(std::ceil(std::log(chunk_size) / std::log(2)));
   create_quotient_filters(table, column_id, quotient_size, remainder_size);
   if (btree) {
     table->populate_btree_index(column_id);
@@ -193,8 +199,8 @@ void run_acdoca_benchmark(std::string column_name, int quotient_size, int remain
 
   int size = -1;
   for (int i = 0; i < sample_size; i++) {
-    auto benchmark = generate_acdoca_benchmark(type, quotient_size, remainder_size, dictionary, btree, art, row_count,
-                                               chunk_size, pruning_rate, selectivity);
+    auto benchmark = generate_acdoca_benchmark(column_name, row_count, chunk_size, quotient_size, remainder_size,
+                                               dictionary, btree, art);
     auto query = benchmark.first;
     auto table = benchmark.second;
     auto column_id = table->column_id_by_name(column_name);
@@ -346,6 +352,7 @@ void acdoca_benchmark_series() {
   auto sample_size = 2;
   auto row_counts = {100'000'000};
   auto remainder_sizes = {0, 2, 4, 8};
+  auto quotient_size = 17;
   auto chunk_sizes = {100'000};
   auto column_name = std::string("todo");
 
@@ -370,26 +377,22 @@ void acdoca_benchmark_series() {
 
   // analyze_value_interval<int>(table_name, column_name);
   auto start = std::chrono::steady_clock::now();
-  for (auto scan_type : scan_types) {
-    for (auto row_count : row_counts) {
-      for (auto chunk_size : chunk_sizes) {
-        for (auto pruning_rate : pruning_rates) {
-          auto dictionary = false;
-          auto btree = false;
-          auto art = false;
-          for (auto remainder_size : remainder_sizes) {
-            run_acdoca_benchmark(column_name, remainder_size, dictionary=false, btree=false, art=false, row_count,
-               chunk_size, pruning_rate, selectivity, sample_size, results_table);
-            run_acdoca_benchmark(column_name, remainder_size, dictionary=true, btree=false, art=false, row_count,
-              chunk_size, pruning_rate, selectivity, sample_size, results_table);
-          }
-          auto remainder_size = 0;
-          run_acdoca_benchmark(column_name, remainder_size=0, dictionary=false, btree=true, art=false, row_count,
-            chunk_size, pruning_rate, selectivity, sample_size, results_table);
-          run_acdoca_benchmarks(column_name, remainder_size=0, dictionary=true, btree=false, art=true, row_count,
-            chunk_size, pruning_rate, selectivity, sample_size, results_table);
-        }
+  for (auto row_count : row_counts) {
+    for (auto chunk_size : chunk_sizes) {
+      auto dictionary = false;
+      auto btree = false;
+      auto art = false;
+      for (auto remainder_size : remainder_sizes) {
+        run_acdoca_benchmark(column_name, quotient_size, remainder_size, dictionary=false, btree=false, art=false, row_count,
+           chunk_size, sample_size, results_table);
+        run_acdoca_benchmark(column_name, quotient_size, remainder_size, dictionary=true, btree=false, art=false, row_count,
+          chunk_size, sample_size, results_table);
       }
+      auto remainder_size = 0;
+      run_acdoca_benchmark(column_name, quotient_size, remainder_size=0, dictionary=false, btree=true, art=false, row_count,
+        chunk_size, sample_size, results_table);
+      run_acdoca_benchmark(column_name, quotient_size, remainder_size=0, dictionary=true, btree=false, art=true, row_count,
+        chunk_size, sample_size, results_table);
     }
   }
   auto duration = std::chrono::duration_cast<std::chrono::seconds>(std::chrono::steady_clock::now()-start);

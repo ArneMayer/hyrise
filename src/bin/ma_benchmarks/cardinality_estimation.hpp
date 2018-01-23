@@ -1,3 +1,7 @@
+#pragma once
+
+#include "utils.hpp"
+
 void cardinality_misestimation_series(std::string distribution_type, int distinct_values) {
   int sample_size = 30'000'000;
   //int sample_size = 300'000;

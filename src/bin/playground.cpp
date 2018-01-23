@@ -1,7 +1,7 @@
 #include "ma_benchmarks/data_generation.hpp"
 #include "ma_benchmarks/cardinality_estimation.hpp"
 #include "ma_benchmarks/data_structure_query.hpp"
-#include "ma_benchmarks/table_scan_benchmark.hpp"
+#include "ma_benchmarks/table_scan_benchmarks.hpp"
 #include "ma_benchmarks/utils.hpp"
 
 /*
@@ -16,8 +16,6 @@
 #include "types.hpp"
 #include "operators/get_table.hpp"
 #include "operators/table_scan.hpp"
-#include "operators/export_csv.hpp"
-#include "operators/table_wrapper.hpp"
 #include "operators/print.hpp"
 #include "storage/storage_manager.hpp"
 #include "scheduler/abstract_task.hpp"

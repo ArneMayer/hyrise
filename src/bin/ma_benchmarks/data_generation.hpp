@@ -10,6 +10,7 @@
 #include "operators/import_binary.hpp"
 #include "operators/export_binary.hpp"
 #include "operators/table_wrapper.hpp"
+#include "operators/import_csv.hpp"
 #include "tpcc/tpcc_table_generator.hpp"
 
 #include <string>
@@ -289,12 +290,12 @@ std::string tpcc_load_or_generate(std::string tpcc_table_name, int warehouse_siz
   return table_name;
 }
 
-std::string acdoca_load_or_generate(int row_count, bool compressed) {
+std::string acdoca_load_or_generate(int row_count, int chunk_size, bool compressed) {
   if (row_count != 100'000'000) {
-    DebugAssert("row count has to be 100M");
+    std::logic_error("row count has to be 100M");
   }
 
-  auto table_name = "acdoca_" + std::to_string(row_count) + "_" + std::to_string(chunk_size) + "_"
+  auto table_name = "acdoca_" + std::to_string(row_count) + "_" + std::to_string(chunk_size) + "_";
   auto compressed_name = table_name + std::to_string(true);
   auto uncompressed_name = table_name + std::to_string(false);
   table_name = table_name + std::to_string(compressed);
@@ -307,8 +308,9 @@ std::string acdoca_load_or_generate(int row_count, bool compressed) {
   // Save uncompressed
   std::cout << " > Generating table " << uncompressed_name << "..." << std::flush;
   auto file = "/mnt/data2/acdoca/acdoca100M.csv";
-  auto import = std::make_shared<CsvImport>(file, bale);
-  auto import_table = import->execute();
+  auto import = std::make_shared<ImportCsv>(file, table_name);
+  import->execute();
+  auto import_table = import->get_output();
 
   // iterate
   auto table = std::make_shared<Table>(chunk_size);

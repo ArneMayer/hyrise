@@ -1,6 +1,104 @@
 #pragma once
 
+#include "types.hpp"
+#include "operators/export_csv.hpp"
+#include "operators/table_wrapper.hpp"
+#include "resolve_type.hpp"
+#include "storage/iterables/create_iterable_from_column.hpp"
+#include "storage/storage_manager.hpp"
+
+
+#include <stdlib.h>
+#include <pwd.h>
+#include <stdio.h>
+
 using namespace opossum;
+
+template <typename T>
+std::pair<T, T> analyze_value_interval(std::string table_name, ColumnID column_id, ChunkID chunk_id) {
+  auto table = opossum::StorageManager::get().get_table(table_name);
+  auto& chunk = table->get_chunk(chunk_id);
+  auto column = chunk.get_column(column_id);
+
+  auto min_value = table->get_value<T>(column_id, 0);
+  auto max_value = table->get_value<T>(column_id, 0);
+  bool initialized = false;
+
+  // Find min and max values
+  resolve_column_type<T>(*column, [&](const auto& typed_column) {
+    auto iterable_left = create_iterable_from_column<T>(typed_column);
+    iterable_left.for_each([&](const auto& value) {
+      if (value.is_null()) return;
+      if (!initialized) {
+        min_value = value.value();
+        max_value = value.value();
+        initialized = true;
+      }
+      if (value.value() < min_value) {
+        min_value = value.value();
+      }
+      if (value.value() > max_value) {
+        max_value = value.value();
+      }
+    });
+  });
+
+  return std::make_pair(min_value, max_value);
+}
+
+void analyze_value_interval(std::string table_name, ColumnID column_id) {
+  //std::cout << " > Analyzing " << table_name << "::" << column_name << std::endl;
+  auto table = opossum::StorageManager::get().get_table(table_name);
+  auto column_type = table->column_type(column_id);
+
+  for (auto chunk_id = opossum::ChunkID{0}; chunk_id < table->chunk_count(); chunk_id++) {
+    if (column_type == DataType::Int) {
+      auto interval = analyze_value_interval<int>(table_name, column_id, chunk_id);
+      std::cout << "[" << interval.first << ", " << interval.second << "], ";
+    } else if (column_type == DataType::Double) {
+      auto interval = analyze_value_interval<double>(table_name, column_id, chunk_id);
+      std::cout << "[" << interval.first << ", " << interval.second << "], ";
+    } else if (column_type == DataType::String) {
+      auto interval = analyze_value_interval<std::string>(table_name, column_id, chunk_id);
+      std::cout << "[" << interval.first << ", " << interval.second << "], ";
+    }
+  }
+  std::cout << std::endl;
+}
+
+void analyze_value_interval(std::string table_name, std::string column_name) {
+  auto table = opossum::StorageManager::get().get_table(table_name);
+  auto column_id = table->column_id_by_name(column_name);
+  analyze_value_interval(table_name, column_id);
+}
+
+std::string data_type_to_string(DataType data_type) {
+  if (data_type == DataType::Int) {
+    return "int";
+  } else if (data_type == DataType::Double) {
+    return "double";
+  } else if (data_type == DataType::String) {
+    return "string";
+  } else {
+    return "unknown";
+  }
+}
+
+void print_table_layout(std::string table_name) {
+  auto table = StorageManager::get().get_table(table_name);
+  std::cout << "table: " << table_name << std::endl;
+  std::cout << "rows: " << table->row_count() << std::endl;
+  std::cout << "chunks: " << table->chunk_count() << std::endl;
+  std::cout << "columns: " << table->column_count() << std::endl;
+  for (auto column_id = ColumnID{0}; column_id < table->column_count(); column_id++) {
+    auto column_name = table->column_name(column_id);
+    auto column_type = table->column_type(column_id);
+    std::cout << "(" << data_type_to_string(column_type) << ") " << column_name << ": ";
+    analyze_value_interval(table_name, column_name);
+  }
+  std::cout << std::endl;
+  std::cout << "------------------------" << std::endl;
+}
 
 void analyze_all_tpcc_tables() {
   auto tpcc_table_names = {std::string("ORDER"),
@@ -55,93 +153,6 @@ void clear_cache() {
     clear[i] += 1;
   }
   clear.resize(0);
-}
-
-template <typename T>
-std::pair<T, T> analyze_value_interval(std::string table_name, ColumnID column_id, ChunkID chunk_id) {
-  auto table = opossum::StorageManager::get().get_table(table_name);
-  auto& chunk = table->get_chunk(chunk_id);
-  auto column = chunk.get_column(column_id);
-
-  auto min_value = table->get_value<T>(column_id, 0);
-  auto max_value = table->get_value<T>(column_id, 0);
-  bool initialized = false;
-
-  // Find min and max values
-  resolve_column_type<T>(*column, [&](const auto& typed_column) {
-    auto iterable_left = create_iterable_from_column<T>(typed_column);
-    iterable_left.for_each([&](const auto& value) {
-      if (value.is_null()) return;
-      if (!initialized) {
-        min_value = value.value();
-        max_value = value.value();
-        initialized = true;
-      }
-      if (value.value() < min_value) {
-        min_value = value.value();
-      }
-      if (value.value() > max_value) {
-        max_value = value.value();
-      }
-    });
-  });
-
-  return std::make_pair(min_value, max_value);
-}
-
-void analyze_value_interval(std::string table_name, std::string column_name) {
-  auto table = opossum::StorageManager::get().get_table(table_name);
-  auto column_id = table->column_id_by_name(column_name);
-  analyze_value_interval(table_name, column_id);
-}
-
-void analyze_value_interval(std::string table_name, ColumnID column_id) {
-  //std::cout << " > Analyzing " << table_name << "::" << column_name << std::endl;
-  auto table = opossum::StorageManager::get().get_table(table_name);
-  auto column_id = table->column_id_by_name(column_name);
-  auto column_type = table->column_type(column_id);
-
-  for (auto chunk_id = opossum::ChunkID{0}; chunk_id < table->chunk_count(); chunk_id++) {
-    if (column_type == DataType::Int) {
-      auto interval = analyze_value_interval<int>(table_name, column_id, chunk_id);
-      std::cout << "[" << interval.first << ", " << interval.second << "], ";
-    } else if (column_type == DataType::Double) {
-      auto interval = analyze_value_interval<double>(table_name, column_id, chunk_id);
-      std::cout << "[" << interval.first << ", " << interval.second << "], ";
-    } else if (column_type == DataType::String) {
-      auto interval = analyze_value_interval<std::string>(table_name, column_id, chunk_id);
-      std::cout << "[" << interval.first << ", " << interval.second << "], ";
-    }
-  }
-  std::cout << std::endl;
-}
-
-std::string data_type_to_string(DataType data_type) {
-  if (data_type == DataType::Int) {
-    return "int";
-  } else if (data_type == DataType::Double) {
-    return "double";
-  } else if (data_type == DataType::String) {
-    return "string";
-  } else {
-    return "unknown";
-  }
-}
-
-void print_table_layout(std::string table_name) {
-  auto table = StorageManager::get().get_table(table_name);
-  std::cout << "table: " << table_name << std::endl;
-  std::cout << "rows: " << table->row_count() << std::endl;
-  std::cout << "chunks: " << table->chunk_count() << std::endl;
-  std::cout << "columns: " << table->column_count() << std::endl;
-  for (auto column_id = ColumnID{0}; column_id < table->column_count(); column_id++) {
-    auto column_name = table->column_name(column_id);
-    auto column_type = table->column_type(column_id);
-    std::cout << "(" << data_type_to_string(column_type) << ") " << column_name << ": ";
-    analyze_value_interval(table_name, column_name);
-  }
-  std::cout << std::endl;
-  std::cout << "------------------------" << std::endl;
 }
 
 int analyze_skippable_chunks_filter(std::string table_name, std::string column_name, AllTypeVariant scan_value) {
