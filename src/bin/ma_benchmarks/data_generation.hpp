@@ -296,7 +296,7 @@ std::string acdoca_load_or_generate(int row_count, int chunk_size, bool compress
   }
 
   //auto table_name = "acdoca_" + std::to_string(row_count) + "_" + std::to_string(chunk_size) + "_";
-  auto table_name = "acdoca";
+  auto table_name = std::string("acdoca");
   auto compressed_name = table_name + std::to_string(true);
   auto uncompressed_name = table_name + std::to_string(false);
   table_name = table_name + std::to_string(compressed);
