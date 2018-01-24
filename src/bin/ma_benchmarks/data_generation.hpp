@@ -4,6 +4,7 @@
 #include "utils/assert.hpp"
 #include "all_type_variant.hpp"
 #include "storage/index/counting_quotient_filter/counting_quotient_filter.hpp"
+#include "import_export/csv_meta.hpp"
 #include "storage/table.hpp"
 #include "storage/dictionary_compression.hpp"
 #include "storage/storage_manager.hpp"
@@ -309,7 +310,8 @@ std::string acdoca_load_or_generate(int row_count, int chunk_size, bool compress
   // Save uncompressed
   std::cout << " > Generating table " << uncompressed_name << "..." << std::flush;
   auto file = "/mnt/data2/acdoca/acdoca.csv";
-  auto import = std::make_shared<ImportCsv>(file, table_name);
+  auto meta_file = "/mnt/data2/acdoca/acdoca.csv.meta";
+  auto import = std::make_shared<ImportCsv>(file, table_name, process_csv_meta_file(meta_file));
   import->execute();
   auto import_table = import->get_output();
 
