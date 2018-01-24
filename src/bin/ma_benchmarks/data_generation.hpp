@@ -4,12 +4,14 @@
 #include "utils/assert.hpp"
 #include "all_type_variant.hpp"
 #include "storage/index/counting_quotient_filter/counting_quotient_filter.hpp"
+#include "import_export/csv_meta.hpp"
 #include "storage/table.hpp"
 #include "storage/dictionary_compression.hpp"
 #include "storage/storage_manager.hpp"
 #include "operators/import_binary.hpp"
 #include "operators/export_binary.hpp"
 #include "operators/table_wrapper.hpp"
+#include "operators/import_csv.hpp"
 #include "tpcc/tpcc_table_generator.hpp"
 
 #include <string>
@@ -285,15 +287,66 @@ std::string tpcc_load_or_generate(std::string tpcc_table_name, int warehouse_siz
   save_table(table, compressed_name);
 
   table = nullptr;
-
   load_table(table_name);
+  return table_name;
+}
 
+std::string acdoca_load_or_generate(int row_count, int chunk_size, bool compressed) {
+  if (row_count != 100'000'000) {
+    std::logic_error("row count has to be 100M");
+  }
+
+  //auto table_name = "acdoca_" + std::to_string(row_count) + "_" + std::to_string(chunk_size) + "_";
+  auto table_name = std::string("acdoca");
+  auto compressed_name = table_name + std::to_string(true);
+  auto uncompressed_name = table_name + std::to_string(false);
+  table_name = table_name + std::to_string(compressed);
+
+  auto loaded = load_table(table_name);
+  if (loaded) {
+    return table_name;
+  }
+
+  // Save uncompressed
+  std::cout << " > Generating table " << uncompressed_name << "..." << std::flush;
+  auto file = "/mnt/data2/acdoca/acdoca.csv";
+  auto meta_file = "/mnt/data2/acdoca/acdoca.csv.meta";
+  auto import = std::make_shared<ImportCsv>(file, table_name, process_csv_meta_file(meta_file));
+  import->execute();
+  auto import_table = import->get_output();
+
+  // iterate
+  auto table = std::make_shared<Table>(chunk_size);
+  std::cout << "OK!" << std::endl;
+  save_table(table, uncompressed_name);
+
+  //for (auto chunk_id = ChunkID{0}; chunk_id < table->chunk_count(); chunk_id++) {
+    // copy over
+  //}
+
+  // Save compressed
+  std::cout << " > Generating table " << compressed_name << "..." << std::flush;
+  DictionaryCompression::compress_table(*table);
+  std::cout << "OK!" << std::endl;
+  save_table(table, compressed_name);
+
+  table.reset();
+  load_table(table_name);
   return table_name;
 }
 
 double normal(double expectation, double variance, double x) {
   auto variance_sq = std::pow(variance, 2);
   return 1.0 / std::sqrt(2 * PI * variance_sq) * std::exp(-std::pow(x - expectation, 2) / (2 * variance_sq));
+}
+
+std::vector<uint> generate_zipfian_distribution(int value_count, int distinct_values) {
+  auto distribution = std::vector<uint>(distinct_values);
+  for (int i = 0; i < distinct_values; i++) {
+    distribution[i] = value_count / (static_cast<double>(i) + std::log(1.78 * value_count));
+  }
+
+  return distribution;
 }
 
 std::vector<uint> generate_normal_distribution(int value_cont, int distinct_values, double variance) {
