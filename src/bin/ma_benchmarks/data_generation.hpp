@@ -341,10 +341,18 @@ double normal(double expectation, double variance, double x) {
 }
 
 std::vector<uint> generate_zipfian_distribution(int value_count, int distinct_values) {
+  int sum = 0;
   auto distribution = std::vector<uint>(distinct_values);
   for (int i = 0; i < distinct_values; i++) {
     distribution[i] = value_count / (static_cast<double>(i) + std::log(1.78 * value_count));
+    sum += distribution[i];
   }
+
+  for (int i = 0; i < distinct_values; i++) {
+    distribution[i] = distribution[i] * value_count / sum;
+  }
+
+  std::cout << "sum: " << sum << std::endl;
 
   return distribution;
 }

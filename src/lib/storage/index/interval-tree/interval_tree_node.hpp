@@ -1,4 +1,4 @@
-
+/*
 namespace opossum {
 
 template <typename T>
@@ -8,8 +8,9 @@ class IntervalTreeNode {
  private:
   T _lower_bound;
   T _upper_bound
-  
+
 
 };
 
 } // namespace opossum
+*/
