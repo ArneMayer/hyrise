@@ -18,7 +18,7 @@
 #include "operators/get_table.hpp"
 #include "operators/table_scan.hpp"
 #include "operators/print.hpp"
-#include "storage/storage_manager.hpp"
+
 #include "scheduler/abstract_task.hpp"
 #include "scheduler/current_scheduler.hpp"
 #include "resolve_type.hpp"
@@ -30,6 +30,8 @@
 
 */
 
+#include "storage/storage_manager.hpp"
+
 int main() {
   //print_table_layout(acdoca_load_or_generate(100'000'000, 100'000, false));
   //custom_benchmark_series();
@@ -38,6 +40,7 @@ int main() {
   auto table_name = jcch_load_or_generate("LINEITEM", 6000000, 100000, false);
   auto prunable = analyze_skippable_chunks_actual(table_name, "L_SHIPDATE", std::string("1992-02-24"));
   std::cout << "prunable chunks: " << prunable << std::endl;
+  std::cout << "total chunks: " << StorageManager::get_table(table_name)->chunk_count() << std::endl;
   //acdoca_benchmark_series();
   //dict_vs_filter_series_cached();
   //dict_vs_filter_series_uncached();
