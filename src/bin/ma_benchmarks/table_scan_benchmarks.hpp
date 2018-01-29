@@ -181,8 +181,8 @@ void run_jcch_benchmark(std::string table_name, std::string column_name, int row
   auto sum_time = std::chrono::microseconds(0);
   int size = -1;
   for (int i = 0; i < sample_size; i++) {
-    auto benchmark = generate_jcch_benchmark(table_name, column_name, row_count, chunk_size, remainder_size,
-                                             dictionary, btree, art);
+    auto benchmark = generate_jcch_benchmark(table_name, column_name, row_count, chunk_size, quotient_size,
+                                             remainder_size, dictionary, btree, art);
     auto query = benchmark.first;
     auto table = benchmark.second;
     clear_cache();
@@ -319,7 +319,7 @@ void jcch_benchmark_series() {
   std::cout << "data:           " << "jcch" << std::endl;
   std::cout << "table_name:     " << tpch_table_name << std::endl;
   std::cout << "column_name:    " << column_name << std::endl;
-  std::cout << "warehouse_size: " << warehouse_size << std::endl;
+  std::cout << "row_count:      " << row_count << std::endl;
   std::cout << "chunk_size:     " << chunk_size << std::endl;
   std::cout << "------------------------" << std::endl;
 
