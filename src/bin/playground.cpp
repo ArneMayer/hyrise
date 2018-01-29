@@ -3,6 +3,7 @@
 #include "ma_benchmarks/data_structure_query.hpp"
 #include "ma_benchmarks/table_scan_benchmarks.hpp"
 #include "ma_benchmarks/utils.hpp"
+#include "ma_benchmarks/analysis.hpp"
 
 /*
 #include <iostream>
