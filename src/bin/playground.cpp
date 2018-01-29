@@ -38,7 +38,7 @@ int main() {
   //tpcc_benchmark_series();
   //jcch_benchmark_series();
   auto table_name = jcch_load_or_generate("LINEITEM", 6000000, 100000, false);
-  table = StorageManager::get().get_table(table_name);
+  auto table = StorageManager::get().get_table(table_name);
   create_quotient_filters(table, table->column_id_by_name("L_SHIPDATE"), 17, 4);
   auto prunable_actual = analyze_skippable_chunks_actual(table_name, "L_SHIPDATE", std::string("1992-02-24"));
   auto prunable_filter = analyze_skippable_chunks_filter(table_name, "L_SHIPDATE", std::string("1992-02-24"));
