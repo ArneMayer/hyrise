@@ -148,7 +148,7 @@ void analyze_jcch_lineitem() {
   auto chunk_size = 100'000;
   auto dictionary = false;
 
-  auto table_name = tpcc_load_or_generate(tpch_table_name, row_count, chunk_size, dictionary);
+  auto table_name = jcch_load_or_generate(tpch_table_name, row_count, chunk_size, dictionary);
   auto table = StorageManager::get().get_table(table_name);
   print_table_layout(table_name);
 }
