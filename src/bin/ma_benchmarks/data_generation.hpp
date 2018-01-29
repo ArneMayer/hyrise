@@ -2,7 +2,7 @@
 
 #include "types.hpp"
 #include "utils/assert.hpp"
-#include "load_table.hpp"
+#include "utils/load_table.hpp"
 #include "all_type_variant.hpp"
 #include "storage/index/counting_quotient_filter/counting_quotient_filter.hpp"
 #include "import_export/csv_meta.hpp"
