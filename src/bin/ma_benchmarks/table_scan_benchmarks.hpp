@@ -111,8 +111,6 @@ std::pair<std::shared_ptr<AbstractOperator>, std::shared_ptr<const Table>> gener
   return std::make_pair(table_scan, table);
 }
 
-
-
 void run_tpcc_benchmark(std::string table_name, std::string column_name, int warehouse_size, int chunk_size,
                         int remainder_size, bool dictionary, bool btree, bool art, int sample_size,
                         std::shared_ptr<Table> results_table) {
@@ -145,6 +143,46 @@ void run_tpcc_benchmark(std::string table_name, std::string column_name, int war
             << ", column: " << column_name
             << ", row_count: " << row_count
             << ", chunk_size: " << chunk_size
+            << ", remainder_size: " << remainder_size
+            << ", dictionary: " << dictionary
+            << ", btree: " << btree
+            << ", art: " << art
+            << ", size: " << size
+            << ", avg_time: " << avg_time.count()
+            << std::endl;
+}
+
+void run_jcch_benchmark(std::string table_name, std::string column_name, int row_count, int chunk_size,
+                        int quotient_size, int remainder_size, bool dictionary, bool btree, bool art, int sample_size,
+                        std::shared_ptr<Table> results_table) {
+  auto sum_time = std::chrono::microseconds(0);
+  int size = -1;
+  uint64_t row_count = 0;
+  for (int i = 0; i < sample_size; i++) {
+    auto benchmark = generate_jcch_benchmark(table_name, column_name, row_count, chunk_size, remainder_size,
+                                             dictionary, btree, art);
+    auto query = benchmark.first;
+    auto table = benchmark.second;
+    clear_cache();
+    auto start = std::chrono::steady_clock::now();
+    query->execute();
+    auto duration = std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::steady_clock::now() - start);
+    sum_time += duration;
+    if (size == -1) {
+      size = table->ma_memory_consumption(table->column_id_by_name(column_name)) / 1000;
+    }
+    row_count = table->row_count();
+    results_table->append({table_name, column_name, static_cast<int>(row_count), chunk_size, quotient_size,
+                           remainder_size, static_cast<int>(dictionary), static_cast<int>(btree), static_cast<int>(art),
+                           size, duration.count()});
+  }
+
+  auto avg_time = sum_time / sample_size;
+  std::cout << "table: " << table_name
+            << ", column: " << column_name
+            << ", row_count: " << row_count
+            << ", chunk_size: " << chunk_size
+            << ", quotient_size: " << remainder_size
             << ", remainder_size: " << remainder_size
             << ", dictionary: " << dictionary
             << ", btree: " << btree
@@ -232,7 +270,61 @@ void run_acdoca_benchmark(std::string column_name, int quotient_size, int remain
 }
 
 
+void jcch_benchmark_series() {
+  auto sample_size = 2;
+  auto tpch_table_name = std::string("LINEITEM");
+  auto column_name = std::string("L_SHIPDATE");
+  auto row_count = 6'000'000;
+  auto chunk_size = 100'000;
+  auto remainder_sizes = {0, 2, 4, 8};
+  auto quotient_size = 17;
 
+  auto results_table = std::make_shared<Table>();
+  results_table->add_column("table_name", DataType::String, false);
+  results_table->add_column("column_name", DataType::String, false);
+  results_table->add_column("row_count", DataType::Int, false);
+  results_table->add_column("chunk_size", DataType::Int, false);
+  results_table->add_column("quotient_size", DataType::Int, false);
+  results_table->add_column("remainder_size", DataType::Int, false);
+  results_table->add_column("dictionary", DataType::Int, false);
+  results_table->add_column("btree", DataType::Int, false);
+  results_table->add_column("art", DataType::Int, false);
+  results_table->add_column("size", DataType::Int, false);
+  results_table->add_column("run_time", DataType::Int, false);
+
+  std::cout << "------------------------" << std::endl;
+  std::cout << "Benchmark configuration: " << std::endl;
+  std::cout << "sample_size:  " << sample_size << std::endl;
+  std::cout << "data:           " << "jcch" << std::endl;
+  std::cout << "table_name:     " << tpch_table_name << std::endl;
+  std::cout << "column_name:    " << column_name << std::endl;
+  std::cout << "warehouse_size: " << warehouse_size << std::endl;
+  std::cout << "chunk_size:     " << chunk_size << std::endl;
+  std::cout << "------------------------" << std::endl;
+
+  auto start = std::chrono::steady_clock::now();
+
+  // analyze_value_interval<int>(table_name, column_name);
+  auto dictionary = false;
+  auto art = false;
+  auto btree = false;
+  for (auto remainder_size : remainder_sizes) {
+    run_jcch_benchmark(tpch_table_name, column_name, row_count, chunk_size, quotient_size, remainder_size,
+      dictionary=false, btree=false, art=false, sample_size, results_table);
+    run_jcch_benchmark(tpch_table_name, column_name, row_count, chunk_size, quotient_size, remainder_size,
+      dictionary=true, btree=false, art=false, sample_size, results_table);
+  }
+  auto remainder_size = 0;
+  run_jcch_benchmark(tpch_table_name, column_name, row_count, chunk_size, quotient_size, remainder_size=0,
+    dictionary=false, btree=true, art=false, sample_size, results_table);
+  run_jcch_benchmark(tpch_table_name, column_name, row_count, chunk_size, quotient_size, remainder_size=0,
+    dictionary=true, btree=false, art=true, sample_size, results_table);
+  auto duration = std::chrono::duration_cast<std::chrono::seconds>(std::chrono::steady_clock::now()-start);
+  std::cout << "Benchmark ran " << duration.count() << " seconds" << std::endl;
+
+  serialize_results_csv("jcch", results_table);
+  StorageManager::get().reset();
+}
 
 void tpcc_benchmark_series() {
   auto sample_size = 2;

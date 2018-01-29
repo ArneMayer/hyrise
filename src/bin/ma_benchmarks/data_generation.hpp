@@ -2,6 +2,7 @@
 
 #include "types.hpp"
 #include "utils/assert.hpp"
+#include "load_table.hpp"
 #include "all_type_variant.hpp"
 #include "storage/index/counting_quotient_filter/counting_quotient_filter.hpp"
 #include "import_export/csv_meta.hpp"
@@ -194,7 +195,7 @@ std::shared_ptr<std::vector<std::string>> generate_dictionary_string(int size, i
   return v;
 }
 
-bool load_table(std::string table_name) {
+bool import_table(std::string table_name) {
   if (StorageManager::get().has_table(table_name)) {
     return true;
   }
@@ -230,7 +231,7 @@ std::string custom_load_or_generate(std::string type, int row_count, int chunk_s
   auto compressed_name = table_name + std::to_string(true);
   auto uncompressed_name = table_name + std::to_string(false);
   table_name = table_name + std::to_string(compressed);
-  auto loaded = load_table(table_name);
+  auto loaded = import_table(table_name);
   if (loaded) {
     return table_name;
   }
@@ -256,7 +257,7 @@ std::string custom_load_or_generate(std::string type, int row_count, int chunk_s
 
   table = nullptr;
 
-  load_table(table_name);
+  import_table(table_name);
 
   return table_name;
 }
@@ -269,7 +270,7 @@ std::string tpcc_load_or_generate(std::string tpcc_table_name, int warehouse_siz
   auto uncompressed_name = table_name + std::to_string(false);
   table_name = table_name + std::to_string(compressed);
 
-  auto loaded = load_table(table_name);
+  auto loaded = import_table(table_name);
   if (loaded) {
     return table_name;
   }
@@ -287,9 +288,44 @@ std::string tpcc_load_or_generate(std::string tpcc_table_name, int warehouse_siz
   save_table(table, compressed_name);
 
   table = nullptr;
-  load_table(table_name);
+  import_table(table_name);
   return table_name;
 }
+
+std::string tcch_load_or_generate(std::string tpch_table_name, int row_count, int chunk_size, bool compressed) {
+  Assert(tpch_table_name == "LINEITEM", "Only the LINEITEM table is supported right now.");
+  Assert(row_count == 6'000'000, "Only a row count of 6'000'000 is supported right now.");
+
+  auto table_name = tpch_table_name + "_"
+                            + std::to_string(row_count) + "_"
+                            + std::to_string(chunk_size) + "_";
+  auto compressed_name = table_name + std::to_string(true);
+  auto uncompressed_name = table_name + std::to_string(false);
+  table_name = table_name + std::to_string(compressed);
+
+  auto loaded = import_table(table_name);
+  if (loaded) {
+    return table_name;
+  }
+
+  // Save uncompressed
+  std::cout << " > Generating table " << uncompressed_name << "..." << std::flush;
+  auto file_name = "/home/" + getUserName() + "/data/jcch/lineitem.tbl";
+  auto table = load_table(file_name, chunk_size);
+  std::cout << "OK!" << std::endl;
+  save_table(table, uncompressed_name);
+
+  // Save compressed
+  std::cout << " > Generating table " << compressed_name << "..." << std::flush;
+  DictionaryCompression::compress_table(*table);
+  std::cout << "OK!" << std::endl;
+  save_table(table, compressed_name);
+
+  table = nullptr;
+  import_table(table_name);
+  return table_name;
+}
+
 
 std::string acdoca_load_or_generate(int row_count, int chunk_size, bool compressed) {
   if (row_count != 100'000'000) {
@@ -302,7 +338,7 @@ std::string acdoca_load_or_generate(int row_count, int chunk_size, bool compress
   auto uncompressed_name = table_name + std::to_string(false);
   table_name = table_name + std::to_string(compressed);
 
-  auto loaded = load_table(table_name);
+  auto loaded = import_table(table_name);
   if (loaded) {
     return table_name;
   }
@@ -331,7 +367,7 @@ std::string acdoca_load_or_generate(int row_count, int chunk_size, bool compress
   save_table(table, compressed_name);
 
   table.reset();
-  load_table(table_name);
+  import_table(table_name);
   return table_name;
 }
 
