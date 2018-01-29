@@ -1,5 +1,7 @@
 #pragma once
 
+#include "utils.hpp"
+
 #include "types.hpp"
 #include "utils/assert.hpp"
 #include "utils/load_table.hpp"
