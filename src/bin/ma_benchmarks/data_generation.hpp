@@ -294,7 +294,7 @@ std::string tpcc_load_or_generate(std::string tpcc_table_name, int warehouse_siz
   return table_name;
 }
 
-std::string tcch_load_or_generate(std::string tpch_table_name, int row_count, int chunk_size, bool compressed) {
+std::string jcch_load_or_generate(std::string tpch_table_name, int row_count, int chunk_size, bool compressed) {
   Assert(tpch_table_name == "LINEITEM", "Only the LINEITEM table is supported right now.");
   Assert(row_count == 6'000'000, "Only a row count of 6'000'000 is supported right now.");
 
