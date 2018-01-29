@@ -84,6 +84,17 @@ void analyze_all_tpcc_tables() {
   }
 }
 
+void analyze_jcch_lineitem() {
+  auto tpch_table_names = std::string("LINEITEM");
+  auto row_count = 6'000'000;
+  auto chunk_size = 100'000;
+  auto dictionary = false;
+
+  auto table_name = tpcc_load_or_generate(tpch_table_name, row_count, chunk_size, dictionary);
+  auto table = StorageManager::get().get_table(table_name);
+  print_table_layout(table_name);
+}
+
 template <typename T>
 std::pair<T, T> analyze_value_interval(std::string table_name, ColumnID column_id, ChunkID chunk_id) {
   auto table = opossum::StorageManager::get().get_table(table_name);
