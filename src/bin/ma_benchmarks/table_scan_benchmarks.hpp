@@ -87,6 +87,29 @@ std::pair<std::shared_ptr<AbstractOperator>, std::shared_ptr<const Table>> gener
   return std::make_pair(table_scan, table);
 }
 
+std::pair<std::shared_ptr<AbstractOperator>, std::shared_ptr<const Table>> generate_jcch_benchmark(
+      std::string tpch_table_name, std::string column_name, int row_count, int chunk_size, uint8_t quotient_size,
+                                                          int remainder_size, bool dictionary, bool btree, bool art) {
+  auto table_name = jcch_load_or_generate(tpch_table_name, row_count, chunk_size, dictionary);
+  auto table = StorageManager::get().get_table(table_name);
+  auto column_id = table->column_id_by_name(column_name);
+  create_quotient_filters(table, column_id, quotient_size, remainder_size);
+  if (btree) {
+    table->populate_btree_index(column_id);
+  } else {
+    table->delete_btree_index(column_id);
+  }
+  if (art) {
+    table->populate_art_index(column_id);
+  } else {
+    table->delete_art_index(column_id);
+  }
+  auto get_table = std::make_shared<GetTable>(table_name);
+  auto table_scan = std::make_shared<TableScan>(get_table, column_id, ScanType::OpEquals, 3000);
+  get_table->execute();
+  return std::make_pair(table_scan, table);
+}
+
 std::pair<std::shared_ptr<AbstractOperator>, std::shared_ptr<const Table>> generate_acdoca_benchmark(
     std::string column_name, int row_count, int chunk_size, int quotient_size,
     int remainder_size, bool dictionary, bool btree, bool art) {
@@ -157,7 +180,6 @@ void run_jcch_benchmark(std::string table_name, std::string column_name, int row
                         std::shared_ptr<Table> results_table) {
   auto sum_time = std::chrono::microseconds(0);
   int size = -1;
-  uint64_t row_count = 0;
   for (int i = 0; i < sample_size; i++) {
     auto benchmark = generate_jcch_benchmark(table_name, column_name, row_count, chunk_size, remainder_size,
                                              dictionary, btree, art);
@@ -171,7 +193,6 @@ void run_jcch_benchmark(std::string table_name, std::string column_name, int row
     if (size == -1) {
       size = table->ma_memory_consumption(table->column_id_by_name(column_name)) / 1000;
     }
-    row_count = table->row_count();
     results_table->append({table_name, column_name, static_cast<int>(row_count), chunk_size, quotient_size,
                            remainder_size, static_cast<int>(dictionary), static_cast<int>(btree), static_cast<int>(art),
                            size, duration.count()});

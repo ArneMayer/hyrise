@@ -346,6 +346,7 @@ std::string acdoca_load_or_generate(int row_count, int chunk_size, bool compress
   }
 
   // Save uncompressed
+  /*
   std::cout << " > Generating table " << uncompressed_name << "..." << std::flush;
   auto file = "/mnt/data2/acdoca/acdoca.csv";
   auto meta_file = "/mnt/data2/acdoca/acdoca.csv.meta";
@@ -370,6 +371,8 @@ std::string acdoca_load_or_generate(int row_count, int chunk_size, bool compress
 
   table.reset();
   import_table(table_name);
+
+  */
   return table_name;
 }
 
