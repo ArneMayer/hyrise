@@ -35,8 +35,8 @@ int main() {
   //custom_benchmark_series();
   //tpcc_benchmark_series();
   //jcch_benchmark_series();
-  auto table_name = jcch_load_or_generate(6000000, 100000, false);
-  auto prunable = analyze_skippable_chunks_actual(table_name, "L_SHIPDATE", std::string("1992-02-24")) {
+  auto table_name = jcch_load_or_generate("LINEITEM", 6000000, 100000, false);
+  auto prunable = analyze_skippable_chunks_actual(table_name, "L_SHIPDATE", std::string("1992-02-24"));
   std::cout << "prunable chunks: " << prunable << std::endl;
   //acdoca_benchmark_series();
   //dict_vs_filter_series_cached();
