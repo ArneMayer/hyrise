@@ -46,55 +46,6 @@ int analyze_skippable_chunks_actual(std::string table_name, std::string column_n
   return skippable_count;
 }
 
-void print_table_layout(std::string table_name) {
-  auto table = StorageManager::get().get_table(table_name);
-  std::cout << "table: " << table_name << std::endl;
-  std::cout << "rows: " << table->row_count() << std::endl;
-  std::cout << "chunks: " << table->chunk_count() << std::endl;
-  std::cout << "columns: " << table->column_count() << std::endl;
-  for (auto column_id = ColumnID{0}; column_id < table->column_count(); column_id++) {
-    auto column_name = table->column_name(column_id);
-    auto column_type = table->column_type(column_id);
-    std::cout << "(" << data_type_to_string(column_type) << ") " << column_name << ": ";
-    analyze_value_interval(table_name, column_name);
-  }
-  std::cout << std::endl;
-  std::cout << "------------------------" << std::endl;
-}
-
-void analyze_all_tpcc_tables() {
-  auto tpcc_table_names = {std::string("ORDER"),
-                           std::string("ITEM"),
-                           std::string("WAREHOUSE"),
-                           std::string("STOCK"),
-                           std::string("DISTRICT"),
-                           std::string("CUSTOMER"),
-                           std::string("HISTORY"),
-                           std::string("NEW-ORDER"),
-                           std::string("ORDER-LINE")
-                          };
-  auto warehouse_size = 3;
-  auto chunk_size = 100000;
-  auto dictionary = false;
-
-  for (auto tpcc_table_name : tpcc_table_names) {
-    auto table_name = tpcc_load_or_generate(tpcc_table_name, warehouse_size, chunk_size, dictionary);
-    auto table = StorageManager::get().get_table(table_name);
-    print_table_layout(table_name);
-  }
-}
-
-void analyze_jcch_lineitem() {
-  auto tpch_table_names = std::string("LINEITEM");
-  auto row_count = 6'000'000;
-  auto chunk_size = 100'000;
-  auto dictionary = false;
-
-  auto table_name = tpcc_load_or_generate(tpch_table_name, row_count, chunk_size, dictionary);
-  auto table = StorageManager::get().get_table(table_name);
-  print_table_layout(table_name);
-}
-
 template <typename T>
 std::pair<T, T> analyze_value_interval(std::string table_name, ColumnID column_id, ChunkID chunk_id) {
   auto table = opossum::StorageManager::get().get_table(table_name);
@@ -151,4 +102,53 @@ void analyze_value_interval(std::string table_name, std::string column_name) {
   auto table = opossum::StorageManager::get().get_table(table_name);
   auto column_id = table->column_id_by_name(column_name);
   analyze_value_interval(table_name, column_id);
+}
+
+void print_table_layout(std::string table_name) {
+  auto table = StorageManager::get().get_table(table_name);
+  std::cout << "table: " << table_name << std::endl;
+  std::cout << "rows: " << table->row_count() << std::endl;
+  std::cout << "chunks: " << table->chunk_count() << std::endl;
+  std::cout << "columns: " << table->column_count() << std::endl;
+  for (auto column_id = ColumnID{0}; column_id < table->column_count(); column_id++) {
+    auto column_name = table->column_name(column_id);
+    auto column_type = table->column_type(column_id);
+    std::cout << "(" << data_type_to_string(column_type) << ") " << column_name << ": ";
+    analyze_value_interval(table_name, column_name);
+  }
+  std::cout << std::endl;
+  std::cout << "------------------------" << std::endl;
+}
+
+void analyze_all_tpcc_tables() {
+  auto tpcc_table_names = {std::string("ORDER"),
+                           std::string("ITEM"),
+                           std::string("WAREHOUSE"),
+                           std::string("STOCK"),
+                           std::string("DISTRICT"),
+                           std::string("CUSTOMER"),
+                           std::string("HISTORY"),
+                           std::string("NEW-ORDER"),
+                           std::string("ORDER-LINE")
+                          };
+  auto warehouse_size = 3;
+  auto chunk_size = 100000;
+  auto dictionary = false;
+
+  for (auto tpcc_table_name : tpcc_table_names) {
+    auto table_name = tpcc_load_or_generate(tpcc_table_name, warehouse_size, chunk_size, dictionary);
+    auto table = StorageManager::get().get_table(table_name);
+    print_table_layout(table_name);
+  }
+}
+
+void analyze_jcch_lineitem() {
+  auto tpch_table_name = std::string("LINEITEM");
+  auto row_count = 6'000'000;
+  auto chunk_size = 100'000;
+  auto dictionary = false;
+
+  auto table_name = tpcc_load_or_generate(tpch_table_name, row_count, chunk_size, dictionary);
+  auto table = StorageManager::get().get_table(table_name);
+  print_table_layout(table_name);
 }
