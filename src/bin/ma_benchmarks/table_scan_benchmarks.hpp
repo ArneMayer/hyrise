@@ -106,7 +106,7 @@ std::pair<std::shared_ptr<AbstractOperator>, std::shared_ptr<const Table>> gener
     table->delete_art_index(column_id);
   }
   auto get_table = std::make_shared<GetTable>(table_name);
-  auto table_scan = std::make_shared<TableScan>(get_table, column_id, ScanType::OpEquals, 3000);
+  auto table_scan = std::make_shared<TableScan>(get_table, column_id, ScanType::OpEquals, std::string("1992-02-24"));
   get_table->execute();
   return std::make_pair(table_scan, table);
 }
@@ -130,7 +130,7 @@ std::pair<std::shared_ptr<AbstractOperator>, std::shared_ptr<const Table>> gener
     table->delete_art_index(column_id);
   }
   auto get_table = std::make_shared<GetTable>(table_name);
-  auto table_scan = std::make_shared<TableScan>(get_table, column_id, ScanType::OpEquals, std::string("1992-02-24"));
+  auto table_scan = std::make_shared<TableScan>(get_table, column_id, ScanType::OpEquals, 3000);
   get_table->execute();
   return std::make_pair(table_scan, table);
 }
