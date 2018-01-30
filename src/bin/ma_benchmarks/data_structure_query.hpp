@@ -69,7 +69,7 @@ void filter_query_benchmark_int_uncached(std::vector<std::shared_ptr<CountingQuo
 void dict_vs_filter_series_cached() {
   auto string_length = 16;
   auto size = 1'000'000;
-  auto n = 10'000'000;
+  auto n = 100'000'000;
   auto quotient_size = 20;
   auto remainder_size = 4;
 
@@ -120,7 +120,7 @@ void dict_vs_filter_series_cached() {
 void dict_vs_filter_series_uncached() {
   auto string_length = 16;
   int size = 1'000'000;
-  int n = 10'000'000;
+  int n = 100'000'000;
   auto quotient_size = 20;
   auto remainder_size = 4;
   auto number_of_filters = 1000;
