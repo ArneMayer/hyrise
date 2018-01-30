@@ -351,6 +351,7 @@ void tpcc_benchmark_series() {
   auto column_name = std::string("OL_I_ID");
   auto warehouse_size = 10;
   auto chunk_size = 100000;
+  auto quotient_size = 17;
   auto remainder_sizes = {0, 2, 4, 8};
 
   auto results_table = std::make_shared<Table>();
@@ -383,15 +384,15 @@ void tpcc_benchmark_series() {
   auto art = false;
   auto btree = false;
   for (auto remainder_size : remainder_sizes) {
-    run_tpcc_benchmark(tpcc_table_name, column_name, warehouse_size, chunk_size, remainder_size, dictionary=false,
+    run_tpcc_benchmark(tpcc_table_name, column_name, warehouse_size, chunk_size, quotient_size, remainder_size, dictionary=false,
                        btree=false, art=false, sample_size, results_table);
-    run_tpcc_benchmark(tpcc_table_name, column_name, warehouse_size, chunk_size, remainder_size, dictionary=true,
+    run_tpcc_benchmark(tpcc_table_name, column_name, warehouse_size, chunk_size, quotient_size, remainder_size, dictionary=true,
                        btree=false, art=false, sample_size, results_table);
   }
   auto remainder_size = 0;
-  run_tpcc_benchmark(tpcc_table_name, column_name, warehouse_size, chunk_size, remainder_size=0, dictionary=false,
+  run_tpcc_benchmark(tpcc_table_name, column_name, warehouse_size, chunk_size, quotient_size, remainder_size=0, dictionary=false,
                      btree=true, art=false, sample_size, results_table);
-  run_tpcc_benchmark(tpcc_table_name, column_name, warehouse_size, chunk_size, remainder_size=0, dictionary=true,
+  run_tpcc_benchmark(tpcc_table_name, column_name, warehouse_size, chunk_size, quotient_size, remainder_size=0, dictionary=true,
                      btree=false, art=true, sample_size, results_table);
   auto duration = std::chrono::duration_cast<std::chrono::seconds>(std::chrono::steady_clock::now()-start);
   std::cout << "Benchmark ran " << duration.count() << " seconds" << std::endl;
