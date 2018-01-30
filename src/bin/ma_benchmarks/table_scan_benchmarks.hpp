@@ -404,6 +404,7 @@ void custom_benchmark_series() {
   auto sample_size = 10;
   auto row_counts = {10'000'000};
   auto remainder_sizes = {0, 2, 4, 8};
+  auto quotient_size = 17;
   auto chunk_sizes = {1'000'000};
   auto pruning_rates = {1.0, 0.5};
   auto selectivity = 1.0 / 3000.0;
@@ -440,15 +441,15 @@ void custom_benchmark_series() {
           auto btree = false;
           auto art = false;
           for (auto remainder_size : remainder_sizes) {
-            run_custom_benchmark(scan_type, remainder_size, dictionary=false, btree=false, art=false, row_count,
+            run_custom_benchmark(scan_type, quotient_size, remainder_size, dictionary=false, btree=false, art=false, row_count,
                chunk_size, pruning_rate, selectivity, sample_size, results_table);
-            run_custom_benchmark(scan_type, remainder_size, dictionary=true, btree=false, art=false, row_count,
+            run_custom_benchmark(scan_type, quotient_size, remainder_size, dictionary=true, btree=false, art=false, row_count,
               chunk_size, pruning_rate, selectivity, sample_size, results_table);
           }
           auto remainder_size = 0;
-          run_custom_benchmark(scan_type, remainder_size=0, dictionary=false, btree=true, art=false, row_count,
+          run_custom_benchmark(scan_type, quotient_size, remainder_size=0, dictionary=false, btree=true, art=false, row_count,
             chunk_size, pruning_rate, selectivity, sample_size, results_table);
-          run_custom_benchmark(scan_type, remainder_size=0, dictionary=true, btree=false, art=true, row_count,
+          run_custom_benchmark(scan_type, quotient_size, remainder_size=0, dictionary=true, btree=false, art=true, row_count,
             chunk_size, pruning_rate, selectivity, sample_size, results_table);
         }
       }
