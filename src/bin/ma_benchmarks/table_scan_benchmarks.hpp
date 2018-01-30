@@ -9,6 +9,7 @@
 #include "scheduler/current_scheduler.hpp"
 #include "operators/table_scan.hpp"
 #include "operators/get_table.hpp"
+#include "operators/print.hpp"
 
 using namespace opossum;
 
