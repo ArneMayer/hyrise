@@ -106,7 +106,9 @@ std::pair<std::shared_ptr<AbstractOperator>, std::shared_ptr<const Table>> gener
     table->delete_art_index(column_id);
   }
   auto get_table = std::make_shared<GetTable>(table_name);
-  auto table_scan = std::make_shared<TableScan>(get_table, column_id, ScanType::OpEquals, std::string("1992-02-24"));
+  //auto scan_value = std::string("1992-02-24");
+  auto scan_value = 3000;
+  auto table_scan = std::make_shared<TableScan>(get_table, column_id, ScanType::OpEquals, scan_value);
   get_table->execute();
   return std::make_pair(table_scan, table);
 }
@@ -292,7 +294,7 @@ void run_acdoca_benchmark(std::string column_name, int quotient_size, int remain
 void jcch_benchmark_series() {
   auto sample_size = 10;
   auto tpch_table_name = std::string("LINEITEM");
-  auto column_name = std::string("L_SHIPDATE");
+  auto column_name = std::string("L_PARTKEY");
   auto row_count = 6'000'000;
   auto chunk_size = 100'000;
   auto remainder_sizes = {0, 2, 4, 8};
