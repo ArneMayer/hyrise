@@ -211,6 +211,9 @@ void run_jcch_benchmark(std::string table_name, std::string column_name, int row
             << ", size: " << size
             << ", avg_time: " << avg_time.count()
             << std::endl;
+
+  auto print = std::make_shared<Print>(query);
+  print->execute();
 }
 
 void run_custom_benchmark(std::string type, int remainder_size, bool dictionary, bool btree, bool art, int row_count,
