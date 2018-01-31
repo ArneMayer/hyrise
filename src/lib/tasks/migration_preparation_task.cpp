@@ -38,7 +38,6 @@ struct ChunkInfo {
   std::string table_name;
   ChunkID id;
   int node;
-  size_t byte_size;
   double temperature;
   friend bool operator<(const ChunkInfo& l, const ChunkInfo& r) { return l.temperature < r.temperature; }
 };
@@ -144,14 +143,13 @@ std::vector<ChunkInfo> collect_chunk_infos(const StorageManager& storage_manager
     const auto& table = *storage_manager.get_table(table_name);
     const auto chunk_count = table.chunk_count();
     for (ChunkID i = ChunkID(0); i < chunk_count; i++) {
-      const auto& chunk = table.get_chunk(i);
-      if (ChunkMigrationTask::chunk_is_completed(chunk, table.max_chunk_size()) && chunk.has_access_counter()) {
-        const double temperature = static_cast<double>(chunk.access_counter()->history_sample(lookback_samples));
+      const auto chunk = table.get_chunk(i);
+      if (ChunkMigrationTask::chunk_is_completed(chunk, table.max_chunk_size()) && chunk->has_access_counter()) {
+        const double temperature = static_cast<double>(chunk->access_counter()->history_sample(lookback_samples));
         sum_temperature += temperature;
         chunk_infos.emplace_back(ChunkInfo{/* .table_name = */ table_name,
                                            /* .id = */ i,
-                                           /* .node = */ MigrationPreparationTask::get_node_id(chunk.get_allocator()),
-                                           /* .byte_size = */ chunk.byte_size(),
+                                           /* .node = */ MigrationPreparationTask::get_node_id(chunk->get_allocator()),
                                            /* .temperature = */ temperature});
       }
     }
