@@ -61,7 +61,7 @@ void clear_cache() {
 
 void print_chunk_sizes(std::shared_ptr<const Table> table) {
   for (auto chunk_id = ChunkID{0}; chunk_id < table->chunk_count(); chunk_id++) {
-    auto& chunk = table->get_chunk(chunk_id);
-    std::cout << "Chunk " << chunk_id << " size: " << chunk.size() << std::endl;
+    auto chunk = table->get_chunk(chunk_id);
+    std::cout << "Chunk " << chunk_id << " size: " << chunk->size() << std::endl;
   }
 }

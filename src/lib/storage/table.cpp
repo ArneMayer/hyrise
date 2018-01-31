@@ -211,26 +211,26 @@ std::vector<std::shared_ptr<AbstractTask>> Table::populate_quotient_filters(Colu
   auto type = column_type(column_id);
   auto jobs = std::vector<std::shared_ptr<AbstractTask>>();
   for (auto chunk_id = ChunkID{0}; chunk_id < chunk_count(); ++chunk_id) {
-    jobs.push_back(get_chunk(chunk_id).populate_quotient_filter(column_id, type, quotient_bits, remainder_bits));
+    jobs.push_back(get_chunk(chunk_id)->populate_quotient_filter(column_id, type, quotient_bits, remainder_bits));
   }
   return jobs;
 }
 
 void Table::delete_quotient_filters(ColumnID column_id) {
   for (auto chunk_id = ChunkID{0}; chunk_id < chunk_count(); ++chunk_id) {
-    get_chunk(chunk_id).delete_quotient_filter(column_id);
+    get_chunk(chunk_id)->delete_quotient_filter(column_id);
   }
 }
 
 void Table::populate_art_index(ColumnID column_id) {
   for (auto chunk_id = ChunkID{0}; chunk_id < chunk_count(); ++chunk_id) {
-    get_chunk(chunk_id).populate_art_index(column_id);
+    get_chunk(chunk_id)->populate_art_index(column_id);
   }
 }
 
 void Table::delete_art_index(ColumnID column_id) {
   for (auto chunk_id = ChunkID{0}; chunk_id < chunk_count(); ++chunk_id) {
-    get_chunk(chunk_id).delete_art_index(column_id);
+    get_chunk(chunk_id)->delete_art_index(column_id);
   }
 }
 
@@ -266,28 +266,28 @@ uint64_t Table::ma_memory_consumption(ColumnID column_id) const {
   }
 
   for (auto chunk_id = ChunkID{0}; chunk_id < chunk_count(); chunk_id++) {
-    auto& chunk = get_chunk(chunk_id);
+    auto chunk = get_chunk(chunk_id);
 
     // Filter
-    auto filter = chunk.get_filter(column_id);
+    auto filter = chunk->get_filter(column_id);
     if (filter != nullptr) {
       memory_consumption += filter->memory_consumption();
     }
 
     // ART
-    auto art = std::dynamic_pointer_cast<AdaptiveRadixTreeIndex>(chunk.get_art_index(column_id));
+    auto art = std::dynamic_pointer_cast<AdaptiveRadixTreeIndex>(chunk->get_art_index(column_id));
     if (art != nullptr) {
       memory_consumption += art->memory_consumption();
     }
 
     // Diciontary Column
-    auto dictionary_column = std::dynamic_pointer_cast<const BaseDictionaryColumn>(chunk.get_column(column_id));
+    auto dictionary_column = std::dynamic_pointer_cast<const BaseDictionaryColumn>(chunk->get_column(column_id));
     if (dictionary_column != nullptr) {
       memory_consumption += dictionary_column->memory_consumption();
     }
 
     // Value Column
-    auto value_column = std::dynamic_pointer_cast<const BaseValueColumn>(chunk.get_column(column_id));
+    auto value_column = std::dynamic_pointer_cast<const BaseValueColumn>(chunk->get_column(column_id));
     if (value_column != nullptr) {
       memory_consumption += value_column->memory_consumption();
     }

@@ -55,7 +55,7 @@ std::pair<std::shared_ptr<AbstractOperator>, std::shared_ptr<const Table>> gener
   }
 
   auto get_table = std::make_shared<GetTable>(table_name);
-  auto table_scan = std::make_shared<TableScan>(get_table, ColumnID{0}, ScanType::OpEquals, scan_value);
+  auto table_scan = std::make_shared<TableScan>(get_table, ColumnID{0}, PredicateCondition::Equals, scan_value);
   get_table->execute();
 
   //print_table_layout(table_name);
@@ -83,7 +83,7 @@ std::pair<std::shared_ptr<AbstractOperator>, std::shared_ptr<const Table>> gener
     table->delete_art_index(column_id);
   }
   auto get_table = std::make_shared<GetTable>(table_name);
-  auto table_scan = std::make_shared<TableScan>(get_table, column_id, ScanType::OpEquals, 3000);
+  auto table_scan = std::make_shared<TableScan>(get_table, column_id, PredicateCondition::Equals, 3000);
   get_table->execute();
   return std::make_pair(table_scan, table);
 }
@@ -108,7 +108,7 @@ std::pair<std::shared_ptr<AbstractOperator>, std::shared_ptr<const Table>> gener
   auto get_table = std::make_shared<GetTable>(table_name);
   //auto scan_value = std::string("1992-02-24");
   auto scan_value = 3000;
-  auto table_scan = std::make_shared<TableScan>(get_table, column_id, ScanType::OpEquals, scan_value);
+  auto table_scan = std::make_shared<TableScan>(get_table, column_id, PredicateCondition::Equals, scan_value);
   get_table->execute();
   return std::make_pair(table_scan, table);
 }
@@ -132,7 +132,7 @@ std::pair<std::shared_ptr<AbstractOperator>, std::shared_ptr<const Table>> gener
     table->delete_art_index(column_id);
   }
   auto get_table = std::make_shared<GetTable>(table_name);
-  auto table_scan = std::make_shared<TableScan>(get_table, column_id, ScanType::OpEquals, 3000);
+  auto table_scan = std::make_shared<TableScan>(get_table, column_id, PredicateCondition::Equals, 3000);
   get_table->execute();
   return std::make_pair(table_scan, table);
 }
@@ -165,7 +165,7 @@ void run_tpcc_benchmark(std::string table_name, std::string column_name, int war
   }
 
   auto avg_time = sum_time / sample_size;
-  std::cout << ", row_count: " << row_count
+  std::cout << "row_count: " << row_count
             << ", chunk_size: " << chunk_size
             << ", remainder_size: " << remainder_size
             << ", dictionary: " << dictionary
@@ -197,12 +197,13 @@ void run_jcch_benchmark(std::string table_name, std::string column_name, int row
     results_table->append({table_name, column_name, static_cast<int>(row_count), chunk_size, quotient_size,
                            remainder_size, static_cast<int>(dictionary), static_cast<int>(btree), static_cast<int>(art),
                            size, duration.count()});
+    std::cout << "Output size: " << query->get_output()->row_count() << std::endl;
    //auto print = std::make_shared<Print>(query);
    //print->execute();
   }
 
   auto avg_time = sum_time / sample_size;
-  std::cout << ", row_count: " << row_count
+  std::cout << "row_count: " << row_count
             << ", chunk_size: " << chunk_size
             << ", quotient_size: " << remainder_size
             << ", remainder_size: " << remainder_size
@@ -236,10 +237,13 @@ void run_custom_benchmark(std::string type, int quotient_size, int remainder_siz
     results_table->append({type, row_count, chunk_size, pruning_rate, selectivity, quotient_size, remainder_size,
                            static_cast<int>(dictionary), static_cast<int>(btree), static_cast<int>(art),
                            static_cast<int>(size), duration.count()});
+    //auto print = std::make_shared<Print>(query);
+    //print->execute();
+    std::cout << "Output size: " << query->get_output()->row_count() << std::endl;
   }
 
   auto avg_time = sum_time / sample_size;
-  std::cout << ", row_count: " << row_count
+  std::cout << "row_count: " << row_count
             << ", chunk_size: " << chunk_size
             << ", remainder_size: " << remainder_size
             << ", dictionary: " << dictionary
@@ -292,7 +296,7 @@ void run_acdoca_benchmark(std::string column_name, int quotient_size, int remain
 
 
 void jcch_benchmark_series() {
-  auto sample_size = 10;
+  auto sample_size = 1;
   auto tpch_table_name = std::string("LINEITEM");
   auto column_name = std::string("L_PARTKEY");
   auto row_count = 6'000'000;
@@ -404,8 +408,8 @@ void tpcc_benchmark_series() {
 }
 
 void custom_benchmark_series() {
-  auto sample_size = 10;
-  auto row_counts = {10'000'000};
+  auto sample_size = 1;
+  auto row_counts = {1'000'000};
   auto remainder_sizes = {0, 2, 4, 8};
   auto quotient_size = 17;
   auto chunk_sizes = {100'000};
@@ -437,18 +441,21 @@ void custom_benchmark_series() {
   // analyze_value_interval<int>(table_name, column_name);
   auto start = std::chrono::steady_clock::now();
   for (auto scan_type : scan_types) {
+    std::cout << " > Data Type: " << scan_type << std::endl;
     for (auto row_count : row_counts) {
       for (auto chunk_size : chunk_sizes) {
         for (auto pruning_rate : pruning_rates) {
           auto dictionary = false;
           auto btree = false;
           auto art = false;
+
           for (auto remainder_size : remainder_sizes) {
             run_custom_benchmark(scan_type, quotient_size, remainder_size, dictionary=false, btree=false, art=false, row_count,
                chunk_size, pruning_rate, selectivity, sample_size, results_table);
             run_custom_benchmark(scan_type, quotient_size, remainder_size, dictionary=true, btree=false, art=false, row_count,
               chunk_size, pruning_rate, selectivity, sample_size, results_table);
           }
+
           auto remainder_size = 0;
           run_custom_benchmark(scan_type, quotient_size, remainder_size=0, dictionary=false, btree=true, art=false, row_count,
             chunk_size, pruning_rate, selectivity, sample_size, results_table);

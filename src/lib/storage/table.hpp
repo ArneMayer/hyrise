@@ -177,5 +177,6 @@ class Table : private Noncopyable {
   std::unique_ptr<std::mutex> _append_mutex;
 
   std::vector<IndexInfo> _indexes;
+  std::map<ColumnID, std::shared_ptr<BaseBTreeIndex>> _btree_indices;
 };
 }  // namespace opossum

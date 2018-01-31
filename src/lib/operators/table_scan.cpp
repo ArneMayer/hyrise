@@ -90,7 +90,7 @@ std::shared_ptr<const Table> TableScan::_on_execute() {
   auto btree_index = _in_table->get_btree_index(_left_column_id);
   if (btree_index && is_variant(_right_parameter)) {
     //std::cout << "using btree" << std::endl;
-    Chunk chunk_out;
+    auto chunk_out = std::make_shared<Chunk>();
     AllTypeVariant scan_value = boost::get<AllTypeVariant>(_right_parameter);
     auto matches_out = std::make_shared<PosList>();
     auto lower_bound = btree_index->lower_bound_all_type(scan_value);
@@ -100,11 +100,11 @@ std::shared_ptr<const Table> TableScan::_on_execute() {
     }
     for (ColumnID column_id{0u}; column_id < _in_table->column_count(); ++column_id) {
       auto ref_column_out = std::make_shared<ReferenceColumn>(_in_table, column_id, matches_out);
-      chunk_out.add_column(ref_column_out);
+      chunk_out->add_column(ref_column_out);
     }
 
     std::lock_guard<std::mutex> lock(output_mutex);
-    if (chunk_out.size() > 0 || _output_table->get_chunk(ChunkID{0}).size() == 0) {
+    if (chunk_out->size() > 0 || _output_table->get_chunk(ChunkID{0})->size() == 0) {
       _output_table->emplace_chunk(std::move(chunk_out));
     }
 

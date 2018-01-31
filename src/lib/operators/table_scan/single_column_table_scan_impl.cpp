@@ -46,8 +46,8 @@ void SingleColumnTableScanImpl::handle_value_column(const BaseValueColumn& base_
 
   // Check whether this chunk needs to be looked at by performing a filter query
   // CQF is only supported for ScanType::OpEquals
-  if (_scan_type == ScanType::OpEquals) {
-    auto cqf = _in_table->get_chunk(chunk_id).get_filter(_left_column_id);
+  if (_predicate_condition == PredicateCondition::Equals) {
+    auto cqf = _in_table->get_chunk(chunk_id)->get_filter(_left_column_id);
 
     if (cqf != nullptr) {
       //std::cout << "using value column cqf" << std::endl;
@@ -88,8 +88,8 @@ void SingleColumnTableScanImpl::handle_dictionary_column(const BaseDictionaryCol
   auto& left_column = static_cast<const BaseDictionaryColumn&>(base_column);
 
   // ART scan
-  if (_scan_type == ScanType::OpEquals) {
-    auto index = _in_table->get_chunk(chunk_id).get_art_index(_left_column_id);
+  if (_predicate_condition == PredicateCondition::Equals) {
+    auto index = _in_table->get_chunk(chunk_id)->get_art_index(_left_column_id);
     if (index != nullptr) {
       //std::cout << "using ART" << std::endl;
       std::vector<AllTypeVariant> value_vector;
@@ -105,8 +105,8 @@ void SingleColumnTableScanImpl::handle_dictionary_column(const BaseDictionaryCol
 
   // Check whether this chunk needs to be looked at by performing a filter query
   // CQF is only supported for ScanType::OpEquals
-  if (_scan_type == ScanType::OpEquals) {
-    auto cqf = _in_table->get_chunk(chunk_id).get_filter(_left_column_id);
+  if (_predicate_condition == PredicateCondition::Equals) {
+    auto cqf = _in_table->get_chunk(chunk_id)->get_filter(_left_column_id);
 
     if (cqf != nullptr) {
       //std::cout << "using dict cqf" << std::endl;

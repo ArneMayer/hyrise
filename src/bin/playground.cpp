@@ -34,8 +34,8 @@
 
 int main() {
   //print_table_layout(acdoca_load_or_generate(100'000'000, 100'000, false));
-  custom_benchmark_series();
-  tpcc_benchmark_series();
+  //custom_benchmark_series();
+  //tpcc_benchmark_series();
   jcch_benchmark_series();
   /*
   auto table_name = jcch_load_or_generate("LINEITEM", 6000000, 100000, false);
@@ -48,6 +48,7 @@ int main() {
   std::cout << "total chunks: " << table->chunk_count() << std::endl;
   */
   //acdoca_benchmark_series();
+  /*
   dict_vs_filter_series_cached();
   dict_vs_filter_series_uncached();
   filter_cardinality_estimation_series("normal", 3'000);
@@ -65,7 +66,7 @@ int main() {
 
   filter_cardinality_estimation_series("zipf", 3000);
   cardinality_misestimation_series("zipf", 3000);
-
+  */
   //analyze_all_tpcc_tables();
   //analyze_jcch_lineitem();
 }

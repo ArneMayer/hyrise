@@ -11,8 +11,8 @@ int analyze_skippable_chunks_filter(std::string table_name, std::string column_n
 
   auto skippable_count = 0;
   for (auto chunk_id = ChunkID{0}; chunk_id < table->chunk_count(); chunk_id++) {
-    auto& chunk = table->get_chunk(chunk_id);
-    auto filter = chunk.get_filter(column_id);
+    auto chunk = table->get_chunk(chunk_id);
+    auto filter = chunk->get_filter(column_id);
     if (filter != nullptr && filter->count_all_type(scan_value) == 0) {
       skippable_count++;
     }
@@ -28,8 +28,8 @@ int analyze_skippable_chunks_actual(std::string table_name, std::string column_n
 
   auto skippable_count = 0;
   for (auto chunk_id = ChunkID{0}; chunk_id < table->chunk_count(); chunk_id++) {
-    auto& chunk = table->get_chunk(chunk_id);
-    auto column = chunk.get_column(column_id);
+    auto chunk = table->get_chunk(chunk_id);
+    auto column = chunk->get_column(column_id);
     bool skippable = true;
     resolve_column_type<T>(*column, [&](const auto& typed_column) {
       auto iterable_left = create_iterable_from_column<T>(typed_column);
@@ -49,8 +49,8 @@ int analyze_skippable_chunks_actual(std::string table_name, std::string column_n
 template <typename T>
 std::pair<T, T> analyze_value_interval(std::string table_name, ColumnID column_id, ChunkID chunk_id) {
   auto table = opossum::StorageManager::get().get_table(table_name);
-  auto& chunk = table->get_chunk(chunk_id);
-  auto column = chunk.get_column(column_id);
+  auto chunk = table->get_chunk(chunk_id);
+  auto column = chunk->get_column(column_id);
 
   auto min_value = table->get_value<T>(column_id, 0);
   auto max_value = table->get_value<T>(column_id, 0);
