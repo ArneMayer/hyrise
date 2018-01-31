@@ -198,8 +198,8 @@ void run_jcch_benchmark(std::string table_name, std::string column_name, int row
                            remainder_size, static_cast<int>(dictionary), static_cast<int>(btree), static_cast<int>(art),
                            size, duration.count()});
     std::cout << "Output size: " << query->get_output()->row_count() << std::endl;
-   //auto print = std::make_shared<Print>(query);
-   //print->execute();
+   auto print = std::make_shared<Print>(query);
+   print->execute();
   }
 
   auto avg_time = sum_time / sample_size;
