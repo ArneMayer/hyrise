@@ -408,7 +408,7 @@ void custom_benchmark_series() {
   auto row_counts = {10'000'000};
   auto remainder_sizes = {0, 2, 4, 8};
   auto quotient_size = 17;
-  auto chunk_sizes = {1'000'000};
+  auto chunk_sizes = {100'000};
   auto pruning_rates = {1.0, 0.5};
   auto selectivity = 1.0 / 3000.0;
   auto scan_types = {std::string("int"), std::string("string")};
