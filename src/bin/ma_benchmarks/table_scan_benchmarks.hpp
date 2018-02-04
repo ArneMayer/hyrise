@@ -1,6 +1,7 @@
 #pragma once
 
 #include "utils.hpp"
+#include "analysis.hpp"
 
 #include "types.hpp"
 #include "storage/table.hpp"
@@ -53,6 +54,11 @@ std::pair<std::shared_ptr<AbstractOperator>, std::shared_ptr<const Table>> gener
   } else {
     scan_value = 1;
   }
+
+  auto prunable_actual = analyze_skippable_chunks_actual(table_name, "column0", scan_value);
+  auto prunable_filter = analyze_skippable_chunks_filter(table_name, "column0", scan_value);
+  std::cout << "prunable by filter: " << prunable_filter << std::endl;
+  std::cout << "prunable actual: " << prunable_actual << std::endl;
 
   auto get_table = std::make_shared<GetTable>(table_name);
   auto table_scan = std::make_shared<TableScan>(get_table, ColumnID{0}, PredicateCondition::Equals, scan_value);

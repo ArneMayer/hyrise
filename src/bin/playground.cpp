@@ -34,9 +34,9 @@
 
 int main() {
   //print_table_layout(acdoca_load_or_generate(100'000'000, 100'000, false));
-  //custom_benchmark_series();
+  custom_benchmark_series();
   //tpcc_benchmark_series();
-  jcch_benchmark_series();
+  //jcch_benchmark_series();
   /*
   auto table_name = jcch_load_or_generate("LINEITEM", 6000000, 100000, false);
   auto table = StorageManager::get().get_table(table_name);
