@@ -55,10 +55,19 @@ std::pair<std::shared_ptr<AbstractOperator>, std::shared_ptr<const Table>> gener
     scan_value = 1;
   }
 
-  auto prunable_actual = analyze_skippable_chunks_actual(table_name, "column0", scan_value);
+  /*
+  int prunable_actual = 0;
+  if (type == "string") {
+    prunable_actual = analyze_skippable_chunks_actual<std::string>(table_name, "column0", std::string("l_scan_value"));
+  } else {
+    prunable_actual = analyze_skippable_chunks_actual<int>(table_name, "column0", 1);
+  }
+
+
   auto prunable_filter = analyze_skippable_chunks_filter(table_name, "column0", scan_value);
   std::cout << "prunable by filter: " << prunable_filter << std::endl;
   std::cout << "prunable actual: " << prunable_actual << std::endl;
+  */
 
   auto get_table = std::make_shared<GetTable>(table_name);
   auto table_scan = std::make_shared<TableScan>(get_table, ColumnID{0}, PredicateCondition::Equals, scan_value);
@@ -302,7 +311,7 @@ void run_acdoca_benchmark(std::string column_name, int quotient_size, int remain
 
 
 void jcch_benchmark_series() {
-  auto sample_size = 1;
+  auto sample_size = 500;
   auto tpch_table_name = std::string("LINEITEM");
   auto column_name = std::string("L_PARTKEY");
   auto row_count = 6'000'000;
@@ -358,7 +367,7 @@ void jcch_benchmark_series() {
 }
 
 void tpcc_benchmark_series() {
-  auto sample_size = 10;
+  auto sample_size = 500;
   auto tpcc_table_name = std::string("ORDER-LINE");
   auto column_name = std::string("OL_I_ID");
   auto warehouse_size = 10;
@@ -414,8 +423,8 @@ void tpcc_benchmark_series() {
 }
 
 void custom_benchmark_series() {
-  auto sample_size = 1;
-  auto row_counts = {1'000'000};
+  auto sample_size = 500;
+  auto row_counts = {10'000'000};
   auto remainder_sizes = {0, 2, 4, 8};
   auto quotient_size = 17;
   auto chunk_sizes = {100'000};
