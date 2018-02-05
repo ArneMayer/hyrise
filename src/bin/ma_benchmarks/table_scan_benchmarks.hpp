@@ -212,9 +212,9 @@ void run_jcch_benchmark(std::string table_name, std::string column_name, int row
     results_table->append({table_name, column_name, static_cast<int>(row_count), chunk_size, quotient_size,
                            remainder_size, static_cast<int>(dictionary), static_cast<int>(btree), static_cast<int>(art),
                            size, duration.count()});
-    std::cout << "Output size: " << query->get_output()->row_count() << std::endl;
-   auto print = std::make_shared<Print>(query);
-   print->execute();
+    //std::cout << "Output size: " << query->get_output()->row_count() << std::endl;
+   //auto print = std::make_shared<Print>(query);
+   //print->execute();
   }
 
   auto avg_time = sum_time / sample_size;
@@ -254,7 +254,7 @@ void run_custom_benchmark(std::string type, int quotient_size, int remainder_siz
                            static_cast<int>(size), duration.count()});
     //auto print = std::make_shared<Print>(query);
     //print->execute();
-    std::cout << "Output size: " << query->get_output()->row_count() << std::endl;
+    //std::cout << "Output size: " << query->get_output()->row_count() << std::endl;
   }
 
   auto avg_time = sum_time / sample_size;
@@ -311,13 +311,13 @@ void run_acdoca_benchmark(std::string column_name, int quotient_size, int remain
 
 
 void jcch_benchmark_series() {
-  auto sample_size = 500;
+  auto sample_size = 50;
   auto tpch_table_name = std::string("LINEITEM");
   auto column_name = std::string("L_PARTKEY");
   auto row_count = 6'000'000;
   auto chunk_size = 100'000;
   auto remainder_sizes = {0, 2, 4, 8};
-  auto quotient_size = 17;
+  auto quotient_size = 16;
 
   auto results_table = std::make_shared<Table>();
   results_table->add_column("table_name", DataType::String, false);
@@ -367,7 +367,7 @@ void jcch_benchmark_series() {
 }
 
 void tpcc_benchmark_series() {
-  auto sample_size = 500;
+  auto sample_size = 50;
   auto tpcc_table_name = std::string("ORDER-LINE");
   auto column_name = std::string("OL_I_ID");
   auto warehouse_size = 10;
@@ -423,7 +423,7 @@ void tpcc_benchmark_series() {
 }
 
 void custom_benchmark_series() {
-  auto sample_size = 500;
+  auto sample_size = 50;
   auto row_counts = {10'000'000};
   auto remainder_sizes = {0, 2, 4, 8};
   auto quotient_size = 17;
