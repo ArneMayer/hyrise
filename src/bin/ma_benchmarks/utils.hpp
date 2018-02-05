@@ -5,8 +5,8 @@
 #include "operators/table_wrapper.hpp"
 #include "resolve_type.hpp"
 #include "storage/iterables/create_iterable_from_column.hpp"
+#include "storage/index/counting_quotient_filer/counting_quotient_filter.hpp"
 #include "storage/storage_manager.hpp"
-
 
 #include <stdlib.h>
 #include <pwd.h>
@@ -63,5 +63,18 @@ void print_chunk_sizes(std::shared_ptr<const Table> table) {
   for (auto chunk_id = ChunkID{0}; chunk_id < table->chunk_count(); chunk_id++) {
     auto chunk = table->get_chunk(chunk_id);
     std::cout << "Chunk " << chunk_id << " size: " << chunk->size() << std::endl;
+  }
+}
+
+void create_quotient_filters(std::shared_ptr<Table> table, ColumnID column_id, uint8_t quotient_size,
+    	                       uint8_t remainder_size) {
+  if (remainder_size > 0 && quotient_size > 0) {
+    auto filter_insert_jobs = table->populate_quotient_filters(column_id, quotient_size, remainder_size);
+    for (auto job : filter_insert_jobs) {
+      job->schedule();
+    }
+    CurrentScheduler::wait_for_tasks(filter_insert_jobs);
+  } else {
+    table->delete_quotient_filters(column_id);
   }
 }

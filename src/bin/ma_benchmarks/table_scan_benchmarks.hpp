@@ -14,19 +14,6 @@
 
 using namespace opossum;
 
-void create_quotient_filters(std::shared_ptr<Table> table, ColumnID column_id, uint8_t quotient_size,
-    	                       uint8_t remainder_size) {
-  if (remainder_size > 0 && quotient_size > 0) {
-    auto filter_insert_jobs = table->populate_quotient_filters(column_id, quotient_size, remainder_size);
-    for (auto job : filter_insert_jobs) {
-      job->schedule();
-    }
-    CurrentScheduler::wait_for_tasks(filter_insert_jobs);
-  } else {
-    table->delete_quotient_filters(column_id);
-  }
-}
-
 std::pair<std::shared_ptr<AbstractOperator>, std::shared_ptr<const Table>> generate_custom_benchmark(
               std::string type, int quotient_size, int remainder_size, bool compressed, bool btree, bool art, int rows, int chunk_size,
                                                                          double pruning_rate, double selectivity) {
@@ -54,11 +41,6 @@ std::pair<std::shared_ptr<AbstractOperator>, std::shared_ptr<const Table>> gener
   } else {
     scan_value = 1;
   }
-
-  auto prunable_actual = analyze_skippable_chunks_actual(table_name, "column0", scan_value);
-  auto prunable_filter = analyze_skippable_chunks_filter(table_name, "column0", scan_value);
-  std::cout << "prunable by filter: " << prunable_filter << std::endl;
-  std::cout << "prunable actual: " << prunable_actual << std::endl;
 
   auto get_table = std::make_shared<GetTable>(table_name);
   auto table_scan = std::make_shared<TableScan>(get_table, ColumnID{0}, PredicateCondition::Equals, scan_value);
