@@ -311,7 +311,7 @@ void run_acdoca_benchmark(std::string column_name, int quotient_size, int remain
 
 
 void jcch_benchmark_series() {
-  auto sample_size = 50;
+  auto sample_size = 1;
   auto tpch_table_name = std::string("LINEITEM");
   auto column_name = std::string("L_PARTKEY");
   auto row_count = 6'000'000;
