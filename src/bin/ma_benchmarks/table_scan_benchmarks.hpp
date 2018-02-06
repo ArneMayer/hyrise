@@ -317,7 +317,7 @@ void jcch_benchmark_series() {
   auto row_count = 6'000'000;
   auto chunk_size = 100'000;
   auto remainder_sizes = {0, 2, 4, 8};
-  auto quotient_size = 16;
+  auto quotient_size = 15;
 
   auto results_table = std::make_shared<Table>();
   results_table->add_column("table_name", DataType::String, false);
