@@ -316,7 +316,7 @@ void jcch_benchmark_series() {
   auto column_name = std::string("L_PARTKEY");
   auto row_count = 6'000'000;
   auto chunk_size = 100'000;
-  auto remainder_sizes = {0, 2, 4};
+  auto remainder_sizes = {0, 4};
   auto quotient_size = 16;
 
   auto results_table = std::make_shared<Table>();
