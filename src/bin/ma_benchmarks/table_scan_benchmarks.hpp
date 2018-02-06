@@ -311,12 +311,12 @@ void run_acdoca_benchmark(std::string column_name, int quotient_size, int remain
 
 
 void jcch_benchmark_series() {
-  auto sample_size = 1;
+  auto sample_size = 20;
   auto tpch_table_name = std::string("LINEITEM");
   auto column_name = std::string("L_PARTKEY");
   auto row_count = 6'000'000;
   auto chunk_size = 100'000;
-  auto remainder_sizes = {0, 4};
+  auto remainder_sizes = {0, 2, 4};
   auto quotient_size = 16;
 
   auto results_table = std::make_shared<Table>();
