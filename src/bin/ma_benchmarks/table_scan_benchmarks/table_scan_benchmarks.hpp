@@ -17,11 +17,6 @@ using namespace opossum;
 std::pair<std::shared_ptr<AbstractOperator>, std::shared_ptr<const Table>> generate_custom_benchmark(
               std::string type, int quotient_size, int remainder_size, bool compressed, bool btree, bool art, int rows, int chunk_size,
                                                                          double pruning_rate, double selectivity) {
-  auto chunk_count = static_cast<int>(std::ceil(rows / static_cast<double>(chunk_size)));
-  auto prunable_chunks = static_cast<int>(chunk_count * pruning_rate);
-  //auto quotient_size = static_cast<int>(std::ceil(std::log(chunk_size) / std::log(2)));
-  auto table_name = custom_load_or_generate(type, rows, chunk_size, prunable_chunks, selectivity, compressed);
-  auto table = StorageManager::get().get_table(table_name);
 
   create_quotient_filters(table, ColumnID{0}, quotient_size, remainder_size);
   if (btree) {

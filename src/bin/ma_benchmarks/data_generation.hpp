@@ -76,11 +76,10 @@ std::vector<AllTypeVariant> generate_row(int scan_column, AllTypeVariant scan_co
   return row;
 }
 
-std::shared_ptr<Table> generate_table_string(int chunk_size, int row_count, int prunable_chunks, double selectivity) {
+std::shared_ptr<Table> generate_table_string(int chunk_size, int row_count, int prunable_chunks, double selectivity, std::string scan_value) {
   const auto column_count = 5;
   const auto scan_column = 0;
   const auto string_size = 16;
-  const auto scan_value = std::string("l_scan_value");
   const auto min_value  = std::string("a_") + random_string(string_size - 2, "");
   const auto max_value = std::string("z_") + random_string(string_size - 2, "");;
 
@@ -115,10 +114,9 @@ std::shared_ptr<Table> generate_table_string(int chunk_size, int row_count, int 
   return table;
 }
 
-std::shared_ptr<Table> generate_table_int(int chunk_size, int row_count, int prunable_chunks, double selectivity) {
+std::shared_ptr<Table> generate_table_int(int chunk_size, int row_count, int prunable_chunks, double selectivity, int scan_value) {
   const auto column_count = 10;
   const auto scan_column = 0;
-  int scan_value = 1;
   int min_value  = 0;
   int max_value;
   if (selectivity == 0.0) {
@@ -222,8 +220,8 @@ void save_table(std::shared_ptr<const Table> table, std::string file_name) {
   std::cout << "OK!" << std::endl;
 }
 
-std::string custom_load_or_generate(std::string type, int row_count, int chunk_size, int prunable_chunks,
-                                    double selectivity, bool compressed) {
+std::string custom_load_or_generate(DataType type, int row_count, int chunk_size, int prunable_chunks,
+                                    double selectivity, bool compressed, AllTypeVariant scan_value) {
   auto selectivity_label = static_cast<int>(selectivity * 10'000'000);
   auto table_name = "custom_" + type + "_"
                               + std::to_string(row_count) + "_"
@@ -241,10 +239,12 @@ std::string custom_load_or_generate(std::string type, int row_count, int chunk_s
   std::cout << " > Generating table " << uncompressed_name << "...";
 
   std::shared_ptr<Table> table = nullptr;
-  if (type == "string") {
-    table = generate_table_string(chunk_size, row_count, prunable_chunks, selectivity);
+  if (type == DataType::String) {
+    table = generate_table_string(chunk_size, row_count, prunable_chunks, selectivity, type_cast<std::string>(scan_value));
+  } else if (type == DataType::Int) {
+    table = generate_table_int(chunk_size, row_count, prunable_chunks, selectivity, type_cast<int>(scan_value));
   } else {
-    table = generate_table_int(chunk_size, row_count, prunable_chunks, selectivity);
+    throw std::logic_error("No data generator for this data type");
   }
 
   // Save uncompressed
