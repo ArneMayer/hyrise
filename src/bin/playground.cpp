@@ -36,7 +36,7 @@ int main() {
   //print_table_layout(acdoca_load_or_generate(100'000'000, 100'000, false));
   //custom_benchmark_series();
   //tpcc_benchmark_series();
-  jcch_benchmark_series();
+  //jcch_benchmark_series();
   /*
   auto table_name = jcch_load_or_generate("LINEITEM", 6000000, 100000, false);
   auto table = StorageManager::get().get_table(table_name);
@@ -69,4 +69,20 @@ int main() {
   */
   //analyze_all_tpcc_tables();
   //analyze_jcch_lineitem();
+/*
+  auto value_count = 100'000;
+  auto distinct_count = 3000;
+  auto distribution = generate_normal_distribution(value_count, distinct_count, 500.0);
+  auto uniform_count = value_count / distinct_count;
+  double me = 0.0;
+  double mse = 0.0;
+  for (int i = 0; i < distinct_count; i++) {
+    auto error = std::abs(uniform_count - static_cast<int>(distribution[i]));
+    me += error / static_cast<double>(distinct_count);
+    mse += (error*error) / static_cast<double>(distinct_count);
+  }
+  */
+
+  std::cout << "me: " << me << std::endl;
+  std::cout << "mse: " << mse << std::endl;
 }
