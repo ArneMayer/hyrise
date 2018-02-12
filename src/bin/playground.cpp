@@ -1,9 +1,14 @@
+/*
 #include "ma_benchmarks/data_generation.hpp"
 #include "ma_benchmarks/cardinality_estimation.hpp"
 #include "ma_benchmarks/data_structure_query.hpp"
 #include "ma_benchmarks/table_scan_benchmarks.hpp"
 #include "ma_benchmarks/utils.hpp"
 #include "ma_benchmarks/analysis.hpp"
+*/
+
+#include "ma_benchmarks/table_scan_benchmarks/table_scan_benchmark_series.hpp"
+#include "ma_benchmarks/table_scan_benchmarks/custom_benchmark.hpp"
 
 /*
 #include <iostream>
@@ -34,7 +39,19 @@
 
 int main() {
   //print_table_layout(acdoca_load_or_generate(100'000'000, 100'000, false));
-  custom_benchmark_series();
+  auto series = TableScanBenchmarkSeries<CustomBenchmark>();
+  series.benchmark_name = "custom";
+  series.sample_size = 1;
+  series.column_names = {std::string("columnInt"), std::string("columnString")};
+  series.row_counts = {1'000'000};
+  series.chunk_sizes = {100'000};
+  series.remainder_sizes = {0, 2, 4, 8};
+  series.quotient_size = 17;
+  series.pruning_rates = {1.0, 0.5};
+  series.selectivities = {1.0 / 3000.0};
+  series.run();
+
+  //custom_benchmark_series();
   //tpcc_benchmark_series();
   //jcch_benchmark_series();
   /*

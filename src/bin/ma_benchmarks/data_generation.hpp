@@ -223,7 +223,7 @@ void save_table(std::shared_ptr<const Table> table, std::string file_name) {
 std::string custom_load_or_generate(DataType type, int row_count, int chunk_size, int prunable_chunks,
                                     double selectivity, bool compressed, AllTypeVariant scan_value) {
   auto selectivity_label = static_cast<int>(selectivity * 10'000'000);
-  auto table_name = "custom_" + type + "_"
+  auto table_name = "custom_" + data_type_to_string(type) + "_"
                               + std::to_string(row_count) + "_"
                               + std::to_string(chunk_size) + "_"
                               + std::to_string(prunable_chunks) + "_"
