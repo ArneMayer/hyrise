@@ -99,7 +99,7 @@ std::pair<std::shared_ptr<AbstractOperator>, std::shared_ptr<const Table>> gener
 std::pair<std::shared_ptr<AbstractOperator>, std::shared_ptr<const Table>> generate_acdoca_benchmark(
       std::string column_name, int row_count, int chunk_size, int quotient_size,
       int remainder_size, bool dictionary, bool btree, bool art) {
-  auto table_name = acdoca_load_or_generate(row_count, chunk_size, dictionary);
+  auto table_name = 
   auto table = StorageManager::get().get_table(table_name);
   auto column_id = table->column_id_by_name("column_name");
   //auto quotient_size = static_cast<int>(std::ceil(std::log(chunk_size) / std::log(2)));

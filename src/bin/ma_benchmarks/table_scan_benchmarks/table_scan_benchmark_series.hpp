@@ -30,15 +30,15 @@ template <typename Benchmark>
 class TableScanBenchmarkSeries {
 public:
   std::string benchmark_name = "unspecified";
+  int sample_size = 10;
   std::string table_name = "unspecified";
-  int sample_size = 100;
-  std::list<int> row_counts = {1'000'000};
-  std::list<int> chunk_sizes = {100'000};
-  std::list<double> selectivities = {0.0};
-  std::list<double> pruning_rates = {0.0};
-  int quotient_size = 18;
-  std::list<int> remainder_sizes = {0, 2, 4, 8};
   std::list<std::string> column_names = {"unspecified"};
+  std::list<int> row_counts = {};
+  std::list<int> chunk_sizes = {};
+  int quotient_size = -1;
+  std::list<int> remainder_sizes = {};
+  std::list<double> selectivities = {-1.0};
+  std::list<double> pruning_rates = {-1.0};
 
   TableScanBenchmarkSeries() {
     _results_table = std::make_shared<Table>();

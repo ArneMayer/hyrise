@@ -10,38 +10,38 @@ using namespace opossum;
 class TpccBenchmark : public TableScanBenchmark {
 
  public:
-  TpccBenchmark(TableScanConfiguration config) : TableScanBenchmark(config) {
-    if (_config.column_name == "columnInt") {
-      _data_type = DataType::Int;
-    } else if (_config.column_name == "columnString") {
-      _data_type = DataType::String;
-    } else {
-      throw std::logic_error("unknown column name: " + _config.column_name);
-    }
-  }
+  TpccBenchmark(TableScanConfiguration config) : TableScanBenchmark(config) {}
 
   virtual std::shared_ptr<Table> get_table() override {
-    auto chunk_count = static_cast<int>(std::ceil(_config.row_count / static_cast<double>(_config.chunk_size)));
-    auto prunable_chunks = static_cast<int>(chunk_count * _config.pruning_rate);
-    auto table_name = custom_load_or_generate(_data_type, _config.row_count, _config.chunk_size,
-      prunable_chunks, _config.selectivity, _config.use_dictionary, get_scan_value());
+    int warehouse_size = 0;
+    if (_config.table_name == "ORDER") {
+      warehouse_size = _config.row_count / 30'000;
+    } else if (_config.table_name == "ITEM") {
+      warehouse_size = 1;
+    } else if (_config.table_name == "STOCK") {
+      warehouse_size = _config.row_count / 100'000;
+    } else if (_config.table_name == "DISTRICT") {
+      warehouse_size = _config.row_count / 10;
+    } else if (_config.table_name == "CUSTOMER") {
+      warehouse_size = _config.row_count / 30'000;
+    } else if (_config.table_name == "HISTORY") {
+      warehouse_size = _config.row_count / 30'000;
+    } else if (_config.table_name == "NEW-ORDER") {
+      warehouse_size = _config.row_count / (30'000 * 0.3);
+    } else if (_config.table_name == "ORDER-LINE") {
+      warehouse_size = _config.row_count / 300'000;
+    } else {
+      throw std::logic_error("tpcc table not known: " + _config.table_name);
+    }
+    auto table_name = tpcc_load_or_generate(_config.table_name, warehouse_size, _config.chunk_size, _config.use_dictionary);
     return StorageManager::get().get_table(table_name);
   }
 
   virtual ColumnID get_column_id() override {
-    return ColumnID{0};
+    return get_table()->column_id_by_name(_config.column_name);
   }
 
   virtual AllTypeVariant get_scan_value() override {
-    if (_data_type == DataType::Int) {
-      return 1;
-    } else if (_data_type == DataType::String) {
-      return std::string("l_scan_value");
-    } else {
-      throw std::logic_error("custom scan type not implemented: " + data_type_to_string(_data_type));
-    }
+    return 3000;
   }
-
- private:
-  DataType _data_type;
 };

@@ -9,6 +9,8 @@
 
 #include "ma_benchmarks/table_scan_benchmarks/table_scan_benchmark_series.hpp"
 #include "ma_benchmarks/table_scan_benchmarks/custom_benchmark.hpp"
+#include "ma_benchmarks/table_scan_benchmarks/tpcc_benchmark.hpp"
+#include "ma_benchmarks/table_scan_benchmarks/jcch_benchmark.hpp"
 
 /*
 #include <iostream>
@@ -39,17 +41,39 @@
 
 int main() {
   //print_table_layout(acdoca_load_or_generate(100'000'000, 100'000, false));
-  auto series = TableScanBenchmarkSeries<CustomBenchmark>();
-  series.benchmark_name = "custom";
-  series.sample_size = 1;
-  series.column_names = {std::string("columnInt"), std::string("columnString")};
-  series.row_counts = {1'000'000};
-  series.chunk_sizes = {100'000};
-  series.remainder_sizes = {0, 2, 4, 8};
-  series.quotient_size = 17;
-  series.pruning_rates = {1.0, 0.5};
-  series.selectivities = {1.0 / 3000.0};
-  series.run();
+  auto custom_series = TableScanBenchmarkSeries<CustomBenchmark>();
+  custom_series.benchmark_name = "custom";
+  custom_series.sample_size = 1;
+  custom_series.column_names = {std::string("columnInt"), std::string("columnString")};
+  custom_series.row_counts = {1'000'000};
+  custom_series.chunk_sizes = {100'000};
+  custom_series.remainder_sizes = {0, 2, 4, 8};
+  custom_series.quotient_size = 17;
+  custom_series.pruning_rates = {1.0, 0.5};
+  custom_series.selectivities = {1.0 / 3000.0};
+  custom_series.run();
+
+  auto tpcc_series = TableScanBenchmarkSeries<TpccBenchmark>();
+  tpcc_series.benchmark_name = "tpcc";
+  tpcc_series.sample_size = 1;
+  tpcc_series.table_name = "ORDER-LINE";
+  tpcc_series.column_names = {"OL_I_ID"};
+  tpcc_series.row_counts = {1'000'000};
+  tpcc_series.chunk_sizes = {100'000};
+  tpcc_series.remainder_sizes = {0, 2, 4, 8};
+  tpcc_series.quotient_size = 17;
+  tpcc_series.run();
+
+  auto jcch_series = TableScanBenchmarkSeries<JcchBenchmark>();
+  jcch_series.benchmark_name = "jcch";
+  jcch_series.sample_size = 1;
+  jcch_series.table_name = "LINEITEM";
+  jcch_series.column_names = {"L_PARTKEY"};
+  jcch_series.row_counts = {6'000'000};
+  jcch_series.chunk_sizes = {100'000};
+  jcch_series.remainder_sizes = {0, 2, 4, 8};
+  jcch_series.quotient_size = 17;
+  jcch_series.run();
 
   //custom_benchmark_series();
   //tpcc_benchmark_series();
