@@ -330,8 +330,8 @@ std::string jcch_load_or_generate(std::string tpch_table_name, int row_count, in
 
 
 std::string acdoca_load_or_generate(int row_count, int chunk_size, bool compressed) {
-  if (row_count != 100'000'000) {
-    std::logic_error("row count has to be 100M");
+  if (row_count != 1'000'000) {
+    std::logic_error("row count has to be 1'000'000");
   }
 
   //auto table_name = "acdoca_" + std::to_string(row_count) + "_" + std::to_string(chunk_size) + "_";
@@ -345,23 +345,19 @@ std::string acdoca_load_or_generate(int row_count, int chunk_size, bool compress
     return table_name;
   }
 
-  // Save uncompressed
-  /*
+  // Parse csv
+  auto tmp_table_name = std::string("acdoca_tmp");
   std::cout << " > Generating table " << uncompressed_name << "..." << std::flush;
-  auto file = "/mnt/data2/acdoca/acdoca.csv";
-  auto meta_file = "/mnt/data2/acdoca/acdoca.csv.meta";
-  auto import = std::make_shared<ImportCsv>(file, table_name, process_csv_meta_file(meta_file));
+  auto file = "/mnt/data2/acdoca/acdoca1M.csv";
+  auto meta_file = "home" + getUserName() + "/data/acdoca/acdoca.csv.json";
+  auto csvMeta = process_csv_meta_file(meta_file);
+  csvMeta.chunk_size = chunk_size;
+  auto import = std::make_shared<ImportCsv>(file, tmp_table_name, csvMeta);
   import->execute();
-  auto import_table = import->get_output();
 
-  // iterate
-  auto table = std::make_shared<Table>(chunk_size);
-  std::cout << "OK!" << std::endl;
+  // Save uncompressed
+  auto table = StorageManager::get().get_table(tmp_table_name);
   save_table(table, uncompressed_name);
-
-  //for (auto chunk_id = ChunkID{0}; chunk_id < table->chunk_count(); chunk_id++) {
-    // copy over
-  //}
 
   // Save compressed
   std::cout << " > Generating table " << compressed_name << "..." << std::flush;
@@ -369,10 +365,11 @@ std::string acdoca_load_or_generate(int row_count, int chunk_size, bool compress
   std::cout << "OK!" << std::endl;
   save_table(table, compressed_name);
 
+  StorageManager::get().drop_table(tmp_table_name);
+
   table.reset();
   import_table(table_name);
 
-  */
   return table_name;
 }
 

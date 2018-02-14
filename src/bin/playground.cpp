@@ -11,6 +11,7 @@
 #include "ma_benchmarks/table_scan_benchmarks/custom_benchmark.hpp"
 #include "ma_benchmarks/table_scan_benchmarks/tpcc_benchmark.hpp"
 #include "ma_benchmarks/table_scan_benchmarks/jcch_benchmark.hpp"
+#include "ma_benchmarks/table_scan_benchmarks/acdoca_benchmark.hpp"
 
 /*
 #include <iostream>
@@ -40,7 +41,8 @@
 #include "storage/storage_manager.hpp"
 
 int main() {
-  //print_table_layout(acdoca_load_or_generate(100'000'000, 100'000, false));
+  //print_table_layout(acdoca_load_or_generate(1'000'000, 100'000, false));
+  /*
   auto custom_series = TableScanBenchmarkSeries<CustomBenchmark>();
   custom_series.benchmark_name = "custom";
   custom_series.sample_size = 1;
@@ -73,7 +75,17 @@ int main() {
   jcch_series.chunk_sizes = {100'000};
   jcch_series.remainder_sizes = {0, 2, 4, 8};
   jcch_series.quotient_size = 17;
-  jcch_series.run();
+  jcch_series.run();*/
+
+  auto acdoca_series = TableScanBenchmarkSeries<AcdocaBenchmark>();
+  acdoca_series.benchmark_name = "acdoca";
+  acdoca_series.sample_size = 1;
+  acdoca_series.column_names = {"unspecified"};
+  acdoca_series.row_counts = {1'000'000};
+  acdoca_series.chunk_sizes = {100'000};
+  acdoca_series.remainder_sizes = {0, 2, 4, 8};
+  acdoca_series.quotient_size = 17;
+  acdoca_series.run();
 
   //custom_benchmark_series();
   //tpcc_benchmark_series();

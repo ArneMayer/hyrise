@@ -7,13 +7,13 @@
 
 using namespace opossum;
 
-class CustomBenchmark : public TableScanBenchmark {
+class AcdocaBenchmark : public TableScanBenchmark {
 
  public:
-  CustomBenchmark(TableScanConfiguration config) : TableScanBenchmark(config) {}
+  AcdocaBenchmark(TableScanConfiguration config) : TableScanBenchmark(config) {}
 
   virtual std::shared_ptr<Table> get_table() override {
-    auto table_name = acdoca_load_or_generate(row_count, chunk_size, dictionary);
+    auto table_name = acdoca_load_or_generate(_config.row_count, _config.chunk_size, _config.use_dictionary);
     return StorageManager::get().get_table(table_name);
   }
 
@@ -22,7 +22,7 @@ class CustomBenchmark : public TableScanBenchmark {
   }
 
   virtual AllTypeVariant get_scan_value() override {
-    return 3000;
+    return "hallo";
   }
 
  private:
