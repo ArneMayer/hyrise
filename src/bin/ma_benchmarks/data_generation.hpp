@@ -349,7 +349,7 @@ std::string acdoca_load_or_generate(int row_count, int chunk_size, bool compress
   auto tmp_table_name = std::string("acdoca_tmp");
   std::cout << " > Generating table " << uncompressed_name << "..." << std::flush;
   auto file = "/mnt/data2/acdoca/acdoca1M.csv";
-  auto meta_file = "home" + getUserName() + "/data/acdoca/acdoca.csv.json";
+  auto meta_file = "/home/" + getUserName() + "/data/acdoca/acdoca.csv.json";
   auto csvMeta = process_csv_meta_file(meta_file);
   csvMeta.chunk_size = chunk_size;
   auto import = std::make_shared<ImportCsv>(file, tmp_table_name, csvMeta);
