@@ -329,13 +329,8 @@ std::string jcch_load_or_generate(std::string tpch_table_name, int row_count, in
 }
 
 
-std::string acdoca_load_or_generate(int row_count, int chunk_size, bool compressed) {
-  if (row_count != 100'000'000) {
-    std::logic_error("row count has to be 100'000'000");
-  }
-
-  //auto table_name = "acdoca_" + std::to_string(row_count) + "_" + std::to_string(chunk_size) + "_";
-  auto table_name = std::string("acdoca");
+std::string acdoca_load_or_generate(std::string column_name, int row_count, int chunk_size, bool compressed) {
+  auto table_name = "acdoca_" + column_name + "_" + std::to_string(row_count) + "_" + std::to_string(chunk_size) + "_";
   auto compressed_name = table_name + std::to_string(true);
   auto uncompressed_name = table_name + std::to_string(false);
   table_name = table_name + std::to_string(compressed);
@@ -346,17 +341,38 @@ std::string acdoca_load_or_generate(int row_count, int chunk_size, bool compress
   }
 
   // Parse csv
+  std::cout << " > Importing Acdoca... " << std::flush;
   auto tmp_table_name = std::string("acdoca_tmp");
   std::cout << " > Generating table " << uncompressed_name << "..." << std::flush;
-  auto file = "/mnt/data2/acdoca/acdoca100M.csv";
+  auto file = "/mnt/data2/acdoca/acdoca.csv";
   auto meta_file = "/home/" + getUserName() + "/data/acdoca/acdoca.csv.json";
   auto csvMeta = process_csv_meta_file(meta_file);
-  csvMeta.chunk_size = chunk_size;
+  //csvMeta.chunk_size = chunk_size;
   auto import = std::make_shared<ImportCsv>(file, tmp_table_name, csvMeta);
   import->execute();
+  auto complete_table = StorageManager::get().get_table(tmp_table_name);
+  std::cout << "OK!" << std::endl;
 
   // Save uncompressed
-  auto table = StorageManager::get().get_table(tmp_table_name);
+  auto table = std::make_shared<Table>(chunk_size);
+  auto column_id = complete_table->column_id_by_name(column_name);
+  auto column_type = complete_table->column_type(column_id);
+  table->add_column_definition(column_name, column_type, false);
+  for (int row_number = 0; row_number < row_count; row_number++) {
+    AllTypeVariant value;
+    if (column_type == DataType::Int) {
+      value = complete_table->get_value<int>(column_id, row_number);
+    }
+    else if (column_type == DataType::String) {
+      value = complete_table->get_value<std::string>(column_id, row_number);
+    }
+    else if (column_type == DataType::Double) {
+      value = complete_table->get_value<double>(column_id, row_number);
+    } else {
+      throw std::logic_error("unknown data type");
+    }
+    table->append({value});
+  }
   save_table(table, uncompressed_name);
 
   // Save compressed

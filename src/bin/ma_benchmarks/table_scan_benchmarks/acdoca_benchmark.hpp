@@ -13,7 +13,7 @@ class AcdocaBenchmark : public TableScanBenchmark {
   AcdocaBenchmark(TableScanConfiguration config) : TableScanBenchmark(config) {}
 
   virtual std::shared_ptr<Table> get_table() override {
-    auto table_name = acdoca_load_or_generate(_config.row_count, _config.chunk_size, _config.use_dictionary);
+    auto table_name = acdoca_load_or_generate(_config.column_name, _config.row_count, _config.chunk_size, _config.use_dictionary);
     return StorageManager::get().get_table(table_name);
   }
 
