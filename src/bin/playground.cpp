@@ -42,10 +42,9 @@
 
 int main() {
   //print_table_layout(acdoca_load_or_generate(100'000'000, 100'000, false));
-  /*
   auto custom_series = TableScanBenchmarkSeries<CustomBenchmark>();
   custom_series.benchmark_name = "custom";
-  custom_series.sample_size = 1;
+  custom_series.sample_size = 10;
   custom_series.column_names = {std::string("columnInt"), std::string("columnString")};
   custom_series.row_counts = {1'000'000};
   custom_series.chunk_sizes = {100'000};
@@ -57,7 +56,7 @@ int main() {
 
   auto tpcc_series = TableScanBenchmarkSeries<TpccBenchmark>();
   tpcc_series.benchmark_name = "tpcc";
-  tpcc_series.sample_size = 1;
+  tpcc_series.sample_size = 10;
   tpcc_series.table_name = "ORDER-LINE";
   tpcc_series.column_names = {"OL_I_ID"};
   tpcc_series.row_counts = {1'000'000};
@@ -68,15 +67,16 @@ int main() {
 
   auto jcch_series = TableScanBenchmarkSeries<JcchBenchmark>();
   jcch_series.benchmark_name = "jcch";
-  jcch_series.sample_size = 1;
+  jcch_series.sample_size = 10;
   jcch_series.table_name = "LINEITEM";
   jcch_series.column_names = {"L_PARTKEY"};
   jcch_series.row_counts = {6'000'000};
   jcch_series.chunk_sizes = {100'000};
   jcch_series.remainder_sizes = {0, 2, 4, 8};
   jcch_series.quotient_size = 17;
-  jcch_series.run();*/
+  jcch_series.run();
 
+  /*
   auto acdoca_series = TableScanBenchmarkSeries<AcdocaBenchmark>();
   acdoca_series.benchmark_name = "acdoca";
   acdoca_series.sample_size = 1;
@@ -86,6 +86,7 @@ int main() {
   acdoca_series.remainder_sizes = {0, 2, 4, 8};
   acdoca_series.quotient_size = 17;
   acdoca_series.run();
+  */
 
   //custom_benchmark_series();
   //tpcc_benchmark_series();
