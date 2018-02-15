@@ -126,6 +126,7 @@ public:
       auto benchmark = Benchmark(config);
       int size = 0;
       int sum_time = 0;
+      int row_count = 0;
       for (int i = 0; i < sample_size; i++) {
         benchmark.prepare();
         auto time = benchmark.execute();
@@ -133,8 +134,11 @@ public:
         if (i == 0) {
           size = benchmark.memory_consumption_kB();
         }
+        if (i == 0) {
+          row_count = benchmark.row_count();
+        }
         auto data_type = benchmark.data_type();
-        _results_table->append({config.table_name, config.column_name, data_type, config.row_count, config.chunk_size,
+        _results_table->append({config.table_name, config.column_name, data_type, row_count, config.chunk_size,
           config.pruning_rate, config.selectivity, config.quotient_size, config.remainder_size,
           static_cast<int>(config.use_dictionary), static_cast<int>(config.use_btree), static_cast<int>(config.use_art),
           size, time});

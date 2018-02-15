@@ -330,6 +330,10 @@ std::string jcch_load_or_generate(std::string tpch_table_name, int row_count, in
 
 
 std::string acdoca_load_or_generate(std::string column_name, int row_count, int chunk_size, bool compressed) {
+  if (row_count != 10'000'000) {
+    throw std::logic_error("row count has to be 10'000'000");
+  }
+
   auto table_name = "acdoca_" + column_name + "_" + std::to_string(row_count) + "_" + std::to_string(chunk_size) + "_";
   auto compressed_name = table_name + std::to_string(true);
   auto uncompressed_name = table_name + std::to_string(false);
@@ -343,7 +347,8 @@ std::string acdoca_load_or_generate(std::string column_name, int row_count, int 
   // Parse csv
   std::cout << " > Importing Acdoca... " << std::flush;
   auto tmp_table_name = std::string("acdoca_tmp");
-  auto file = "/mnt/data2/acdoca/acdoca.csv";
+  //auto file = "/mnt/data2/acdoca/acdoca.csv";
+  auto file = "/home/" + getUserName() + "/data/acdoca/acdoca10M.csv";
   auto meta_file = "/home/" + getUserName() + "/data/acdoca/acdoca.csv.json";
   auto csvMeta = process_csv_meta_file(meta_file);
   //csvMeta.chunk_size = chunk_size;

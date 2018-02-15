@@ -53,6 +53,10 @@ class TableScanBenchmark {
     return _table->ma_memory_consumption(_scan_column_id) / 1000;
   }
 
+  int row_count() {
+    return _table->row_count();
+  }
+
   std::string data_type() {
     return data_type_to_string(_table->column_type(_scan_column_id));
   }
