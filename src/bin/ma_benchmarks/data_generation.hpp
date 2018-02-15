@@ -343,7 +343,6 @@ std::string acdoca_load_or_generate(std::string column_name, int row_count, int 
   // Parse csv
   std::cout << " > Importing Acdoca... " << std::flush;
   auto tmp_table_name = std::string("acdoca_tmp");
-  std::cout << " > Generating table " << uncompressed_name << "..." << std::flush;
   auto file = "/mnt/data2/acdoca/acdoca.csv";
   auto meta_file = "/home/" + getUserName() + "/data/acdoca/acdoca.csv.json";
   auto csvMeta = process_csv_meta_file(meta_file);
@@ -354,6 +353,7 @@ std::string acdoca_load_or_generate(std::string column_name, int row_count, int 
   std::cout << "OK!" << std::endl;
 
   // Save uncompressed
+  std::cout << " > Generating table " << uncompressed_name << "..." << std::flush;
   auto table = std::make_shared<Table>(chunk_size);
   auto column_id = complete_table->column_id_by_name(column_name);
   auto column_type = complete_table->column_type(column_id);
@@ -374,12 +374,13 @@ std::string acdoca_load_or_generate(std::string column_name, int row_count, int 
     table->append({value});
   }
   save_table(table, uncompressed_name);
+  std::cout << "OK!" << std::endl;
 
   // Save compressed
   std::cout << " > Generating table " << compressed_name << "..." << std::flush;
   DictionaryCompression::compress_table(*table);
-  std::cout << "OK!" << std::endl;
   save_table(table, compressed_name);
+  std::cout << "OK!" << std::endl;
 
   StorageManager::get().drop_table(tmp_table_name);
 

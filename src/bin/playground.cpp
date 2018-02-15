@@ -80,8 +80,8 @@ int main() {
   auto acdoca_series = TableScanBenchmarkSeries<AcdocaBenchmark>();
   acdoca_series.benchmark_name = "acdoca";
   acdoca_series.sample_size = 1;
-  acdoca_series.column_names = {"unspecified"};
-  acdoca_series.row_counts = {100'000'000};
+  acdoca_series.column_names = {"RCLNT"};
+  acdoca_series.row_counts = {1'000'000};
   acdoca_series.chunk_sizes = {100'000};
   acdoca_series.remainder_sizes = {0, 2, 4, 8};
   acdoca_series.quotient_size = 17;
