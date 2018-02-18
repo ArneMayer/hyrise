@@ -363,7 +363,7 @@ std::string acdoca_load_or_generate(std::string column_name, int row_count, int 
   auto column_id = complete_table->column_id_by_name(column_name);
   auto column_type = complete_table->column_type(column_id);
   table->add_column_definition(column_name, column_type, false);
-  for (int row_number = 0; row_number < row_count; row_number++) {
+  for (int row_number = 0; row_number < complete_table->row_count(); row_number++) {
     AllTypeVariant value;
     if (column_type == DataType::Int) {
       value = complete_table->get_value<int>(column_id, row_number);
