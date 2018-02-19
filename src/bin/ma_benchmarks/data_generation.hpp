@@ -379,8 +379,10 @@ std::string acdoca_load_or_generate(std::string column_name, int row_count, int 
     }
     table->append({value});
   }
-  save_table(table, uncompressed_name);
   std::cout << "OK!" << std::endl;
+  std::cout << "Row count: " << table->row_count() << std::endl << std::flush;
+  save_table(table, uncompressed_name);
+
 
   // Save compressed
   std::cout << " > Generating table " << compressed_name << "..." << std::flush;
