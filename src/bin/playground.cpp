@@ -112,28 +112,32 @@ int main() {
   dict_vs_filter_series_uncached();
   */
 
+
   filter_cardinality_estimation_series("normal", 3'000);
   filter_cardinality_estimation_series("normal", 10'000);
   filter_cardinality_estimation_series("normal", 25'000);
   filter_cardinality_estimation_series("normal", 50'000);
 
-  filter_misestimation_series("normal", 3'000);
-  filter_misestimation_series("normal", 10'000);
-  filter_misestimation_series("normal", 25'000);
-  filter_misestimation_series("normal", 50'000);
+  auto misestimation_results = create_misestimation_results_table();
+  filter_misestimation_series(misestimation_results, "normal", 3'000);
+  filter_misestimation_series(misestimation_results, "normal", 10'000);
+  filter_misestimation_series(misestimation_results, "normal", 25'000);
+  filter_misestimation_series(misestimation_results, "normal", 50'000);
 
-  postgres_misestimation_series("normal", 3'000, 10);
-  postgres_misestimation_series("normal", 10'000, 10);
-  postgres_misestimation_series("normal", 25'000, 10);
-  postgres_misestimation_series("normal", 50'000, 10);
+  postgres_misestimation_series(misestimation_results, "normal", 3'000, 10);
+  postgres_misestimation_series(misestimation_results, "normal", 10'000, 10);
+  postgres_misestimation_series(misestimation_results, "normal", 25'000, 10);
+  postgres_misestimation_series(misestimation_results, "normal", 50'000, 10);
 
   filter_cardinality_estimation_series("uniform", 3000);
-  filter_misestimation_series("uniform", 3000);
-  postgres_misestimation_series("uniform", 3000, 10);
+  filter_misestimation_series(misestimation_results, "uniform", 3000);
+  postgres_misestimation_series(misestimation_results, "uniform", 3000, 10);
 
   filter_cardinality_estimation_series("zipf", 3000);
-  filter_misestimation_series("zipf", 3000);
-  postgres_misestimation_series("zipf", 3000, 10);
+  filter_misestimation_series(misestimation_results, "zipf", 3000);
+  postgres_misestimation_series(misestimation_results, "zipf", 3000, 10);
+
+  serialize_results_csv("misestimation", misestimation_results);
 
   //analyze_all_tpcc_tables();
   //analyze_jcch_lineitem();

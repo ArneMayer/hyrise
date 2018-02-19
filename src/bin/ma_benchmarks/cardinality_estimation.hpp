@@ -2,7 +2,36 @@
 
 #include "utils.hpp"
 
-void filter_misestimation_series(std::string distribution_type, int distinct_values) {
+std::shared_ptr<Table> create_misestimation_results_table() {
+  auto results_table = std::make_shared<Table>();
+  results_table->add_column("sample_size", DataType::Int, false);
+  results_table->add_column("value_count", DataType::Int, false);
+  results_table->add_column("distinct_values", DataType::Int, false);
+  results_table->add_column("data", DataType::String, false);
+  results_table->add_column("estimation_technique", DataType::String, false);
+  results_table->add_column("error", DataType::Int, false);
+  results_table->add_column("occurrences", DataType::Int, false);
+
+  return results_table;
+}
+
+std::vector<uint> generate_distribution(std::string distribution_type, uint value_count, uint distinct_values) {
+  std::vector<uint> distribution;
+  if (distribution_type == "normal") {
+    double variance = distinct_values / 6.0;
+    distribution = generate_normal_distribution(value_count, distinct_values, variance);
+  } else if (distribution_type == "uniform") {
+    distribution = generate_uniform_distribution(value_count, distinct_values);
+  } else if (distribution_type == "zipf") {
+    distribution = generate_zipfian_distribution(value_count, distinct_values);
+  } else {
+    throw std::invalid_argument("data: " + distribution_type);
+  }
+
+  return distribution;
+}
+
+void filter_misestimation_series(std::shared_ptr<Table> results_table, std::string distribution_type, int distinct_values) {
   //int sample_size = 300'000;
   int sample_size = 300'000;
   int value_count = 100'000;
@@ -15,28 +44,7 @@ void filter_misestimation_series(std::string distribution_type, int distinct_val
   std::cout << "distinct values: " << distinct_values << std::endl;
   std::cout << "data distribution: " << distribution_type << std::endl;
 
-  auto results_table = std::make_shared<Table>();
-  results_table->add_column("sample_size", DataType::Int, false);
-  results_table->add_column("value_count", DataType::Int, false);
-  results_table->add_column("distinct_values", DataType::Int, false);
-  results_table->add_column("data", DataType::String, false);
-  results_table->add_column("quotient_size", DataType::Int, false);
-  results_table->add_column("remainder_size", DataType::Int, false);
-  results_table->add_column("error", DataType::Int, false);
-  results_table->add_column("occurrences", DataType::Int, false);
-
-  std::vector<uint> distribution;
-  if (distribution_type == "normal") {
-    double variance = distinct_values / 6.0;
-    distribution = generate_normal_distribution(value_count, distinct_values, variance);
-  } else if (distribution_type == "uniform") {
-    distribution = generate_uniform_distribution(value_count, distinct_values);
-  } else if (distribution_type == "zipf") {
-    distribution = generate_zipfian_distribution(value_count, distinct_values);
-  } else {
-    throw std::invalid_argument("data: " + data);
-  }
-
+  auto distribution = generate_distribution(distribution_type, value_count, distinct_values);
   for (auto quotient_size : quotient_sizes) {
     for (auto remainder_size : remainder_sizes) {
       auto over_estimation = std::map<int, int>();
@@ -75,9 +83,9 @@ void filter_misestimation_series(std::string distribution_type, int distinct_val
         continue;
       }
 
+      auto description = std::string("filter_") + std::to_string(quotient_size) + "_" + std::to_string(remainder_size);
       for (auto pair : over_estimation) {
-        results_table->append({sample_size, value_count, distinct_values, data, quotient_size,
-                               remainder_size, pair.first, pair.second});
+        results_table->append({sample_size, value_count, distinct_values, data, description, pair.first, pair.second});
       }
 
       auto mean_error = sum_error / static_cast<double>(sample_size);
@@ -89,37 +97,19 @@ void filter_misestimation_series(std::string distribution_type, int distinct_val
       }
     }
   }
-  serialize_results_csv("filter_misestimation_" + data, results_table);
 }
 
-void postgres_misestimation_series(std::string distribution_type, int distinct_values, uint granularity) {
+void postgres_misestimation_series(std::shared_ptr<Table> results_table, std::string distribution_type,
+                                   int distinct_values, uint granularity) {
   int value_count = 100'000;
   auto data = distribution_type + std::to_string(distinct_values);
 
   std::cout << " >> Postgres Misestimation Series" << std::endl;
   std::cout << "distinct values: " << distinct_values << std::endl;
   std::cout << "data distribution: " << distribution_type << std::endl;
+  std::cout << "granularity: " << granularity << std::endl;
 
-  auto results_table = std::make_shared<Table>();
-  results_table->add_column("value_count", DataType::Int, false);
-  results_table->add_column("distinct_values", DataType::Int, false);
-  results_table->add_column("data", DataType::String, false);
-  results_table->add_column("granularity", DataType::Int, false);
-  results_table->add_column("error", DataType::Int, false);
-  results_table->add_column("occurrences", DataType::Int, false);
-
-  std::vector<uint> distribution;
-  if (distribution_type == "normal") {
-    double variance = distinct_values / 6.0;
-    distribution = generate_normal_distribution(value_count, distinct_values, variance);
-  } else if (distribution_type == "uniform") {
-    distribution = generate_uniform_distribution(value_count, distinct_values);
-  } else if (distribution_type == "zipf") {
-    distribution = generate_zipfian_distribution(value_count, distinct_values);
-  } else {
-    throw std::invalid_argument("data: " + data);
-  }
-
+  auto distribution = generate_distribution(distribution_type, value_count, distinct_values);
   auto estimation = generate_postgres_estimation(distribution, granularity);
   auto errors = std::map<int, int>();
   auto sum_error = 0;
@@ -133,13 +123,13 @@ void postgres_misestimation_series(std::string distribution_type, int distinct_v
     sum_error += std::abs(error);
   }
 
+  auto description = std::string("postgres1_") + std::to_string(granularity);
   for (auto pair : errors) {
-    results_table->append({value_count, distinct_values, data, static_cast<int>(granularity), pair.first, pair.second});
+    results_table->append({distinct_values, value_count, distinct_values, data, description, pair.first, pair.second});
   }
 
   auto mean_error = sum_error / static_cast<double>(distribution.size());
   std::cout << "Mean Error: " << std::to_string(mean_error) << std::endl;
-  serialize_results_csv("postgres_misestimation_" + data, results_table);
 }
 
 void filter_cardinality_estimation_series(std::string distribution_type, int distinct_values) {
