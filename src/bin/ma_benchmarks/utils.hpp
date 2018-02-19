@@ -44,7 +44,7 @@ std::string getUserName()
 
 void serialize_results_csv(std::string benchmark_name, std::shared_ptr<Table> table) {
   std::cout << "Writing results to csv...";
-  auto file_name = "/home/" + getUserName() + "/dev/MasterarbeitJupyter/" + benchmark_name + "_results.csv";
+  auto file_name = "/home/" + getUserName() + "/dev/MasterarbeitJupyter/results/" + benchmark_name + "_results.csv";
   auto table_wrapper = std::make_shared<TableWrapper>(table);
   table_wrapper->execute();
   auto export_csv = std::make_shared<ExportCsv>(table_wrapper, file_name);

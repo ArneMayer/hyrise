@@ -440,3 +440,45 @@ std::vector<uint> generate_uniform_distribution(int value_cont, int distinct_val
 
   return distribution;
 }
+
+std::vector<uint> generate_postgres_estimation(std::vector<uint> distribution, uint granularity) {
+  uint row_count = 0;
+  for (uint i = 0; i < distribution.size(); i++) {
+    row_count += distribution[i];
+  }
+  uint bucket_size = row_count / granularity;
+  auto bucket_ends = std::vector<uint>();
+
+  uint count = 0;
+  uint number_of_buckets = 0;
+  for (uint i = 0; i < distribution.size() && number_of_buckets < granularity; i++) {
+    count += distribution[i];
+    if (count >= bucket_size) {
+      bucket_ends.push_back(i + 1);
+      count = 0;
+      number_of_buckets++;
+    }
+  }
+
+  if (number_of_buckets == granularity - 1) {
+    bucket_ends.push_back(distribution.size());
+    number_of_buckets++;
+  }
+
+  Assert(number_of_buckets == granularity, "number of buckets is incorrect");
+
+  auto estimation = std::vector<uint>(distribution.size());
+  for(uint i = 0; i < distribution.size(); i++) {
+    uint bucket_number = 0;
+    uint bucket_start = 0;
+    uint bucket_end = bucket_ends[0];
+    while (i >= bucket_end) {
+      bucket_number++;
+      bucket_start = bucket_ends[bucket_number - 1];
+      bucket_end = bucket_ends[bucket_number];
+    }
+    estimation[i] = bucket_size / (bucket_end - bucket_start);
+  }
+
+  return estimation;
+}
