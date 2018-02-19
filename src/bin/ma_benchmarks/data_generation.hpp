@@ -330,7 +330,7 @@ std::string jcch_load_or_generate(std::string tpch_table_name, int row_count, in
 
 
 std::string acdoca_load_or_generate(std::string column_name, int row_count, int chunk_size, bool compressed) {
-  if (row_count != 10'000'000 || row_count != 1'000'000) {
+  if (row_count != 10'000'000 && row_count != 1'000'000) {
     throw std::logic_error("row count not supported for acdoca");
   }
 
