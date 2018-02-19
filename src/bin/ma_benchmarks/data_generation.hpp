@@ -362,7 +362,7 @@ std::string acdoca_load_or_generate(std::string column_name, int row_count, int 
   auto table = std::make_shared<Table>(chunk_size);
   auto column_id = complete_table->column_id_by_name(column_name);
   auto column_type = complete_table->column_type(column_id);
-  table->add_column_definition(column_name, column_type, false);
+  table->add_column(column_name, column_type, false);
   auto actual_row_count = complete_table->row_count();
   std::cout << "Complete table row count: " << actual_row_count << std::endl;
   for (uint64_t row_number = 0; row_number < actual_row_count; row_number++) {
