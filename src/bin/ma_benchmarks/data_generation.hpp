@@ -441,11 +441,56 @@ std::vector<uint> generate_uniform_distribution(int value_cont, int distinct_val
   return distribution;
 }
 
-std::vector<uint> generate_postgres_estimation(std::vector<uint> distribution, uint granularity) {
+uint compute_row_count(std::vector<uint> distribution) {
   uint row_count = 0;
   for (uint i = 0; i < distribution.size(); i++) {
     row_count += distribution[i];
   }
+
+  return row_count;
+}
+
+std::vector<uint> generate_postgres2_estimation(std::vector<uint> distribution, uint granularity) {
+  // pair: <value id, count>
+  std::vector<std::pair<uint, uint>> values_and_counts;
+  for (uint i = 0; i < distribution.size(); i++) {
+    values_and_counts.push_back(std::pair<uint, uint>(i, distribution[i]));
+  }
+
+  // Sort value ids by their value counts
+  std::sort(values_and_counts.begin(), values_and_counts.end(), [](const auto a, const auto b) {
+    return a.second < b.second;
+  });
+  // The most common values are now at the end of the vector
+
+  // Initialize the estimations to zero
+  auto estimation = std::vector<uint>(distribution.size());
+
+  // Update the most common values estimations
+  uint most_common_count_sum = 0;
+  for (uint i = values_and_counts.size() - granularity; i < values_and_counts.size(); i++) {
+    auto value_id = values_and_counts[i].first;
+    auto value_count = values_and_counts[i].second;
+    estimation[value_id] = value_count;
+    most_common_count_sum += value_count;
+  }
+
+  // Estimate all other values as uniform
+  uint row_count = compute_row_count(distribution);
+  uint base_estimation = (row_count - most_common_count_sum) / (distribution.size() - granularity);
+
+  // Update all other values filter_cardinality_estimation_series
+  for (uint i = 0; i < estimation.size(); i++) {
+    if (estimation[i] == 0) {
+      estimation[i] = base_estimation;
+    }
+  }
+
+  return estimation;
+}
+
+std::vector<uint> generate_postgres1_estimation(std::vector<uint> distribution, uint granularity) {
+  uint row_count = compute_row_count(distribution);
   uint bucket_size = row_count / granularity;
   auto bucket_ends = std::vector<uint>();
 

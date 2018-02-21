@@ -80,17 +80,15 @@ int main() {
   jcch_series.run();
   */
 
-  /*
   auto acdoca_series = TableScanBenchmarkSeries<AcdocaBenchmark>();
   acdoca_series.benchmark_name = "acdoca";
   acdoca_series.sample_size = 10;
-  acdoca_series.column_names = {"RCLNT"};
+  acdoca_series.column_names = {"BELNR"};
   acdoca_series.row_counts = {1'000'000};
   acdoca_series.chunk_sizes = {100'000};
   acdoca_series.remainder_sizes = {0, 2, 4, 8};
   acdoca_series.quotient_size = 17;
   acdoca_series.run();
-  */
 
   //custom_benchmark_series();
   //tpcc_benchmark_series();
@@ -112,7 +110,7 @@ int main() {
   dict_vs_filter_series_uncached();
   */
 
-
+  /*
   filter_cardinality_estimation_series("normal", 3'000);
   filter_cardinality_estimation_series("normal", 10'000);
   filter_cardinality_estimation_series("normal", 25'000);
@@ -124,20 +122,28 @@ int main() {
   filter_misestimation_series(misestimation_results, "normal", 25'000);
   filter_misestimation_series(misestimation_results, "normal", 50'000);
 
-  postgres_misestimation_series(misestimation_results, "normal", 3'000, 10);
-  postgres_misestimation_series(misestimation_results, "normal", 10'000, 10);
-  postgres_misestimation_series(misestimation_results, "normal", 25'000, 10);
-  postgres_misestimation_series(misestimation_results, "normal", 50'000, 10);
+  postgres1_misestimation_series(misestimation_results, "normal", 3'000, 10);
+  postgres1_misestimation_series(misestimation_results, "normal", 10'000, 10);
+  postgres1_misestimation_series(misestimation_results, "normal", 25'000, 10);
+  postgres1_misestimation_series(misestimation_results, "normal", 50'000, 10);
+
+  postgres2_misestimation_series(misestimation_results, "normal", 3'000, 10);
+  postgres2_misestimation_series(misestimation_results, "normal", 10'000, 10);
+  postgres2_misestimation_series(misestimation_results, "normal", 25'000, 10);
+  postgres2_misestimation_series(misestimation_results, "normal", 50'000, 10);
 
   filter_cardinality_estimation_series("uniform", 3000);
   filter_misestimation_series(misestimation_results, "uniform", 3000);
-  postgres_misestimation_series(misestimation_results, "uniform", 3000, 10);
+  postgres1_misestimation_series(misestimation_results, "uniform", 3000, 10);
+  postgres2_misestimation_series(misestimation_results, "uniform", 3000, 10);
 
   filter_cardinality_estimation_series("zipf", 3000);
   filter_misestimation_series(misestimation_results, "zipf", 3000);
-  postgres_misestimation_series(misestimation_results, "zipf", 3000, 10);
+  postgres1_misestimation_series(misestimation_results, "zipf", 3000, 10);
+  postgres2_misestimation_series(misestimation_results, "zipf", 3000, 10);
 
   serialize_results_csv("misestimation", misestimation_results);
+  */
 
   //analyze_all_tpcc_tables();
   //analyze_jcch_lineitem();

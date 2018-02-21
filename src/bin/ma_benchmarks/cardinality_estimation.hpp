@@ -37,7 +37,6 @@ void filter_misestimation_series(std::shared_ptr<Table> results_table, std::stri
   int value_count = 100'000;
   auto quotient_sizes = {12, 13, 14, 15, 16, 17};
   auto remainder_sizes = {2, 4, 8, 16};
-  auto data = distribution_type + std::to_string(distinct_values);
 
   std::cout << " >> Filter Misestimation Series" << std::endl;
   std::cout << "sample size: " << sample_size << std::endl;
@@ -85,7 +84,7 @@ void filter_misestimation_series(std::shared_ptr<Table> results_table, std::stri
 
       auto description = std::string("filter_") + std::to_string(quotient_size) + "_" + std::to_string(remainder_size);
       for (auto pair : over_estimation) {
-        results_table->append({sample_size, value_count, distinct_values, data, description, pair.first, pair.second});
+        results_table->append({sample_size, value_count, distinct_values, distribution_type, description, pair.first, pair.second});
       }
 
       auto mean_error = sum_error / static_cast<double>(sample_size);
@@ -99,18 +98,17 @@ void filter_misestimation_series(std::shared_ptr<Table> results_table, std::stri
   }
 }
 
-void postgres_misestimation_series(std::shared_ptr<Table> results_table, std::string distribution_type,
+void postgres1_misestimation_series(std::shared_ptr<Table> results_table, std::string distribution_type,
                                    int distinct_values, uint granularity) {
   int value_count = 100'000;
-  auto data = distribution_type + std::to_string(distinct_values);
 
-  std::cout << " >> Postgres Misestimation Series" << std::endl;
+  std::cout << " >> Postgres1 Misestimation Series" << std::endl;
   std::cout << "distinct values: " << distinct_values << std::endl;
   std::cout << "data distribution: " << distribution_type << std::endl;
   std::cout << "granularity: " << granularity << std::endl;
 
   auto distribution = generate_distribution(distribution_type, value_count, distinct_values);
-  auto estimation = generate_postgres_estimation(distribution, granularity);
+  auto estimation = generate_postgres1_estimation(distribution, granularity);
   auto errors = std::map<int, int>();
   auto sum_error = 0;
 
@@ -125,7 +123,39 @@ void postgres_misestimation_series(std::shared_ptr<Table> results_table, std::st
 
   auto description = std::string("postgres1_") + std::to_string(granularity);
   for (auto pair : errors) {
-    results_table->append({distinct_values, value_count, distinct_values, data, description, pair.first, pair.second});
+    results_table->append({distinct_values, value_count, distinct_values, distribution_type, description, pair.first, pair.second});
+  }
+
+  auto mean_error = sum_error / static_cast<double>(distribution.size());
+  std::cout << "Mean Error: " << std::to_string(mean_error) << std::endl;
+}
+
+void postgres2_misestimation_series(std::shared_ptr<Table> results_table, std::string distribution_type,
+                                   int distinct_values, uint granularity) {
+  int value_count = 100'000;
+
+  std::cout << " >> Postgres2 Misestimation Series" << std::endl;
+  std::cout << "distinct values: " << distinct_values << std::endl;
+  std::cout << "data distribution: " << distribution_type << std::endl;
+  std::cout << "granularity: " << granularity << std::endl;
+
+  auto distribution = generate_distribution(distribution_type, value_count, distinct_values);
+  auto estimation = generate_postgres2_estimation(distribution, granularity);
+  auto errors = std::map<int, int>();
+  auto sum_error = 0;
+
+  for(uint i = 0; i < distribution.size(); i++) {
+    auto actual_count = static_cast<int>(distribution[i]);
+    auto estimated_count = static_cast<int>(estimation[i]);
+    auto error = estimated_count - actual_count;
+
+    errors[error]++;
+    sum_error += std::abs(error);
+  }
+
+  auto description = std::string("postgres2_") + std::to_string(granularity);
+  for (auto pair : errors) {
+    results_table->append({distinct_values, value_count, distinct_values, distribution_type, description, pair.first, pair.second});
   }
 
   auto mean_error = sum_error / static_cast<double>(distribution.size());

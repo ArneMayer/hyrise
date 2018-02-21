@@ -22,7 +22,7 @@ class AcdocaBenchmark : public TableScanBenchmark {
   }
 
   virtual AllTypeVariant get_scan_value() override {
-    return "hallo";
+    return "0911422816";
   }
 
  private:
