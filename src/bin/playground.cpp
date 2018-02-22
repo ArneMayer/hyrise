@@ -80,6 +80,7 @@ int main() {
   jcch_series.run();
   */
 
+  /*
   auto acdoca_series = TableScanBenchmarkSeries<AcdocaBenchmark>();
   acdoca_series.benchmark_name = "acdoca";
   acdoca_series.sample_size = 10;
@@ -89,6 +90,7 @@ int main() {
   acdoca_series.remainder_sizes = {0, 2, 4, 8};
   acdoca_series.quotient_size = 17;
   acdoca_series.run();
+  */
 
   //custom_benchmark_series();
   //tpcc_benchmark_series();
@@ -110,40 +112,31 @@ int main() {
   dict_vs_filter_series_uncached();
   */
 
-  /*
-  filter_cardinality_estimation_series("normal", 3'000);
-  filter_cardinality_estimation_series("normal", 10'000);
-  filter_cardinality_estimation_series("normal", 25'000);
-  filter_cardinality_estimation_series("normal", 50'000);
 
+  // CARDINALITY ESTIMATION
   auto misestimation_results = create_misestimation_results_table();
-  filter_misestimation_series(misestimation_results, "normal", 3'000);
-  filter_misestimation_series(misestimation_results, "normal", 10'000);
-  filter_misestimation_series(misestimation_results, "normal", 25'000);
-  filter_misestimation_series(misestimation_results, "normal", 50'000);
+  auto example_results = create_estimation_examples_table();
+  auto data_names = {"normal", "uniform", "zipf"};
+  auto distinct_counts = {3'000, 10'000, 25'000, 50'000};
+  auto postgres_granularity = 10;
+  for (auto data_name : data_names) {
+    for (auto distinct_count : distinct_counts) {
+      // Filters
+      filter_estimation_examples(example_results, data_name, distinct_count);
+      filter_misestimation_series(misestimation_results, data_name, distinct_count);
 
-  postgres1_misestimation_series(misestimation_results, "normal", 3'000, 10);
-  postgres1_misestimation_series(misestimation_results, "normal", 10'000, 10);
-  postgres1_misestimation_series(misestimation_results, "normal", 25'000, 10);
-  postgres1_misestimation_series(misestimation_results, "normal", 50'000, 10);
+      // Postgres1
+      postgres1_estimation_example(example_results, data_name, distinct_count, postgres_granularity);
+      postgres1_misestimation_series(misestimation_results, data_name, distinct_count, postgres_granularity);
 
-  postgres2_misestimation_series(misestimation_results, "normal", 3'000, 10);
-  postgres2_misestimation_series(misestimation_results, "normal", 10'000, 10);
-  postgres2_misestimation_series(misestimation_results, "normal", 25'000, 10);
-  postgres2_misestimation_series(misestimation_results, "normal", 50'000, 10);
-
-  filter_cardinality_estimation_series("uniform", 3000);
-  filter_misestimation_series(misestimation_results, "uniform", 3000);
-  postgres1_misestimation_series(misestimation_results, "uniform", 3000, 10);
-  postgres2_misestimation_series(misestimation_results, "uniform", 3000, 10);
-
-  filter_cardinality_estimation_series("zipf", 3000);
-  filter_misestimation_series(misestimation_results, "zipf", 3000);
-  postgres1_misestimation_series(misestimation_results, "zipf", 3000, 10);
-  postgres2_misestimation_series(misestimation_results, "zipf", 3000, 10);
+      // Postgres2
+      postgres2_estimation_example(example_results, data_name, distinct_count, postgres_granularity);
+      postgres2_misestimation_series(misestimation_results, data_name, distinct_count, postgres_granularity);
+    }
+  }
 
   serialize_results_csv("misestimation", misestimation_results);
-  */
+  serialize_results_csv("estimation_examples", example_results);
 
   //analyze_all_tpcc_tables();
   //analyze_jcch_lineitem();

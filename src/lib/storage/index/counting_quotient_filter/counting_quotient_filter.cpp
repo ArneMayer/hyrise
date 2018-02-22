@@ -175,7 +175,7 @@ double CountingQuotientFilter<ElementType>::load_factor() const {
 
 template <typename ElementType>
 bool CountingQuotientFilter<ElementType>::is_full() const {
-  return load_factor() >= 1.0;
+  return load_factor() > 0.99;
 }
 
 EXPLICITLY_INSTANTIATE_DATA_TYPES(CountingQuotientFilter);
