@@ -2,7 +2,7 @@
 
 #include "utils.hpp"
 
-std::shared_ptr<Table> create_misestimation_results_table() {
+std::shared_ptr<Table> create_estimation_results_table() {
   auto results_table = std::make_shared<Table>();
   results_table->add_column("sample_size", DataType::Int, false);
   results_table->add_column("row_count", DataType::Int, false);
@@ -31,17 +31,19 @@ std::vector<uint> generate_distribution(std::string distribution_type, uint row_
   return distribution;
 }
 
-void filter_misestimation_series(std::shared_ptr<Table> results_table, std::string data_name, int distinct_values) {
+void filter_estimation_series(std::shared_ptr<Table> results_table, std::string data_name, int distinct_values) {
   //int sample_size = 300'000;
   int sample_size = 300'000;
   int row_count = 100'000;
   auto quotient_sizes = {12, 13, 14, 15, 16, 17};
   auto remainder_sizes = {2, 4, 8, 16};
 
+  std::cout << "-----------------------------------" << std::endl;
   std::cout << " >> Filter Misestimation Series" << std::endl;
   std::cout << "sample size: " << sample_size << std::endl;
   std::cout << "distinct values: " << distinct_values << std::endl;
   std::cout << "data distribution: " << data_name << std::endl;
+  std::cout << std::endl;
 
   auto distribution = generate_distribution(data_name, row_count, distinct_values);
   for (auto quotient_size : quotient_sizes) {
@@ -98,14 +100,16 @@ void filter_misestimation_series(std::shared_ptr<Table> results_table, std::stri
   }
 }
 
-void postgres1_misestimation_series(std::shared_ptr<Table> results_table, std::string data_name,
+void postgres1_estimation_series(std::shared_ptr<Table> results_table, std::string data_name,
                                    int distinct_values, uint granularity) {
   int row_count = 100'000;
 
+  std::cout << "-----------------------------------" << std::endl;
   std::cout << " >> Postgres1 Misestimation Series" << std::endl;
   std::cout << "distinct values: " << distinct_values << std::endl;
   std::cout << "data distribution: " << data_name << std::endl;
   std::cout << "granularity: " << granularity << std::endl;
+  std::cout << std::endl;
 
   auto distribution = generate_distribution(data_name, row_count, distinct_values);
   auto estimation = generate_postgres1_estimation(distribution, granularity);
@@ -130,14 +134,16 @@ void postgres1_misestimation_series(std::shared_ptr<Table> results_table, std::s
   std::cout << "Mean Error: " << std::to_string(mean_error) << std::endl;
 }
 
-void postgres2_misestimation_series(std::shared_ptr<Table> results_table, std::string data_name,
+void postgres2_estimation_series(std::shared_ptr<Table> results_table, std::string data_name,
                                    int distinct_values, uint granularity) {
   int row_count = 100'000;
 
+  std::cout << "-----------------------------------" << std::endl;
   std::cout << " >> Postgres2 Misestimation Series" << std::endl;
   std::cout << "distinct values: " << distinct_values << std::endl;
   std::cout << "data distribution: " << data_name << std::endl;
   std::cout << "granularity: " << granularity << std::endl;
+  std::cout << std::endl;
 
   auto distribution = generate_distribution(data_name, row_count, distinct_values);
   auto estimation = generate_postgres2_estimation(distribution, granularity);
@@ -179,8 +185,11 @@ void postgres1_estimation_example(std::shared_ptr<Table> results_table, std::str
                                               int distinct_values, int granularity) {
   int row_count = 100'000;
 
+  std::cout << "-----------------------------------" << std::endl;
   std::cout << " >> Postgres1 Estimation Example" << std::endl;
   std::cout << "data: " << data_name << std::endl;
+  std::cout << "granularity: " << granularity << std::endl;
+  std::cout << std::endl;
 
   std::vector<uint> distribution;
   if (data_name == "normal") {
@@ -207,8 +216,11 @@ void postgres2_estimation_example(std::shared_ptr<Table> results_table, std::str
                                   int distinct_values, int granularity) {
   int row_count = 100'000;
 
+  std::cout << "-----------------------------------" << std::endl;
   std::cout << " >> Postgres2 Estimation Example" << std::endl;
   std::cout << "data: " << data_name << std::endl;
+  std::cout << "granularity: " << granularity << std::endl;
+  std::cout << std::endl;
 
   std::vector<uint> distribution;
   if (data_name == "normal") {
@@ -236,8 +248,10 @@ void filter_estimation_examples(std::shared_ptr<Table> results_table, std::strin
   auto remainder_sizes = {2, 4, 8, 16};
   auto quotient_sizes = {12, 13, 14, 15, 16, 17};
 
+  std::cout << "-----------------------------------" << std::endl;
   std::cout << " >> Filter Estimation Examples" << std::endl;
   std::cout << "data: " << data_name << std::endl;
+  std::cout << std::endl;
 
   std::vector<uint> distribution;
   if (data_name == "normal") {

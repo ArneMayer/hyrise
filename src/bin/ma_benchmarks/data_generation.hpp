@@ -495,22 +495,17 @@ std::vector<uint> generate_postgres1_estimation(std::vector<uint> distribution, 
   auto bucket_ends = std::vector<uint>();
 
   uint count = 0;
-  uint number_of_buckets = 0;
-  for (uint i = 0; i < distribution.size() && number_of_buckets < granularity; i++) {
+  for (uint i = 0; i < distribution.size() && bucket_ends.size() < granularity; i++) {
     count += distribution[i];
     if (count >= bucket_size) {
       bucket_ends.push_back(i + 1);
       count = 0;
-      number_of_buckets++;
     }
   }
 
-  if (number_of_buckets == granularity - 1) {
+  if (bucket_ends[bucket_ends.size() - 1] != distribution.size()) {
     bucket_ends.push_back(distribution.size());
-    number_of_buckets++;
   }
-
-  Assert(number_of_buckets == granularity, "number of buckets is incorrect");
 
   auto estimation = std::vector<uint>(distribution.size());
   for(uint i = 0; i < distribution.size(); i++) {
