@@ -118,7 +118,7 @@ int main() {
   auto example_results = create_estimation_examples_table();
   auto data_names = {"normal", "uniform", "zipf"};
   auto distinct_counts = {3'000, 10'000, 25'000, 50'000};
-  auto postgres_granularities = {10, 100, 1000};
+  auto postgres_granularities = {10, 50, 100, 200, 500, 1000};
   for (auto data_name : data_names) {
     for (auto distinct_count : distinct_counts) {
       // Filters

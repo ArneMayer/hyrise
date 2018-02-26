@@ -416,8 +416,6 @@ std::vector<uint> generate_zipfian_distribution(int value_count, int distinct_va
     distribution[i] = distribution[i] * value_count / sum;
   }
 
-  std::cout << "sum: " << sum << std::endl;
-
   return distribution;
 }
 
