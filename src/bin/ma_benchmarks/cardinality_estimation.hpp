@@ -15,22 +15,6 @@ std::shared_ptr<Table> create_estimation_results_table() {
   return results_table;
 }
 
-std::vector<uint> generate_distribution(std::string distribution_type, uint row_count, uint distinct_values) {
-  std::vector<uint> distribution;
-  if (distribution_type == "normal") {
-    double variance = distinct_values / 6.0;
-    distribution = generate_normal_distribution(row_count, distinct_values, variance);
-  } else if (distribution_type == "uniform") {
-    distribution = generate_uniform_distribution(row_count, distinct_values);
-  } else if (distribution_type == "zipf") {
-    distribution = generate_zipfian_distribution(row_count, distinct_values);
-  } else {
-    throw std::invalid_argument("data: " + distribution_type);
-  }
-
-  return distribution;
-}
-
 void filter_estimation_series(std::shared_ptr<Table> results_table, std::string data_name, int distinct_values) {
   //int sample_size = 300'000;
   int sample_size = 300'000;
@@ -191,18 +175,7 @@ void postgres1_estimation_example(std::shared_ptr<Table> results_table, std::str
   std::cout << "granularity: " << granularity << std::endl;
   std::cout << std::endl;
 
-  std::vector<uint> distribution;
-  if (data_name == "normal") {
-    double variance = distinct_values / 6.0;
-    distribution = generate_normal_distribution(row_count, distinct_values, variance);
-  } else if (data_name == "uniform") {
-    distribution = generate_uniform_distribution(row_count, distinct_values);
-  } else if (data_name == "zipf") {
-    distribution = generate_zipfian_distribution(row_count, distinct_values);
-  } else {
-    throw std::invalid_argument("data: " + data_name);
-  }
-
+  auto distribution = generate_distribution(data_name, row_count, distinct_values);
   auto estimation = generate_postgres1_estimation(distribution, granularity);
   for (uint i = 0; i < distribution.size(); i++) {
     auto actual_count = static_cast<int>(distribution[i]);
@@ -222,18 +195,7 @@ void postgres2_estimation_example(std::shared_ptr<Table> results_table, std::str
   std::cout << "granularity: " << granularity << std::endl;
   std::cout << std::endl;
 
-  std::vector<uint> distribution;
-  if (data_name == "normal") {
-    double variance = distinct_values / 6.0;
-    distribution = generate_normal_distribution(row_count, distinct_values, variance);
-  } else if (data_name == "uniform") {
-    distribution = generate_uniform_distribution(row_count, distinct_values);
-  } else if (data_name == "zipf") {
-    distribution = generate_zipfian_distribution(row_count, distinct_values);
-  } else {
-    throw std::invalid_argument("data: " + data_name);
-  }
-
+  auto distribution = generate_distribution(data_name, row_count, distinct_values);
   auto estimation = generate_postgres2_estimation(distribution, granularity);
   for (int i = 0; i < distinct_values; i++) {
     auto actual_count = static_cast<int>(distribution[i]);
@@ -253,20 +215,7 @@ void filter_estimation_examples(std::shared_ptr<Table> results_table, std::strin
   std::cout << "data: " << data_name << std::endl;
   std::cout << std::endl;
 
-  std::vector<uint> distribution;
-  if (data_name == "normal") {
-    double variance = distinct_values / 6.0;
-    distribution = generate_normal_distribution(row_count, distinct_values, variance);
-  } else if (data_name == "uniform") {
-    distribution = generate_uniform_distribution(row_count, distinct_values);
-  } else if (data_name == "zipf") {
-    distribution = generate_zipfian_distribution(row_count, distinct_values);
-  } else {
-    throw std::invalid_argument("data: " + data_name);
-  }
-
-  //auto postgres_estimation = generate_postgres_estimation(distribution, 10);
-
+  auto distribution = generate_distribution(data_name, row_count, distinct_values);
   for (auto quotient_size : quotient_sizes) {
     for (auto remainder_size : remainder_sizes) {
       auto filter = CountingQuotientFilter<int>(quotient_size, remainder_size);

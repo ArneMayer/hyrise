@@ -439,6 +439,32 @@ std::vector<uint> generate_uniform_distribution(int value_cont, int distinct_val
   return distribution;
 }
 
+void shuffle(std::vector<uint>& distribution) {
+  std::random_shuffle(distribution.begin(), distribution.end());
+}
+
+std::vector<uint> generate_distribution(std::string data_name, uint row_count, uint distinct_count) {
+  if (data_name == "normal") {
+    double variance = distinct_count / 6.0;
+    return generate_normal_distribution(row_count, distinct_count, variance);
+  } else if (data_name == "normal_shuffled") {
+    double variance = distinct_count / 6.0;
+    auto distribution = generate_normal_distribution(row_count, distinct_count, variance);
+    shuffle(distribution);
+    return distribution;
+  } else if (data_name == "uniform") {
+    return generate_uniform_distribution(row_count, distinct_count);
+  } else if (data_name == "zipf") {
+    return generate_zipfian_distribution(row_count, distinct_count);
+  } else if (data_name == "zipf_shuffled") {
+    auto distribution = generate_zipfian_distribution(row_count, distinct_count);
+    shuffle(distribution);
+    return distribution;
+  }  else {
+    throw std::invalid_argument("data: " + data_name);
+  }
+}
+
 uint compute_row_count(std::vector<uint> distribution) {
   uint row_count = 0;
   for (uint i = 0; i < distribution.size(); i++) {
