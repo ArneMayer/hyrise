@@ -17,17 +17,10 @@ std::shared_ptr<Table> create_estimation_results_table() {
 
 void filter_estimation_series(std::shared_ptr<Table> results_table, std::string data_name, int distinct_values) {
   //int sample_size = 300'000;
-  int sample_size = 300'000;
+  int sample_size = 3'000'000;
   int row_count = 100'000;
   auto quotient_sizes = {12, 13, 14, 15, 16, 17};
   auto remainder_sizes = {2, 4, 8, 16};
-
-  std::cout << "-----------------------------------" << std::endl;
-  std::cout << " >> Filter Misestimation Series" << std::endl;
-  std::cout << "sample size: " << sample_size << std::endl;
-  std::cout << "distinct values: " << distinct_values << std::endl;
-  std::cout << "data distribution: " << data_name << std::endl;
-  std::cout << std::endl;
 
   auto distribution = generate_distribution(data_name, row_count, distinct_values);
   for (auto quotient_size : quotient_sizes) {
@@ -68,15 +61,16 @@ void filter_estimation_series(std::shared_ptr<Table> results_table, std::string 
         continue;
       }
 
-      auto description = std::string("filter_") + std::to_string(quotient_size) + "_" + std::to_string(remainder_size);
+      auto estimation_tec = std::string("filter_") + std::to_string(quotient_size) + "_" + std::to_string(remainder_size);
       for (auto pair : over_estimation) {
-        results_table->append({sample_size, row_count, distinct_values, data_name, description, pair.first, pair.second});
+        results_table->append({sample_size, row_count, distinct_values, data_name, estimation_tec, pair.first, pair.second});
       }
 
       auto mean_error = sum_error / static_cast<double>(sample_size);
-      std::cout << "quotient_size: " << quotient_size;
-      std::cout << ", remainder_size: " << remainder_size;
-      std::cout << ", mean error: " << mean_error << std::endl;
+      std::cout << "estimation: "<< estimation_tec << ", "
+                << "data: " << data_name << ", "
+                << "distinct values: " << distinct_values << ", "
+                << "mean error: " << mean_error << std::endl;
       if (under_estimation > 0) {
         std::cout << "UNDERCOUNTS: " << under_estimation << std::endl;
       }
@@ -84,17 +78,38 @@ void filter_estimation_series(std::shared_ptr<Table> results_table, std::string 
   }
 }
 
+void uniform_estimation_series(std::shared_ptr<Table> results_table, std::string data_name, int distinct_values) {
+  auto row_count = 100'000;
+  auto distribution = generate_distribution(data_name, row_count, distinct_values);
+  auto estimation = generate_uniform_estimation(distribution);
+  auto errors = std::map<int, int>();
+  auto sum_error = 0;
+
+  for(uint i = 0; i < distribution.size(); i++) {
+    auto actual_count = static_cast<int>(distribution[i]);
+    auto estimated_count = static_cast<int>(estimation[i]);
+    auto error = estimated_count - actual_count;
+
+    errors[error]++;
+    sum_error += std::abs(error);
+  }
+
+  auto estimation_tec = std::string("uniform");
+  for (auto pair : errors) {
+    results_table->append({distinct_values, row_count, distinct_values, data_name, estimation_tec, pair.first, pair.second});
+  }
+
+  auto mean_error = sum_error / static_cast<double>(distribution.size());
+  std::cout << "estimation: uniform, "
+            << "data: " << data_name << ", "
+            << "distinct values: " << distinct_values << ", "
+            << "mean error: " << mean_error << std::endl;
+}
+
+
 void postgres1_estimation_series(std::shared_ptr<Table> results_table, std::string data_name,
                                    int distinct_values, uint granularity) {
   int row_count = 100'000;
-
-  std::cout << "-----------------------------------" << std::endl;
-  std::cout << " >> Postgres1 Misestimation Series" << std::endl;
-  std::cout << "distinct values: " << distinct_values << std::endl;
-  std::cout << "data distribution: " << data_name << std::endl;
-  std::cout << "granularity: " << granularity << std::endl;
-  std::cout << std::endl;
-
   auto distribution = generate_distribution(data_name, row_count, distinct_values);
   auto estimation = generate_postgres1_estimation(distribution, granularity);
   auto errors = std::map<int, int>();
@@ -115,20 +130,15 @@ void postgres1_estimation_series(std::shared_ptr<Table> results_table, std::stri
   }
 
   auto mean_error = sum_error / static_cast<double>(distribution.size());
-  std::cout << "Mean Error: " << std::to_string(mean_error) << std::endl;
+  std::cout << "estimation: postgres1, "
+            << "data: " << data_name << ", "
+            << "distinct values: " << distinct_values << ", "
+            << "mean error: " << mean_error << std::endl;
 }
 
 void postgres2_estimation_series(std::shared_ptr<Table> results_table, std::string data_name,
                                    int distinct_values, uint granularity) {
   int row_count = 100'000;
-
-  std::cout << "-----------------------------------" << std::endl;
-  std::cout << " >> Postgres2 Misestimation Series" << std::endl;
-  std::cout << "distinct values: " << distinct_values << std::endl;
-  std::cout << "data distribution: " << data_name << std::endl;
-  std::cout << "granularity: " << granularity << std::endl;
-  std::cout << std::endl;
-
   auto distribution = generate_distribution(data_name, row_count, distinct_values);
   auto estimation = generate_postgres2_estimation(distribution, granularity);
   auto errors = std::map<int, int>();
@@ -149,7 +159,10 @@ void postgres2_estimation_series(std::shared_ptr<Table> results_table, std::stri
   }
 
   auto mean_error = sum_error / static_cast<double>(distribution.size());
-  std::cout << "Mean Error: " << std::to_string(mean_error) << std::endl;
+  std::cout << "estimation: postgres2, "
+            << "data: " << data_name << ", "
+            << "distinct values: " << distinct_values << ", "
+            << "mean error: " << mean_error << std::endl;
 }
 
 std::shared_ptr<Table> create_estimation_examples_table() {
@@ -167,14 +180,10 @@ std::shared_ptr<Table> create_estimation_examples_table() {
 
 void postgres1_estimation_example(std::shared_ptr<Table> results_table, std::string data_name,
                                               int distinct_values, int granularity) {
+  std::cout << "postgres1 estimation example, "
+            << "data: " << data_name << ", "
+            << "granularity: " << granularity << std::endl;
   int row_count = 100'000;
-
-  std::cout << "-----------------------------------" << std::endl;
-  std::cout << " >> Postgres1 Estimation Example" << std::endl;
-  std::cout << "data: " << data_name << std::endl;
-  std::cout << "granularity: " << granularity << std::endl;
-  std::cout << std::endl;
-
   auto distribution = generate_distribution(data_name, row_count, distinct_values);
   auto estimation = generate_postgres1_estimation(distribution, granularity);
   for (uint i = 0; i < distribution.size(); i++) {
@@ -187,14 +196,10 @@ void postgres1_estimation_example(std::shared_ptr<Table> results_table, std::str
 
 void postgres2_estimation_example(std::shared_ptr<Table> results_table, std::string data_name,
                                   int distinct_values, int granularity) {
+  std::cout << "postgres2 estimation example, "
+            << "data: " << data_name << ", "
+            << "granularity: " << granularity << std::endl;
   int row_count = 100'000;
-
-  std::cout << "-----------------------------------" << std::endl;
-  std::cout << " >> Postgres2 Estimation Example" << std::endl;
-  std::cout << "data: " << data_name << std::endl;
-  std::cout << "granularity: " << granularity << std::endl;
-  std::cout << std::endl;
-
   auto distribution = generate_distribution(data_name, row_count, distinct_values);
   auto estimation = generate_postgres2_estimation(distribution, granularity);
   for (int i = 0; i < distinct_values; i++) {
@@ -205,16 +210,24 @@ void postgres2_estimation_example(std::shared_ptr<Table> results_table, std::str
   }
 }
 
+void uniform_estimation_example(std::shared_ptr<Table> results_table, std::string data_name, int distinct_values) {
+  std::cout << "uniform estimation example, data: " << data_name << std::endl;
+  int row_count = 100'000;
+  auto distribution = generate_distribution(data_name, row_count, distinct_values);
+  auto estimation = generate_uniform_estimation(distribution);
+  for (int i = 0; i < distinct_values; i++) {
+    auto actual_count = static_cast<int>(distribution[i]);
+    auto estimated_count = static_cast<int>(estimation[i]);
+    auto estimation_tec = std::string("uniform");
+    results_table->append({row_count, distinct_values, data_name, estimation_tec, i, actual_count, estimated_count});
+  }
+}
+
 void filter_estimation_examples(std::shared_ptr<Table> results_table, std::string data_name, int distinct_values) {
+  std::cout << "filter estimation examples, data: " << data_name << std::endl;
   int row_count = 100'000;
   auto remainder_sizes = {2, 4, 8, 16};
   auto quotient_sizes = {12, 13, 14, 15, 16, 17};
-
-  std::cout << "-----------------------------------" << std::endl;
-  std::cout << " >> Filter Estimation Examples" << std::endl;
-  std::cout << "data: " << data_name << std::endl;
-  std::cout << std::endl;
-
   auto distribution = generate_distribution(data_name, row_count, distinct_values);
   for (auto quotient_size : quotient_sizes) {
     for (auto remainder_size : remainder_sizes) {
@@ -247,9 +260,6 @@ void filter_estimation_examples(std::shared_ptr<Table> results_table, std::strin
         }
       }
 
-      std::cout << "quotient_size: " << quotient_size;
-      std::cout << ", remainder_size: " << remainder_size;
-      std::cout << ", error: " << over_estimation << std::endl;
       if (under_estimation > 0) {
         std::cout << "UNDERCOUNTS: " << under_estimation << std::endl;
         //throw std::logic_error("filter with undercounts");

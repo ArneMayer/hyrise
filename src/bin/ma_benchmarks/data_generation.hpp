@@ -474,6 +474,17 @@ uint compute_row_count(std::vector<uint> distribution) {
   return row_count;
 }
 
+std::vector<uint> generate_uniform_estimation(std::vector<uint> distribution) {
+  uint row_count = compute_row_count(distribution);
+  uint estimated_count = row_count / distribution.size();
+  std::vector<uint> estimation(distribution.size());
+  for (uint i = 0; i < estimation.size(); i++) {
+    estimation[i] = estimated_count;
+  }
+
+  return estimation;
+}
+
 std::vector<uint> generate_postgres2_estimation(std::vector<uint> distribution, uint granularity) {
   // pair: <value id, count>
   std::vector<std::pair<uint, uint>> values_and_counts;

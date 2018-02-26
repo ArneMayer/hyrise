@@ -114,7 +114,7 @@ int main() {
 
 
   // CARDINALITY ESTIMATION
-  auto misestimation_results = create_estimation_results_table();
+  auto estimation_results = create_estimation_results_table();
   auto example_results = create_estimation_examples_table();
   auto data_names = {"normal", "normal_shuffled", "uniform", "zipf", "zipf_shuffled"};
   auto distinct_counts = {3'000, 10'000, 25'000, 50'000};
@@ -123,21 +123,25 @@ int main() {
     for (auto distinct_count : distinct_counts) {
       // Filters
       filter_estimation_examples(example_results, data_name, distinct_count);
-      filter_estimation_series(misestimation_results, data_name, distinct_count);
+      filter_estimation_series(estimation_results, data_name, distinct_count);
+
+      // Uniform estimation
+      uniform_estimation_example(example_results, data_name, distinct_count);
+      uniform_estimation_series(estimation_results, data_name, distinct_count);
 
       for (auto granularity : postgres_granularities) {
         // Postgres1
         postgres1_estimation_example(example_results, data_name, distinct_count, granularity);
-        postgres1_estimation_series(misestimation_results, data_name, distinct_count, granularity);
+        postgres1_estimation_series(estimation_results, data_name, distinct_count, granularity);
 
         // Postgres2
         postgres2_estimation_example(example_results, data_name, distinct_count, granularity);
-        postgres2_estimation_series(misestimation_results, data_name, distinct_count, granularity);
+        postgres2_estimation_series(estimation_results, data_name, distinct_count, granularity);
       }
     }
   }
 
-  serialize_results_csv("estimation", misestimation_results);
+  serialize_results_csv("estimation", estimation_results);
   serialize_results_csv("estimation_examples", example_results);
 
   //analyze_all_tpcc_tables();
