@@ -508,16 +508,13 @@ std::vector<uint> generate_postgres1_estimation(std::vector<uint> distribution, 
   }
 
   auto estimation = std::vector<uint>(distribution.size());
-  for(uint i = 0; i < distribution.size(); i++) {
-    uint bucket_number = 0;
-    uint bucket_start = 0;
-    uint bucket_end = bucket_ends[0];
-    while (i >= bucket_end) {
-      bucket_number++;
-      bucket_start = bucket_ends[bucket_number - 1];
-      bucket_end = bucket_ends[bucket_number];
+  uint bucket_start = 0;
+  for (uint bucket_id = 0; bucket_id < bucket_ends.size(); bucket_id++) {
+    uint bucket_end = bucket_ends[bucket_id];
+    for (uint value_id = bucket_start; value_id < bucket_end; value_id++) {
+      estimation[value_id] = bucket_size / (bucket_end - bucket_start);
     }
-    estimation[i] = bucket_size / (bucket_end - bucket_start);
+    bucket_start = bucket_end;
   }
 
   return estimation;

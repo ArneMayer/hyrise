@@ -204,7 +204,7 @@ void postgres1_estimation_example(std::shared_ptr<Table> results_table, std::str
   }
 
   auto estimation = generate_postgres1_estimation(distribution, granularity);
-  for (int i = 0; i < distinct_values; i++) {
+  for (int i = 0; i < distribution.size(); i++) {
     auto actual_count = static_cast<int>(distribution[i]);
     auto estimated_count = static_cast<int>(estimation[i]);
     auto estimation_tec = std::string("postgres1_") + std::to_string(granularity);
