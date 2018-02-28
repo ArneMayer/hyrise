@@ -22,7 +22,7 @@ class AcdocaBenchmark : public TableScanBenchmark {
   }
 
   virtual AllTypeVariant get_scan_value() override {
-    return "0911422816";
+    return get_table()->get_value<std::string>(get_column_id(), 1000);
   }
 
  private:
