@@ -80,7 +80,7 @@ int main() {
   jcch_series.run();
   */
 
-  /*
+
   auto acdoca_series = TableScanBenchmarkSeries<AcdocaBenchmark>();
   acdoca_series.benchmark_name = "acdoca";
   acdoca_series.sample_size = 10;
@@ -90,7 +90,7 @@ int main() {
   acdoca_series.remainder_sizes = {0, 2, 4, 8};
   acdoca_series.quotient_size = 17;
   acdoca_series.run();
-  */
+
 
   //custom_benchmark_series();
   //tpcc_benchmark_series();
@@ -112,7 +112,7 @@ int main() {
   dict_vs_filter_series_uncached();
   */
 
-
+  /*
   // CARDINALITY ESTIMATION
   auto estimation_results = create_estimation_results_table();
   auto example_results = create_estimation_examples_table();
@@ -143,6 +143,7 @@ int main() {
 
   serialize_results_csv("estimation", estimation_results);
   serialize_results_csv("estimation_examples", example_results);
+  */
 
   //analyze_all_tpcc_tables();
   //analyze_jcch_lineitem();
