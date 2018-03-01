@@ -47,7 +47,7 @@ int main() {
 
   auto custom_series = TableScanBenchmarkSeries<CustomBenchmark>();
   custom_series.benchmark_name = "custom";
-  custom_series.table_name = "Custom"
+  custom_series.table_name = "Custom";
   custom_series.sample_size = 10;
   custom_series.column_names = {std::string("columnInt"), std::string("columnString")};
   custom_series.row_counts = {1'000'000};
@@ -84,7 +84,7 @@ int main() {
 
   auto acdoca_series = TableScanBenchmarkSeries<AcdocaBenchmark>();
   acdoca_series.benchmark_name = "acdoca";
-  acdoca_series.table_name = "Acdoca"
+  acdoca_series.table_name = "Acdoca";
   acdoca_series.sample_size = 10;
   acdoca_series.column_names = {"BELNR"};
   acdoca_series.row_counts = {1'000'000};
