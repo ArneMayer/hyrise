@@ -59,9 +59,21 @@ int main() {
   custom_series.run();
   */
 
-
+  /*
   auto tpcc_series = TableScanBenchmarkSeries<TpccBenchmark>();
   tpcc_series.benchmark_name = "tpcc";
+  tpcc_series.sample_size = 10;
+  tpcc_series.table_name = "ORDER-LINE";
+  tpcc_series.column_names = {"OL_I_ID"};
+  tpcc_series.row_counts = {1'000'000};
+  tpcc_series.chunk_sizes = {100'000};
+  tpcc_series.remainder_sizes = {0, 2, 4, 8};
+  tpcc_series.quotient_size = 17;
+  tpcc_series.run();
+  */
+
+  auto tpcc_series = TableScanBenchmarkSeries<TpccBenchmark>();
+  tpcc_series.benchmark_name = "tpcc-chunk-sizes";
   tpcc_series.sample_size = 10;
   tpcc_series.table_name = "ORDER-LINE";
   tpcc_series.column_names = {"OL_I_ID"};
