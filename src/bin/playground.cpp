@@ -78,7 +78,7 @@ int main() {
   tpcc_chunk_sizes_series.table_name = "ORDER-LINE";
   tpcc_chunk_sizes_series.column_names = {"OL_I_ID"};
   tpcc_chunk_sizes_series.row_counts = {10'000'000};
-  tpcc_chunk_sizes_series.chunk_sizes = {1000, 10'000, 100'000, 1'000'000};
+  tpcc_chunk_sizes_series.chunk_sizes = {100, 1000, 10'000, 100'000, 1'000'000};
   tpcc_chunk_sizes_series.remainder_sizes = {0, 16};
   tpcc_chunk_sizes_series.auto_quotient_size = true;
   tpcc_chunk_sizes_series.dictionary_run = false;
