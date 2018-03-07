@@ -93,6 +93,7 @@ public:
               base_config.selectivity = selectivity;
               if (auto_quotient_size) {
                 base_config.quotient_size = static_cast<int>(std::ceil(std::log2(chunk_size)));
+                std::cout << "chunk_size: " << chunk_size << ", quotient_size: " << base_config.quotient_size << std::endl;
               } else {
                 base_config.quotient_size = quotient_size;
               }
