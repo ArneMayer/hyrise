@@ -72,16 +72,19 @@ int main() {
   tpcc_series.run();
   */
 
-  auto tpcc_series = TableScanBenchmarkSeries<TpccBenchmark>();
-  tpcc_series.benchmark_name = "tpcc-chunk-sizes";
-  tpcc_series.sample_size = 2;
-  tpcc_series.table_name = "ORDER-LINE";
-  tpcc_series.column_names = {"OL_I_ID"};
-  tpcc_series.row_counts = {10'000'000};
-  tpcc_series.chunk_sizes = {1000, 10'000, 100'000, 1'000'000};
-  tpcc_series.remainder_sizes = {16};
-  tpcc_series.auto_quotient_size = true;
-  tpcc_series.run();
+  auto tpcc_chunk_sizes_series = TableScanBenchmarkSeries<TpccBenchmark>();
+  tpcc_chunk_sizes_series.benchmark_name = "tpcc-chunk-sizes";
+  tpcc_chunk_sizes_series.sample_size = 2;
+  tpcc_chunk_sizes_series.table_name = "ORDER-LINE";
+  tpcc_chunk_sizes_series.column_names = {"OL_I_ID"};
+  tpcc_chunk_sizes_series.row_counts = {10'000'000};
+  tpcc_chunk_sizes_series.chunk_sizes = {1000, 10'000, 100'000, 1'000'000};
+  tpcc_chunk_sizes_series.remainder_sizes = {0, 16};
+  tpcc_chunk_sizes_series.auto_quotient_size = true;
+  tpcc_chunk_sizes_series.dictionary_run = false;
+  tpcc_chunk_sizes_series.art_run = false;
+  tpcc_chunk_sizes_series.btree_run = false;
+  tpcc_chunk_sizes_series.run();
 
 
   /*

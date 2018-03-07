@@ -29,7 +29,6 @@ std::ostream & operator<<(std::ostream& stream, std::list<T>& list) {
 template <typename Benchmark>
 class TableScanBenchmarkSeries {
 public:
-  static const int AUTO_QUOTIENT_SIZE = -1234;
   std::string benchmark_name = "unspecified";
   int sample_size = 10;
   std::string table_name = "unspecified";
@@ -38,6 +37,9 @@ public:
   std::list<int> chunk_sizes = {};
   bool auto_quotient_size = false;
   int quotient_size = -1;
+  bool dictionary_run = true;
+  bool art_run = true;
+  bool btree_run = true;
   std::list<int> remainder_sizes = {};
   std::list<double> selectivities = {-1.0};
   std::list<double> pruning_rates = {-1.0};
@@ -106,20 +108,26 @@ public:
                 value_config.remainder_size = remainder_size;
                 configurations.push_back(value_config);
 
-                TableScanConfiguration dict_config = base_config;
-                dict_config.remainder_size = remainder_size;
-                dict_config.use_dictionary = true;
-                configurations.push_back(dict_config);
+                if (dictionary_run) {
+                  TableScanConfiguration dict_config = base_config;
+                  dict_config.remainder_size = remainder_size;
+                  dict_config.use_dictionary = true;
+                  configurations.push_back(dict_config);
+                }
               }
 
-              TableScanConfiguration btree_config = base_config;
-              btree_config.use_btree = true;
-              configurations.push_back(btree_config);
+              if (btree_run) {
+                TableScanConfiguration btree_config = base_config;
+                btree_config.use_btree = true;
+                configurations.push_back(btree_config);
+              }
 
-              TableScanConfiguration art_config = base_config;
-              art_config.use_art = true;
-              art_config.use_dictionary = true;
-              configurations.push_back(art_config);
+              if (art_run) {
+                TableScanConfiguration art_config = base_config;
+                art_config.use_art = true;
+                art_config.use_dictionary = true;
+                configurations.push_back(art_config);
+              }
             }
           }
         }
