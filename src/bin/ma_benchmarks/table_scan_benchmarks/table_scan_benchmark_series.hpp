@@ -29,12 +29,14 @@ std::ostream & operator<<(std::ostream& stream, std::list<T>& list) {
 template <typename Benchmark>
 class TableScanBenchmarkSeries {
 public:
+  static const int AUTO_QUOTIENT_SIZE = -1234;
   std::string benchmark_name = "unspecified";
   int sample_size = 10;
   std::string table_name = "unspecified";
   std::list<std::string> column_names = {"unspecified"};
   std::list<int> row_counts = {};
   std::list<int> chunk_sizes = {};
+  bool auto_quotient_size = false;
   int quotient_size = -1;
   std::list<int> remainder_sizes = {};
   std::list<double> selectivities = {-1.0};
@@ -89,7 +91,11 @@ public:
               base_config.chunk_size = chunk_size;
               base_config.pruning_rate = pruning_rate;
               base_config.selectivity = selectivity;
-              base_config.quotient_size = quotient_size;
+              if (auto_quotient_size) {
+                base_config.quotient_size = static_cast<int>(std::ceil(std::log2(chunk_size)));
+              } else {
+                base_config.quotient_size = quotient_size;
+              }
               base_config.remainder_size = 0;
               base_config.use_art = false;
               base_config.use_dictionary = false;

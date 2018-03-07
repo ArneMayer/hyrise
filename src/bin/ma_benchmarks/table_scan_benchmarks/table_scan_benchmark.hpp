@@ -66,7 +66,7 @@ class TableScanBenchmark {
     auto prunable_chunks = 0;
     for (auto chunk_id = ChunkID{0}; chunk_id < chunk_count; chunk_id++) {
       auto filter = _table->get_chunk(chunk_id)->get_filter(_scan_column_id);
-      if (filter->count(_scan_value) == 0) {
+      if (filter->count_all_type(_scan_value) == 0) {
         prunable_chunks++;
       }
     }

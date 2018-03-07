@@ -80,7 +80,7 @@ int main() {
   tpcc_series.row_counts = {10'000'000};
   tpcc_series.chunk_sizes = {1000, 10'000, 100'000, 1'000'000};
   tpcc_series.remainder_sizes = {16};
-  tpcc_series.quotient_size = 20;
+  tpcc_series.auto_quotient_size = true;
   tpcc_series.run();
 
 
