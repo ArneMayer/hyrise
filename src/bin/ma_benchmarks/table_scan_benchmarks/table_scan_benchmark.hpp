@@ -61,6 +61,19 @@ class TableScanBenchmark {
     return data_type_to_string(_table->column_type(_scan_column_id));
   }
 
+  double actual_pruning_rate() {
+    auto chunk_count = _table->chunk_count();
+    auto prunable_chunks = 0;
+    for (auto chunk_id = ChunkID{0}; chunk_id < chunk_count; chunk_id++) {
+      auto filter = _table->get_chunk(chunk_id)->get_filter(_scan_column_id);
+      if (filter->count(_scan_value) == 0) {
+        prunable_chunks++;
+      }
+    }
+
+    return prunable_chunks / static_cast<double>(chunk_count);
+  }
+
   virtual std::shared_ptr<Table> get_table() = 0;
   virtual ColumnID get_column_id() = 0;
   virtual AllTypeVariant get_scan_value() = 0;

@@ -55,6 +55,7 @@ public:
     _results_table->add_column("btree", DataType::Int, false);
     _results_table->add_column("art", DataType::Int, false);
     _results_table->add_column("size", DataType::Int, false);
+    _results_table->add_column("actual_pruning_rate", DataType::Double, false);
     _results_table->add_column("run_time", DataType::Int, false);
   }
 
@@ -137,11 +138,12 @@ public:
         if (i == 0) {
           row_count = benchmark.row_count();
         }
+        auto actual_pruning_rate = benchmark.actual_pruning_rate();
         auto data_type = benchmark.data_type();
         _results_table->append({config.table_name, config.column_name, data_type, row_count, config.chunk_size,
           config.pruning_rate, config.selectivity, config.quotient_size, config.remainder_size,
           static_cast<int>(config.use_dictionary), static_cast<int>(config.use_btree), static_cast<int>(config.use_art),
-          size, time});
+          size, actual_pruning_rate, time});
       }
 
       auto avg_time = sum_time / sample_size;
