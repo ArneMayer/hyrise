@@ -13,7 +13,7 @@
 #include "operators/get_table.hpp"
 #include "operators/print.hpp"
 #include "operators/table_scan.hpp"
-#include "storage/dictionary_compression.hpp"
+#include "storage/chunk_encoder.hpp"
 #include "storage/reference_column.hpp"
 #include "storage/storage_manager.hpp"
 #include "storage/table.hpp"
@@ -23,28 +23,30 @@ namespace opossum {
 
 class ReferenceColumnTest : public BaseTest {
   virtual void SetUp() {
-    _test_table = std::make_shared<opossum::Table>(opossum::Table(3));
-    _test_table->add_column("a", DataType::Int, true);
-    _test_table->add_column("b", DataType::Float);
+    TableColumnDefinitions column_definitions;
+    column_definitions.emplace_back("a", DataType::Int, true);
+    column_definitions.emplace_back("b", DataType::Float);
+
+    _test_table = std::make_shared<opossum::Table>(column_definitions, TableType::Data, 3);
     _test_table->append({123, 456.7f});
     _test_table->append({1234, 457.7f});
     _test_table->append({12345, 458.7f});
     _test_table->append({NULL_VALUE, 458.7f});
     _test_table->append({12345, 458.7f});
 
-    _test_table_dict = std::make_shared<opossum::Table>(5);
-    _test_table_dict->add_column("a", DataType::Int);
-    _test_table_dict->add_column("b", DataType::Int);
+    TableColumnDefinitions column_definitions2;
+    column_definitions2.emplace_back("a", DataType::Int);
+    column_definitions2.emplace_back("b", DataType::Int);
+    _test_table_dict = std::make_shared<opossum::Table>(column_definitions2, TableType::Data, 5, UseMvcc::Yes);
     for (int i = 0; i <= 24; i += 2) _test_table_dict->append({i, 100 + i});
 
-    DictionaryCompression::compress_chunks(*_test_table_dict, {ChunkID{0}, ChunkID{1}});
+    ChunkEncoder::encode_chunks(_test_table_dict, {ChunkID{0}, ChunkID{1}});
 
     StorageManager::get().add_table("test_table_dict", _test_table_dict);
   }
 
  public:
   std::shared_ptr<opossum::Table> _test_table, _test_table_dict;
-  std::shared_ptr<ReferenceColumn> _ref_column_1;
 };
 
 TEST_F(ReferenceColumnTest, IsImmutable) {
@@ -109,6 +111,23 @@ TEST_F(ReferenceColumnTest, RetrieveNullValueFromNullRowID) {
   EXPECT_EQ(ref_column[1], column[1]);
   EXPECT_TRUE(variant_is_null(ref_column[2]));
   EXPECT_EQ(ref_column[3], column[2]);
+}
+
+TEST_F(ReferenceColumnTest, MemoryUsageEstimation) {
+  /**
+   * WARNING: Since it's hard to assert what constitutes a correct "estimation", this just tests basic sanity of the
+   * memory usage estimations
+   */
+
+  const auto pos_list_a = std::make_shared<PosList>();
+  pos_list_a->emplace_back(RowID{ChunkID{0}, ChunkOffset{0}});
+  pos_list_a->emplace_back(RowID{ChunkID{0}, ChunkOffset{1}});
+  const auto pos_list_b = std::make_shared<PosList>();
+
+  ReferenceColumn reference_column_a(_test_table, ColumnID{0}, pos_list_a);
+  ReferenceColumn reference_column_b(_test_table, ColumnID{0}, pos_list_b);
+
+  EXPECT_EQ(reference_column_a.estimate_memory_usage(), reference_column_b.estimate_memory_usage() + 2 * sizeof(RowID));
 }
 
 }  // namespace opossum

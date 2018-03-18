@@ -7,12 +7,14 @@
 #include "abstract_read_only_operator.hpp"
 #include "import_export/binary.hpp"
 #include "storage/column_visitable.hpp"
-#include "storage/dictionary_column.hpp"
 #include "storage/reference_column.hpp"
 #include "storage/value_column.hpp"
 #include "utils/assert.hpp"
 
 namespace opossum {
+
+class BaseCompressedVector;
+enum class CompressedVectorType : uint8_t;
 
 /**
  * Note: ExportBinary does not support null values at the moment
@@ -31,6 +33,11 @@ class ExportBinary : public AbstractReadOnlyOperator {
    * Name of the operator is ExportBinary
    */
   const std::string name() const final;
+
+ protected:
+  std::shared_ptr<AbstractOperator> _on_recreate(
+      const std::vector<AllParameterVariant>& args, const std::shared_ptr<AbstractOperator>& recreated_input_left,
+      const std::shared_ptr<AbstractOperator>& recreated_input_right) const override;
 
  private:
   // Path of the binary file
@@ -105,8 +112,7 @@ class ExportBinary::ExportBinaryVisitor : public ColumnVisitable {
    * @param base_context A context in the form of an ExportContext. Contains a reference to the ofstream.
    *
    */
-  void handle_value_column(const BaseValueColumn& base_column,
-                           std::shared_ptr<ColumnVisitableContext> base_context) final;
+  void handle_column(const BaseValueColumn& base_column, std::shared_ptr<ColumnVisitableContext> base_context) final;
 
   /**
    * Reference Columns are dumped with the following layout, which is similar to value columns:
@@ -127,8 +133,8 @@ class ExportBinary::ExportBinaryVisitor : public ColumnVisitable {
    * @param base_column The Column to export
    * @param base_context A context in the form of an ExportContext. Contains a reference to the ofstream.
    */
-  void handle_reference_column(const ReferenceColumn& ref_column,
-                               std::shared_ptr<ColumnVisitableContext> base_context) override;
+  void handle_column(const ReferenceColumn& ref_column, std::shared_ptr<ColumnVisitableContext> base_context) override;
+
   /**
    * Dictionary Columns are dumped with the following layout:
    *
@@ -151,11 +157,15 @@ class ExportBinary::ExportBinaryVisitor : public ColumnVisitable {
    * @param base_column The Column to export
    * @param base_context A context in the form of an ExportContext. Contains a reference to the ofstream.
    */
-  void handle_dictionary_column(const BaseDictionaryColumn& base_column,
-                                std::shared_ptr<ColumnVisitableContext> base_context) override;
+  void handle_column(const BaseDictionaryColumn& base_column,
+                     std::shared_ptr<ColumnVisitableContext> base_context) override;
+
+  void handle_column(const BaseEncodedColumn& base_column,
+                     std::shared_ptr<ColumnVisitableContext> base_context) override;
 
  private:
-  // Chooses the right FittedAttributeVector depending on the attribute_vector_width and exports it.
-  static void _export_attribute_vector(std::ofstream& ofstream, const BaseAttributeVector& attribute_vector);
+  // Chooses the right FixedSizeByteAlignedVector depending on the attribute_vector_width and exports it.
+  static void _export_attribute_vector(std::ofstream& ofstream, const CompressedVectorType type,
+                                       const BaseCompressedVector& attribute_vector);
 };
 }  // namespace opossum

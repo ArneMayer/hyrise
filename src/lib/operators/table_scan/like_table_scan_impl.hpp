@@ -29,11 +29,25 @@ class LikeTableScanImpl : public BaseSingleColumnTableScanImpl {
   LikeTableScanImpl(std::shared_ptr<const Table> in_table, const ColumnID left_column_id,
                     const PredicateCondition predicate_condition, const std::string& right_wildcard);
 
-  void handle_value_column(const BaseValueColumn& base_column,
-                           std::shared_ptr<ColumnVisitableContext> base_context) override;
+  void handle_column(const BaseValueColumn& base_column, std::shared_ptr<ColumnVisitableContext> base_context) override;
 
-  void handle_dictionary_column(const BaseDictionaryColumn& base_column,
-                                std::shared_ptr<ColumnVisitableContext> base_context) override;
+  void handle_column(const BaseDictionaryColumn& base_column,
+                     std::shared_ptr<ColumnVisitableContext> base_context) override;
+
+  void handle_column(const BaseEncodedColumn& base_column,
+                     std::shared_ptr<ColumnVisitableContext> base_context) override;
+
+  using BaseSingleColumnTableScanImpl::handle_column;
+
+ public:
+  /**
+   * @defgroup Methods which are used to convert an SQL wildcard into a C++ regex.
+   * @{
+   */
+
+  static std::string sqllike_to_regex(std::string sqllike);
+
+  /**@}*/
 
  private:
   /**
@@ -45,16 +59,6 @@ class LikeTableScanImpl : public BaseSingleColumnTableScanImpl {
    * @returns number of matches and the result of each dictionary entry
    */
   std::pair<size_t, std::vector<bool>> _find_matches_in_dictionary(const pmr_vector<std::string>& dictionary);
-
-  /**@}*/
-
- private:
-  /**
-   * @defgroup Methods which are used to convert an SQL wildcard into a C++ regex.
-   * @{
-   */
-
-  static std::string _sqllike_to_regex(std::string sqllike);
 
   /**@}*/
 

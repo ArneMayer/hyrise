@@ -41,9 +41,6 @@ class ValueColumn : public BaseValueColumn {
   const pmr_concurrent_vector<T>& values() const;
   pmr_concurrent_vector<T>& values();
 
-  // return a generated vector of all values (or nulls)
-  const pmr_concurrent_vector<std::optional<T>> materialize_values() const;
-
   // Return whether column supports null values.
   bool is_nullable() const final;
 
@@ -55,7 +52,7 @@ class ValueColumn : public BaseValueColumn {
   pmr_concurrent_vector<bool>& null_values() final;
 
   // Return the number of entries in the column.
-  size_t size() const override;
+  size_t size() const final;
 
   // Visitor pattern, see base_column.hpp
   void visit(ColumnVisitable& visitable, std::shared_ptr<ColumnVisitableContext> context = nullptr) const override;
@@ -63,13 +60,15 @@ class ValueColumn : public BaseValueColumn {
   // Copies a ValueColumn using a new allocator. This is useful for placing the ValueColumn on a new NUMA node.
   std::shared_ptr<BaseColumn> copy_using_allocator(const PolymorphicAllocator<size_t>& alloc) const override;
 
+  size_t estimate_memory_usage() const override;
   uint64_t memory_consumption() const final;
 
  protected:
   pmr_concurrent_vector<T> _values;
 
-  // While a ValueColumn knows if it is nullable or not by looking at this optional, a DictionaryColumn does not.
-  // For this reason, we need to store the nullable information separately in the table's definition.
+  // While a ValueColumn knows if it is nullable or not by looking at this optional, most other column types
+  // (e.g. DictionaryColumn) does not. For this reason, we need to store the nullable information separately
+  // in the table's definition.
   std::optional<pmr_concurrent_vector<bool>> _null_values;
 };
 

@@ -5,8 +5,6 @@
 #include <utility>
 #include <vector>
 
-#include "storage/base_attribute_vector.hpp"
-#include "storage/base_dictionary_column.hpp"
 #include "storage/index/base_index.hpp"
 #include "types.hpp"
 #include "utils/assert.hpp"
@@ -14,6 +12,7 @@
 namespace opossum {
 
 class BaseColumn;
+class BaseDictionaryColumn;
 class GroupKeyIndexTest;
 
 /**

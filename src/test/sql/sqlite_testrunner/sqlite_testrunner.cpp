@@ -21,7 +21,6 @@
 #include "scheduler/topology.hpp"
 #include "sql/sql_pipeline.hpp"
 #include "sql/sql_pipeline_statement.hpp"
-#include "sql/sql_planner.hpp"
 #include "sqlite_wrapper.hpp"
 #include "storage/storage_manager.hpp"
 
@@ -60,6 +59,8 @@ class SQLiteTestRunner : public BaseTestWithParam<std::string> {
 
     opossum::CurrentScheduler::set(
         std::make_shared<opossum::NodeQueueScheduler>(opossum::Topology::create_numa_topology()));
+
+    SQLQueryCache<SQLQueryPlan>::get().clear();
   }
 
   std::unique_ptr<SQLiteWrapper> _sqlite;

@@ -20,7 +20,7 @@ class HSQLExpressionTranslatorTest : public BaseTest {
   void SetUp() override {
     // We need a base table to be able to lookup column names for ColumnIDs.
     StorageManager::get().add_table("table_a", load_table("src/test/tables/int_float.tbl", Chunk::MAX_SIZE));
-    _stored_table_node = std::make_shared<StoredTableNode>("table_a");
+    _stored_table_node = StoredTableNode::make("table_a");
   }
 
   /*
@@ -213,7 +213,7 @@ TEST_F(HSQLExpressionTranslatorTest, DISABLED_ExpressionIn /* #279 */) {
 
   EXPECT_EQ(expression->type(), ExpressionType::In);
   EXPECT_EQ(expression->left_child()->type(), ExpressionType::Column);
-  EXPECT_EQ(expression->right_child()->type(), ExpressionType::Select);
+  EXPECT_EQ(expression->right_child()->type(), ExpressionType::Subselect);
 }
 
 // TODO(mp): Subselects are not supported yet
@@ -222,7 +222,7 @@ TEST_F(HSQLExpressionTranslatorTest, DISABLED_ExpressionExist /* #279 */) {
   auto expression = compile_where_expression(query);
 
   EXPECT_EQ(expression->type(), ExpressionType::Exists);
-  EXPECT_EQ(expression->left_child()->type(), ExpressionType::Select);
+  EXPECT_EQ(expression->left_child()->type(), ExpressionType::Subselect);
 }
 
 // TODO(mp): implement, CASE not supported yet

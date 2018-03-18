@@ -14,7 +14,7 @@
 #include "../lib/scheduler/node_queue_scheduler.hpp"
 #include "../lib/scheduler/topology.hpp"
 #include "../lib/storage/chunk.hpp"
-#include "../lib/storage/dictionary_compression.hpp"
+#include "../lib/storage/chunk_encoder.hpp"
 #include "../lib/storage/numa_placement_manager.hpp"
 #include "../lib/storage/storage_manager.hpp"
 #include "../lib/storage/table.hpp"
@@ -50,22 +50,23 @@ class NUMAPlacementTest : public BaseTest {
 
   // Creates a table with a single column and increasing integers modulo 1000.
   std::shared_ptr<Table> create_table(size_t num_chunks, size_t num_rows_per_chunk) {
-    auto table = std::make_shared<Table>(num_rows_per_chunk);
-    table->add_column("a", DataType::Int, false);
+    auto table = std::make_shared<Table>(TableColumnDefinitions{{"a", DataType::Int, false}}, TableType::Data,
+                                         num_rows_per_chunk, UseMvcc::Yes);
 
     for (size_t i = 0; i < num_chunks; i++) {
+      ChunkColumns columns;
+
       const auto alloc = PolymorphicAllocator<Chunk>(NUMAPlacementManager::get().get_memory_resource(0));
-      auto chunk = std::make_shared<Chunk>(alloc, ChunkUseMvcc::Yes, ChunkUseAccessCounter::Yes);
       auto value_column = std::allocate_shared<ValueColumn<int>>(alloc, alloc);
       auto& values = value_column->values();
       values.reserve(num_rows_per_chunk);
       for (size_t row = 0; row < num_rows_per_chunk; row++) {
         values.push_back(static_cast<int>(row % 1000));
       }
-      chunk->add_column(value_column);
-      table->emplace_chunk(std::move(chunk));
+      columns.push_back(value_column);
+      table->append_chunk(columns, alloc, std::make_shared<ChunkAccessCounter>(alloc));
     }
-    DictionaryCompression::compress_table(*table);
+    ChunkEncoder::encode_all_chunks(table);
     return table;
   }
 

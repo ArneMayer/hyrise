@@ -17,7 +17,7 @@
 #include "operators/print.hpp"
 #include "operators/table_scan.hpp"
 #include "operators/table_wrapper.hpp"
-#include "storage/dictionary_compression.hpp"
+#include "storage/chunk_encoder.hpp"
 #include "storage/storage_manager.hpp"
 #include "storage/table.hpp"
 #include "types.hpp"
@@ -74,16 +74,19 @@ class OperatorsAggregateTest : public BaseTest {
     _table_wrapper_3_2->execute();
 
     auto test_table = load_table("src/test/tables/aggregateoperator/groupby_int_1gb_1agg/input.tbl", 2);
-    DictionaryCompression::compress_table(*test_table);
+    ChunkEncoder::encode_all_chunks(test_table);
 
     _table_wrapper_1_1_dict = std::make_shared<TableWrapper>(std::move(test_table));
     _table_wrapper_1_1_dict->execute();
 
     test_table = load_table("src/test/tables/aggregateoperator/groupby_int_1gb_1agg/input_null.tbl", 2);
-    DictionaryCompression::compress_table(*test_table);
+    ChunkEncoder::encode_all_chunks(test_table);
 
     _table_wrapper_1_1_null_dict = std::make_shared<TableWrapper>(std::move(test_table));
     _table_wrapper_1_1_null_dict->execute();
+
+    _table_wrapper_int_int = std::make_shared<TableWrapper>(load_table("src/test/tables/int_int.tbl", 2));
+    _table_wrapper_int_int->execute();
   }
 
   void test_output(const std::shared_ptr<AbstractOperator> in, const std::vector<AggregateColumnDefinition>& aggregates,
@@ -101,7 +104,7 @@ class OperatorsAggregateTest : public BaseTest {
 
     if (test_references) {
       for (const auto& agg : aggregates) {
-        ref_columns.insert(agg.column.value());
+        ref_columns.insert(*agg.column);
       }
 
       for (const auto column_id : groupby_column_ids) {
@@ -132,7 +135,7 @@ class OperatorsAggregateTest : public BaseTest {
   std::shared_ptr<TableWrapper> _table_wrapper_1_1, _table_wrapper_1_1_null, _table_wrapper_join_1,
       _table_wrapper_join_2, _table_wrapper_1_2, _table_wrapper_2_1, _table_wrapper_2_2, _table_wrapper_2_0_null,
       _table_wrapper_1_1_string, _table_wrapper_1_1_string_null, _table_wrapper_1_1_dict, _table_wrapper_1_1_null_dict,
-      _table_wrapper_3_1, _table_wrapper_3_2;
+      _table_wrapper_3_1, _table_wrapper_3_2, _table_wrapper_int_int;
 };
 
 TEST_F(OperatorsAggregateTest, OperatorName) {
@@ -531,6 +534,21 @@ TEST_F(OperatorsAggregateTest, OuterJoinThenAggregate) {
 
   this->test_output(join, {{ColumnID{1}, AggregateFunction::Min}}, {ColumnID{0}},
                     "src/test/tables/aggregateoperator/groupby_int_1gb_1agg/outer_join.tbl", 1, false);
+}
+
+TEST_F(OperatorsAggregateTest, EmptyInputTable) {
+  const auto table_scan =
+      std::make_shared<TableScan>(_table_wrapper_int_int, ColumnID{0}, PredicateCondition::LessThan, int32_t{32});
+
+  const auto aggregates = std::vector<AggregateColumnDefinition>({{ColumnID{0}, AggregateFunction::Sum}});
+  const auto aggregate = std::make_shared<Aggregate>(table_scan, aggregates, std::vector<ColumnID>({ColumnID{1}}));
+
+  table_scan->execute();
+  aggregate->execute();
+
+  EXPECT_EQ(aggregate->get_output()->chunk_count(), 1u);
+  EXPECT_EQ(aggregate->get_output()->row_count(), 0u);
+  EXPECT_EQ(aggregate->get_output()->column_count(), 2u);
 }
 
 }  // namespace opossum

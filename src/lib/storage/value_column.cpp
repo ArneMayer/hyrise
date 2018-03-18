@@ -8,6 +8,7 @@
 #include <vector>
 
 #include "column_visitable.hpp"
+#include "resolve_type.hpp"
 #include "type_cast.hpp"
 #include "utils/assert.hpp"
 #include "utils/performance_warning.hpp"
@@ -15,21 +16,23 @@
 namespace opossum {
 
 template <typename T>
-ValueColumn<T>::ValueColumn(bool nullable) {
+ValueColumn<T>::ValueColumn(bool nullable) : BaseValueColumn(data_type_from_type<T>()) {
   if (nullable) _null_values = pmr_concurrent_vector<bool>();
 }
 
 template <typename T>
-ValueColumn<T>::ValueColumn(const PolymorphicAllocator<T>& alloc, bool nullable) : _values(alloc) {
+ValueColumn<T>::ValueColumn(const PolymorphicAllocator<T>& alloc, bool nullable)
+    : BaseValueColumn(data_type_from_type<T>()), _values(alloc) {
   if (nullable) _null_values = pmr_concurrent_vector<bool>(alloc);
 }
 
 template <typename T>
-ValueColumn<T>::ValueColumn(pmr_concurrent_vector<T>&& values) : _values(std::move(values)) {}
+ValueColumn<T>::ValueColumn(pmr_concurrent_vector<T>&& values)
+    : BaseValueColumn(data_type_from_type<T>()), _values(std::move(values)) {}
 
 template <typename T>
 ValueColumn<T>::ValueColumn(pmr_concurrent_vector<T>&& values, pmr_concurrent_vector<bool>&& null_values)
-    : _values(std::move(values)), _null_values(std::move(null_values)) {}
+    : BaseValueColumn(data_type_from_type<T>()), _values(std::move(values)), _null_values(std::move(null_values)) {}
 
 template <typename T>
 const AllTypeVariant ValueColumn<T>::operator[](const ChunkOffset chunk_offset) const {
@@ -104,18 +107,6 @@ pmr_concurrent_vector<T>& ValueColumn<T>::values() {
 }
 
 template <typename T>
-const pmr_concurrent_vector<std::optional<T>> ValueColumn<T>::materialize_values() const {
-  pmr_concurrent_vector<std::optional<T>> values(_values.size(), std::nullopt, _values.get_allocator());
-
-  for (ChunkOffset chunk_offset = 0; chunk_offset < _values.size(); ++chunk_offset) {
-    if (is_null(chunk_offset)) continue;
-    values[chunk_offset] = _values[chunk_offset];
-  }
-
-  return values;
-}
-
-template <typename T>
 bool ValueColumn<T>::is_nullable() const {
   return static_cast<bool>(_null_values);
 }
@@ -141,7 +132,7 @@ size_t ValueColumn<T>::size() const {
 
 template <typename T>
 void ValueColumn<T>::visit(ColumnVisitable& visitable, std::shared_ptr<ColumnVisitableContext> context) const {
-  visitable.handle_value_column(*this, std::move(context));
+  visitable.handle_column(*this, std::move(context));
 }
 
 template <typename T>
@@ -153,6 +144,11 @@ std::shared_ptr<BaseColumn> ValueColumn<T>::copy_using_allocator(const Polymorph
   } else {
     return std::allocate_shared<ValueColumn<T>>(alloc, std::move(new_values));
   }
+}
+
+template <typename T>
+size_t ValueColumn<T>::estimate_memory_usage() const {
+  return sizeof(*this) + _values.size() * sizeof(T) + (_null_values ? _null_values->size() * sizeof(bool) : 0u);
 }
 
 template <typename T>

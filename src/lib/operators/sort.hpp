@@ -9,7 +9,7 @@
 
 #include "abstract_read_only_operator.hpp"
 #include "resolve_type.hpp"
-#include "storage/iterables/create_iterable_from_column.hpp"
+#include "storage/create_iterable_from_column.hpp"
 #include "types.hpp"
 
 namespace opossum {
@@ -29,11 +29,13 @@ class Sort : public AbstractReadOnlyOperator {
   OrderByMode order_by_mode() const;
 
   const std::string name() const override;
-  std::shared_ptr<AbstractOperator> recreate(const std::vector<AllParameterVariant>& args = {}) const override;
 
  protected:
   std::shared_ptr<const Table> _on_execute() override;
   void _on_cleanup() override;
+  std::shared_ptr<AbstractOperator> _on_recreate(
+      const std::vector<AllParameterVariant>& args, const std::shared_ptr<AbstractOperator>& recreated_input_left,
+      const std::shared_ptr<AbstractOperator>& recreated_input_right) const override;
 
   // The operator is separated in three different classes. SortImpl is the common templated implementation of the
   // operator. SortImpl* und SortImplMaterializeOutput are extra classes for the visitor pattern. They fulfill a certain

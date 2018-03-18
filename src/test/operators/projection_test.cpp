@@ -12,7 +12,7 @@
 #include "operators/projection.hpp"
 #include "operators/table_scan.hpp"
 #include "operators/table_wrapper.hpp"
-#include "storage/dictionary_compression.hpp"
+#include "storage/chunk_encoder.hpp"
 #include "storage/storage_manager.hpp"
 #include "storage/table.hpp"
 #include "types.hpp"
@@ -41,12 +41,12 @@ class OperatorsProjectionTest : public BaseTest {
     _table_wrapper_float->execute();
 
     std::shared_ptr<Table> test_table_dict = load_table("src/test/tables/int_int_int.tbl", 2);
-    DictionaryCompression::compress_table(*test_table_dict);
+    ChunkEncoder::encode_all_chunks(test_table_dict);
     _table_wrapper_int_dict = std::make_shared<TableWrapper>(std::move(test_table_dict));
     _table_wrapper_int_dict->execute();
 
     std::shared_ptr<Table> test_table_dict_null = load_table("src/test/tables/int_int_int.tbl", 2);
-    DictionaryCompression::compress_table(*test_table_dict_null);
+    ChunkEncoder::encode_all_chunks(test_table_dict_null);
     _table_wrapper_int_dict_null = std::make_shared<TableWrapper>(std::move(test_table_dict_null));
     _table_wrapper_int_dict_null->execute();
 
@@ -334,6 +334,33 @@ TEST_F(OperatorsProjectionTest, OperatorName) {
   auto projection_1 = std::make_shared<opossum::Projection>(_table_wrapper, _a_b_expr);
 
   EXPECT_EQ(projection_1->name(), "Projection");
+}
+
+TEST_F(OperatorsProjectionTest, ExecuteSubquery) {
+  auto expected_result = load_table("src/test/tables/int_repeated.tbl", 1);
+
+  // subselect table can only have one row and one column
+  auto single_value_table = std::make_shared<TableWrapper>(load_table("src/test/tables/int_single.tbl", 1));
+  auto subselect_expr = Projection::ColumnExpressions{PQPExpression::create_subselect(single_value_table)};
+
+  auto projection = std::make_shared<opossum::Projection>(_table_wrapper, subselect_expr);
+  projection->execute();
+
+  auto pqp_expression = projection->column_expressions().back();
+  EXPECT_TRUE(pqp_expression->is_subselect());
+  EXPECT_NE(pqp_expression->subselect_operator(), nullptr);
+
+  EXPECT_TABLE_EQ_UNORDERED(projection->get_output(), expected_result);
+}
+
+TEST_F(OperatorsProjectionTest, ExecuteSubqueryFail) {
+  auto multiple_value_table = std::make_shared<TableWrapper>(load_table("src/test/tables/int3.tbl", 1));
+  auto subselect_expr = Projection::ColumnExpressions{PQPExpression::create_subselect(multiple_value_table)};
+
+  auto projection = std::make_shared<opossum::Projection>(_table_wrapper, subselect_expr);
+
+  // will fail, since subqueries executed in projection can only return one row
+  EXPECT_ANY_THROW(projection->execute());
 }
 
 }  // namespace opossum

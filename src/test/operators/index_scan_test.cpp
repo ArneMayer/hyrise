@@ -9,7 +9,7 @@
 
 #include "operators/index_scan.hpp"
 #include "operators/table_wrapper.hpp"
-#include "storage/dictionary_compression.hpp"
+#include "storage/chunk_encoder.hpp"
 #include "storage/index/adaptive_radix_tree/adaptive_radix_tree_index.hpp"
 #include "storage/index/group_key/composite_group_key_index.hpp"
 #include "storage/index/group_key/group_key_index.hpp"
@@ -24,11 +24,12 @@ class OperatorsIndexScanTest : public BaseTest {
   void SetUp() override {
     _index_type = get_index_type_of<DerivedIndex>();
 
-    auto table = std::make_shared<Table>(5);
-    table->add_column("a", DataType::Int);
-    table->add_column("b", DataType::Int);
+    TableColumnDefinitions column_definitions;
+    column_definitions.emplace_back("a", DataType::Int);
+    column_definitions.emplace_back("b", DataType::Int);
+    auto table = std::make_shared<Table>(column_definitions, TableType::Data, 5);
     for (int i = 0; i <= 24; i += 2) table->append({i, 100 + i});
-    DictionaryCompression::compress_table(*table);
+    ChunkEncoder::encode_all_chunks(table);
 
     _chunk_ids = std::vector<ChunkID>(table->chunk_count());
     std::iota(_chunk_ids.begin(), _chunk_ids.end(), ChunkID{0u});
@@ -43,9 +44,7 @@ class OperatorsIndexScanTest : public BaseTest {
     _table_wrapper = std::make_shared<TableWrapper>(table);
     _table_wrapper->execute();
 
-    auto empty_table = std::make_shared<Table>(5);
-    empty_table->add_column("a", DataType::Int);
-    empty_table->add_column("b", DataType::Int);
+    auto empty_table = std::make_shared<Table>(column_definitions, TableType::Data, 5);
 
     _empty_table_wrapper = std::make_shared<TableWrapper>(empty_table);
     _empty_table_wrapper->execute();

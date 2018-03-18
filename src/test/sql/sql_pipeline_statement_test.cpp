@@ -6,8 +6,8 @@
 #include "SQLParser.h"
 #include "SQLParserResult.h"
 #include "gtest/gtest.h"
-#include "logical_query_plan/join_node.hpp"
 
+#include "logical_query_plan/join_node.hpp"
 #include "operators/abstract_join_operator.hpp"
 #include "operators/print.hpp"
 #include "operators/validate.hpp"
@@ -16,7 +16,6 @@
 #include "scheduler/node_queue_scheduler.hpp"
 #include "scheduler/topology.hpp"
 #include "sql/sql_pipeline_statement.hpp"
-#include "sql/sql_query_operator.hpp"
 #include "storage/storage_manager.hpp"
 
 namespace {
@@ -45,23 +44,41 @@ class SQLPipelineStatementTest : public BaseTest {
     _table_b = load_table("src/test/tables/int_float2.tbl", 2);
     StorageManager::get().add_table("table_b", _table_b);
 
-    _join_result = std::make_shared<Table>();
-    _join_result->add_column("a", DataType::Int);
-    _join_result->add_column("b", DataType::Float);
-    _join_result->add_column("bb", DataType::Float);
+    _table_int = load_table("src/test/tables/int_int_int.tbl", 2);
+    StorageManager::get().add_table("table_int", _table_int);
+
+    TableColumnDefinitions column_definitions;
+    column_definitions.emplace_back("a", DataType::Int);
+    column_definitions.emplace_back("b", DataType::Float);
+    column_definitions.emplace_back("bb", DataType::Float);
+    _join_result = std::make_shared<Table>(column_definitions, TableType::Data);
+
     _join_result->append({12345, 458.7f, 456.7f});
     _join_result->append({12345, 458.7f, 457.7f});
+
+    _int_float_column_definitions.emplace_back("a", DataType::Int);
+    _int_float_column_definitions.emplace_back("b", DataType::Float);
+
+    _int_int_int_column_definitions.emplace_back("a", DataType::Int);
+    _int_int_int_column_definitions.emplace_back("b", DataType::Int);
+    _int_int_int_column_definitions.emplace_back("c", DataType::Int);
 
     _select_parse_result = std::make_shared<hsql::SQLParserResult>();
     hsql::SQLParser::parse(_select_query_a, _select_parse_result.get());
 
     _multi_statement_parse_result = std::make_shared<hsql::SQLParserResult>();
     hsql::SQLParser::parse(_multi_statement_dependant, _multi_statement_parse_result.get());
+
+    SQLQueryCache<SQLQueryPlan>::get().clear();
   }
 
   std::shared_ptr<Table> _table_a;
   std::shared_ptr<Table> _table_b;
+  std::shared_ptr<Table> _table_int;
   std::shared_ptr<Table> _join_result;
+
+  TableColumnDefinitions _int_float_column_definitions;
+  TableColumnDefinitions _int_int_int_column_definitions;
 
   const std::string _select_query_a = "SELECT * FROM table_a";
   const std::string _invalid_sql = "SELECT FROM table_a";
@@ -88,12 +105,14 @@ TEST_F(SQLPipelineStatementTest, SimpleCreation) {
   SQLPipelineStatement sql_pipeline{_select_query_a};
 
   EXPECT_EQ(sql_pipeline.transaction_context(), nullptr);
+  EXPECT_EQ(sql_pipeline.get_sql_string(), _select_query_a);
 }
 
 TEST_F(SQLPipelineStatementTest, SimpleCreationWithoutMVCC) {
-  SQLPipelineStatement sql_pipeline{_join_query, false};
+  SQLPipelineStatement sql_pipeline{_join_query, UseMvcc::No};
 
   EXPECT_EQ(sql_pipeline.transaction_context(), nullptr);
+  EXPECT_EQ(sql_pipeline.get_sql_string(), _join_query);
 }
 
 TEST_F(SQLPipelineStatementTest, SimpleCreationWithCustomTransactionContext) {
@@ -101,17 +120,20 @@ TEST_F(SQLPipelineStatementTest, SimpleCreationWithCustomTransactionContext) {
   SQLPipelineStatement sql_pipeline{_select_query_a, context};
 
   EXPECT_EQ(sql_pipeline.transaction_context().get(), context.get());
+  EXPECT_EQ(sql_pipeline.get_sql_string(), _select_query_a);
 }
 
 TEST_F(SQLPipelineStatementTest, SimpleParsedCreation) {
-  SQLPipelineStatement sql_pipeline{_select_parse_result, nullptr, true};
+  SQLPipelineStatement sql_pipeline{
+      _select_query_a, _select_parse_result, UseMvcc::Yes, nullptr, Optimizer::create_default_optimizer(), nullptr};
 
   EXPECT_EQ(sql_pipeline.transaction_context(), nullptr);
   EXPECT_EQ(sql_pipeline.get_parsed_sql_statement().get(), _select_parse_result.get());
 }
 
 TEST_F(SQLPipelineStatementTest, SimpleParsedCreationWithoutMVCC) {
-  SQLPipelineStatement sql_pipeline{_select_parse_result, nullptr, false};
+  SQLPipelineStatement sql_pipeline{
+      _select_query_a, _select_parse_result, UseMvcc::No, nullptr, Optimizer::create_default_optimizer(), nullptr};
 
   EXPECT_EQ(sql_pipeline.transaction_context(), nullptr);
   EXPECT_EQ(sql_pipeline.get_parsed_sql_statement().get(), _select_parse_result.get());
@@ -119,14 +141,51 @@ TEST_F(SQLPipelineStatementTest, SimpleParsedCreationWithoutMVCC) {
 
 TEST_F(SQLPipelineStatementTest, SimpleParsedCreationWithCustomTransactionContext) {
   auto context = TransactionManager::get().new_transaction_context();
-  SQLPipelineStatement sql_pipeline{_select_parse_result, context, true};
+  SQLPipelineStatement sql_pipeline{
+      _select_query_a, _select_parse_result, UseMvcc::Yes, context, Optimizer::create_default_optimizer(), nullptr};
 
   EXPECT_EQ(sql_pipeline.transaction_context().get(), context.get());
   EXPECT_EQ(sql_pipeline.get_parsed_sql_statement().get(), _select_parse_result.get());
 }
 
 TEST_F(SQLPipelineStatementTest, SimpleParsedCreationTooManyStatements) {
-  EXPECT_THROW(SQLPipelineStatement(_multi_statement_parse_result, nullptr, false), std::exception);
+  EXPECT_THROW(SQLPipelineStatement(_multi_statement_dependant, _multi_statement_parse_result, UseMvcc::No, nullptr,
+                                    Optimizer::create_default_optimizer(), nullptr),
+               std::exception);
+}
+
+TEST_F(SQLPipelineStatementTest, ConstructorCombinations) {
+  // Simple sanity test for all other constructor options
+
+  const auto optimizer = Optimizer::create_default_optimizer();
+  auto prepared_cache = std::make_shared<SQLQueryCache<SQLQueryPlan>>(5);
+  auto transaction_context = TransactionManager::get().new_transaction_context();
+
+  // No transaction context
+  SQLPipelineStatement sql_pipeline1{_select_query_a, optimizer, UseMvcc::Yes};
+  EXPECT_EQ(sql_pipeline1.transaction_context(), nullptr);
+  EXPECT_EQ(sql_pipeline1.get_sql_string(), _select_query_a);
+
+  SQLPipelineStatement sql_pipeline2{_select_query_a, prepared_cache, UseMvcc::No};
+  EXPECT_EQ(sql_pipeline2.transaction_context(), nullptr);
+  EXPECT_EQ(sql_pipeline2.get_sql_string(), _select_query_a);
+
+  SQLPipelineStatement sql_pipeline3{_select_query_a, optimizer, prepared_cache, UseMvcc::Yes};
+  EXPECT_EQ(sql_pipeline3.transaction_context(), nullptr);
+  EXPECT_EQ(sql_pipeline3.get_sql_string(), _select_query_a);
+
+  // With transaction context
+  SQLPipelineStatement sql_pipeline4{_select_query_a, optimizer, transaction_context};
+  EXPECT_EQ(sql_pipeline4.transaction_context(), transaction_context);
+  EXPECT_EQ(sql_pipeline4.get_sql_string(), _select_query_a);
+
+  SQLPipelineStatement sql_pipeline5{_select_query_a, prepared_cache, transaction_context};
+  EXPECT_EQ(sql_pipeline5.transaction_context(), transaction_context);
+  EXPECT_EQ(sql_pipeline5.get_sql_string(), _select_query_a);
+
+  SQLPipelineStatement sql_pipeline6{_select_query_a, optimizer, prepared_cache, transaction_context};
+  EXPECT_EQ(sql_pipeline6.transaction_context(), transaction_context);
+  EXPECT_EQ(sql_pipeline6.get_sql_string(), _select_query_a);
 }
 
 TEST_F(SQLPipelineStatementTest, GetParsedSQL) {
@@ -172,17 +231,17 @@ TEST_F(SQLPipelineStatementTest, GetUnoptimizedLQPValidated) {
 
   // We did not need the context yet
   EXPECT_EQ(sql_pipeline.transaction_context(), nullptr);
-  EXPECT_TRUE(lqp->subtree_is_validated());
+  EXPECT_TRUE(lqp->subplan_is_validated());
 }
 
 TEST_F(SQLPipelineStatementTest, GetUnoptimizedLQPNotValidated) {
-  SQLPipelineStatement sql_pipeline{_select_query_a, false};
+  SQLPipelineStatement sql_pipeline{_select_query_a, UseMvcc::No};
 
   const auto& lqp = sql_pipeline.get_unoptimized_logical_plan();
 
   // We did not need the context yet
   EXPECT_EQ(sql_pipeline.transaction_context(), nullptr);
-  EXPECT_FALSE(lqp->subtree_is_validated());
+  EXPECT_FALSE(lqp->subplan_is_validated());
 }
 
 TEST_F(SQLPipelineStatementTest, GetOptimizedLQP) {
@@ -211,17 +270,17 @@ TEST_F(SQLPipelineStatementTest, GetOptimizedLQPValidated) {
 
   // We did not need the context yet
   EXPECT_EQ(sql_pipeline.transaction_context(), nullptr);
-  EXPECT_TRUE(lqp->subtree_is_validated());
+  EXPECT_TRUE(lqp->subplan_is_validated());
 }
 
 TEST_F(SQLPipelineStatementTest, GetOptimizedLQPNotValidated) {
-  SQLPipelineStatement sql_pipeline{_select_query_a, false};
+  SQLPipelineStatement sql_pipeline{_select_query_a, UseMvcc::No};
 
   const auto& lqp = sql_pipeline.get_optimized_logical_plan();
 
   // We did not need the context yet
   EXPECT_EQ(sql_pipeline.transaction_context(), nullptr);
-  EXPECT_FALSE(lqp->subtree_is_validated());
+  EXPECT_FALSE(lqp->subplan_is_validated());
 }
 
 TEST_F(SQLPipelineStatementTest, GetOptimizedLQPDoesNotInfluenceUnoptimizedLQP) {
@@ -237,7 +296,7 @@ TEST_F(SQLPipelineStatementTest, GetOptimizedLQPDoesNotInfluenceUnoptimizedLQP) 
   sql_pipeline.get_optimized_logical_plan();
   const auto& unoptimized_lqp_new = sql_pipeline.get_unoptimized_logical_plan();
 
-  EXPECT_TRUE(subtree_types_are_equal(unoptimized_lqp_new, unoptimized_copy));
+  EXPECT_LQP_EQ(unoptimized_copy, unoptimized_lqp_new);
 }
 
 TEST_F(SQLPipelineStatementTest, GetQueryPlan) {
@@ -296,7 +355,7 @@ TEST_F(SQLPipelineStatementTest, GetQueryPlanWithMVCC) {
 }
 
 TEST_F(SQLPipelineStatementTest, GetQueryPlanWithoutMVCC) {
-  SQLPipelineStatement sql_pipeline{_select_query_a, false};
+  SQLPipelineStatement sql_pipeline{_select_query_a, UseMvcc::No};
   const auto& plan = sql_pipeline.get_query_plan();
 
   EXPECT_EQ(plan->tree_roots().at(0)->transaction_context(), nullptr);
@@ -330,7 +389,7 @@ TEST_F(SQLPipelineStatementTest, GetTasksTwice) {
 }
 
 TEST_F(SQLPipelineStatementTest, GetTasksNotValidated) {
-  SQLPipelineStatement sql_pipeline{_select_query_a, false};
+  SQLPipelineStatement sql_pipeline{_select_query_a, UseMvcc::No};
 
   const auto& tasks = sql_pipeline.get_tasks();
 
@@ -377,7 +436,7 @@ TEST_F(SQLPipelineStatementTest, GetResultTableWithScheduler) {
 
 TEST_F(SQLPipelineStatementTest, GetResultTableBadQueryNoMVCC) {
   auto sql = "SELECT a + b FROM table_a";
-  SQLPipelineStatement sql_pipeline{sql, false};
+  SQLPipelineStatement sql_pipeline{sql, UseMvcc::No};
 
   // Make sure this is actually the failed execution and not a logic_error from the transaction management.
   EXPECT_THROW(sql_pipeline.get_result_table(), std::runtime_error);
@@ -404,7 +463,7 @@ TEST_F(SQLPipelineStatementTest, GetResultTableNoOutput) {
 }
 
 TEST_F(SQLPipelineStatementTest, GetResultTableNoMVCC) {
-  SQLPipelineStatement sql_pipeline{_select_query_a, false};
+  SQLPipelineStatement sql_pipeline{_select_query_a, UseMvcc::No};
 
   const auto& table = sql_pipeline.get_result_table();
 
@@ -442,6 +501,218 @@ TEST_F(SQLPipelineStatementTest, ParseErrorDebugMessage) {
     // Check that the ^ was actually inserted in the error message
     EXPECT_TRUE(error_msg.find('^') != std::string::npos);
   }
+}
+
+TEST_F(SQLPipelineStatementTest, PreparedStatementPrepare) {
+  auto prepared_statement_cache = std::make_shared<SQLQueryCache<SQLQueryPlan>>(5);
+
+  const std::string prepared_statement = "PREPARE x1 FROM 'SELECT * FROM table_a WHERE a = ?'";
+  SQLPipelineStatement sql_pipeline{prepared_statement, prepared_statement_cache};
+
+  sql_pipeline.get_query_plan();
+
+  EXPECT_EQ(prepared_statement_cache->size(), 1u);
+  EXPECT_TRUE(prepared_statement_cache->has("x1"));
+
+  EXPECT_NO_THROW(sql_pipeline.get_result_table());
+}
+
+TEST_F(SQLPipelineStatementTest, PreparedStatementExecute) {
+  auto prepared_statement_cache = std::make_shared<SQLQueryCache<SQLQueryPlan>>(5);
+
+  const std::string prepared_statement = "PREPARE x1 FROM 'SELECT * FROM table_a WHERE a = ?'";
+  SQLPipelineStatement prepare_sql_pipeline{prepared_statement, prepared_statement_cache};
+  prepare_sql_pipeline.get_result_table();
+
+  EXPECT_EQ(prepared_statement_cache->size(), 1u);
+
+  const std::string execute_statement = "EXECUTE x1 (123)";
+  SQLPipelineStatement execute_sql_pipeline{execute_statement, prepared_statement_cache};
+  const auto& table = execute_sql_pipeline.get_result_table();
+
+  auto expected = std::make_shared<Table>(_int_float_column_definitions, TableType::Data);
+  expected->append({123, 456.7f});
+
+  EXPECT_TABLE_EQ_UNORDERED(table, expected);
+}
+
+TEST_F(SQLPipelineStatementTest, PreparedStatementMultiPlaceholderExecute) {
+  auto prepared_statement_cache = std::make_shared<SQLQueryCache<SQLQueryPlan>>(5);
+
+  const std::string prepared_statement = "PREPARE x1 FROM 'SELECT * FROM table_a WHERE a = ? OR (a > ? AND b < ?)'";
+  SQLPipelineStatement prepare_sql_pipeline{prepared_statement, prepared_statement_cache};
+  prepare_sql_pipeline.get_result_table();
+
+  EXPECT_EQ(prepared_statement_cache->size(), 1u);
+
+  const std::string execute_statement = "EXECUTE x1 (123, 10000, 500)";
+  SQLPipelineStatement execute_sql_pipeline{execute_statement, prepared_statement_cache};
+  const auto& table = execute_sql_pipeline.get_result_table();
+
+  auto expected = std::make_shared<Table>(_int_float_column_definitions, TableType::Data);
+  expected->append({123, 456.7f});
+  expected->append({12345, 458.7f});
+
+  EXPECT_TABLE_EQ_UNORDERED(table, expected);
+}
+
+TEST_F(SQLPipelineStatementTest, MultiplePreparedStatementsExecute) {
+  auto prepared_statement_cache = std::make_shared<SQLQueryCache<SQLQueryPlan>>(5);
+
+  const std::string prepared_statement1 = "PREPARE x1 FROM 'SELECT * FROM table_a WHERE a = ?'";
+  const std::string prepared_statement2 = "PREPARE x2 FROM 'SELECT * FROM table_a WHERE a > ?'";
+  const std::string prepared_statement_multi =
+      "PREPARE x_multi FROM 'SELECT * FROM table_a WHERE a = ? OR (a > ? AND b < ?)'";
+
+  SQLPipelineStatement prepare_sql_pipeline1{prepared_statement1, prepared_statement_cache};
+  SQLPipelineStatement prepare_sql_pipeline2{prepared_statement2, prepared_statement_cache};
+  SQLPipelineStatement prepare_sql_pipeline_multi{prepared_statement_multi, prepared_statement_cache};
+
+  prepare_sql_pipeline1.get_result_table();
+  prepare_sql_pipeline2.get_result_table();
+  prepare_sql_pipeline_multi.get_result_table();
+
+  EXPECT_EQ(prepared_statement_cache->size(), 3u);
+  EXPECT_TRUE(prepared_statement_cache->has("x1"));
+  EXPECT_TRUE(prepared_statement_cache->has("x2"));
+  EXPECT_TRUE(prepared_statement_cache->has("x_multi"));
+
+  const std::string execute_statement1 = "EXECUTE x1 (123)";
+  const std::string execute_statement1_invalid = "EXECUTE x1 (123, 10000)";  // too many arguments
+
+  const std::string execute_statement2 = "EXECUTE x2 (10000)";
+  const std::string execute_statement2_invalid = "EXECUTE x2";  // too few arguments
+
+  const std::string execute_statement_multi = "EXECUTE x_multi (123, 10000, 500)";
+  const std::string execute_statement_multi_invalid = "EXECUTE x_multi (123, 10000, 500, 100)";  // too many arguments
+
+  EXPECT_THROW(SQLPipelineStatement(execute_statement1_invalid).get_result_table(), std::runtime_error);
+  EXPECT_THROW(SQLPipelineStatement(execute_statement2_invalid).get_result_table(), std::runtime_error);
+  EXPECT_THROW(SQLPipelineStatement(execute_statement_multi_invalid).get_result_table(), std::runtime_error);
+
+  SQLPipelineStatement execute_sql_pipeline1{execute_statement1, prepared_statement_cache};
+  const auto& table1 = execute_sql_pipeline1.get_result_table();
+
+  SQLPipelineStatement execute_sql_pipeline2{execute_statement2, prepared_statement_cache};
+  const auto& table2 = execute_sql_pipeline2.get_result_table();
+
+  SQLPipelineStatement execute_sql_pipeline_multi{execute_statement_multi, prepared_statement_cache};
+  const auto& table_multi = execute_sql_pipeline_multi.get_result_table();
+
+  // x1 result
+  auto expected1 = std::make_shared<Table>(_int_float_column_definitions, TableType::Data);
+  expected1->append({123, 456.7f});
+
+  // x2 result
+  auto expected2 = std::make_shared<Table>(_int_float_column_definitions, TableType::Data);
+  expected2->append({12345, 458.7f});
+
+  // x_multi result
+  auto expected_multi = std::make_shared<Table>(_int_float_column_definitions, TableType::Data);
+  expected_multi->append({123, 456.7f});
+  expected_multi->append({12345, 458.7f});
+
+  EXPECT_TABLE_EQ_UNORDERED(table1, expected1);
+  EXPECT_TABLE_EQ_UNORDERED(table2, expected2);
+  EXPECT_TABLE_EQ_UNORDERED(table_multi, expected_multi);
+}
+
+TEST_F(SQLPipelineStatementTest, PreparedInsertStatementExecute) {
+  auto prepared_statement_cache = std::make_shared<SQLQueryCache<SQLQueryPlan>>(5);
+
+  const std::string prepared_statement = "PREPARE x1 FROM 'INSERT INTO table_a VALUES (?, ?)'";
+  SQLPipelineStatement prepare_sql_pipeline{prepared_statement, prepared_statement_cache};
+  prepare_sql_pipeline.get_result_table();
+
+  EXPECT_EQ(prepared_statement_cache->size(), 1u);
+
+  const std::string execute_statement = "EXECUTE x1 (1, 0.75)";
+  SQLPipelineStatement execute_sql_pipeline{execute_statement, prepared_statement_cache};
+  execute_sql_pipeline.get_result_table();
+
+  SQLPipelineStatement select_sql_pipeline{_select_query_a};
+  const auto table = select_sql_pipeline.get_result_table();
+
+  EXPECT_TABLE_EQ_UNORDERED(table, _table_a);
+}
+
+TEST_F(SQLPipelineStatementTest, PreparedUpdateStatementExecute) {
+  auto prepared_statement_cache = std::make_shared<SQLQueryCache<SQLQueryPlan>>(5);
+
+  const std::string prepared_statement = "PREPARE x1 FROM 'UPDATE table_a SET a = ? WHERE a = ?'";
+  SQLPipelineStatement prepare_sql_pipeline{prepared_statement, prepared_statement_cache};
+  prepare_sql_pipeline.get_result_table();
+
+  EXPECT_EQ(prepared_statement_cache->size(), 1u);
+
+  const std::string execute_statement = "EXECUTE x1 (1, 123)";
+  SQLPipelineStatement execute_sql_pipeline{execute_statement, prepared_statement_cache};
+  execute_sql_pipeline.get_result_table();
+
+  SQLPipelineStatement select_sql_pipeline{_select_query_a};
+  const auto table = select_sql_pipeline.get_result_table();
+
+  auto expected = std::make_shared<Table>(_int_float_column_definitions, TableType::Data);
+  expected->append({1, 456.7f});
+  expected->append({1234, 457.7f});
+  expected->append({12345, 458.7f});
+
+  EXPECT_TABLE_EQ_UNORDERED(table, expected);
+}
+
+TEST_F(SQLPipelineStatementTest, PreparedDeleteStatementExecute) {
+  auto prepared_statement_cache = std::make_shared<SQLQueryCache<SQLQueryPlan>>(5);
+
+  const std::string prepared_statement = "PREPARE x1 FROM 'DELETE FROM table_a WHERE a = ?'";
+  SQLPipelineStatement prepare_sql_pipeline{prepared_statement, prepared_statement_cache};
+  prepare_sql_pipeline.get_result_table();
+
+  EXPECT_EQ(prepared_statement_cache->size(), 1u);
+
+  const std::string execute_statement = "EXECUTE x1 (123)";
+  SQLPipelineStatement execute_sql_pipeline{execute_statement, prepared_statement_cache};
+  execute_sql_pipeline.get_result_table();
+
+  SQLPipelineStatement select_sql_pipeline{_select_query_a};
+  const auto table = select_sql_pipeline.get_result_table();
+
+  auto expected = std::make_shared<Table>(_int_float_column_definitions, TableType::Data);
+  expected->append({1234, 457.7f});
+  expected->append({12345, 458.7f});
+
+  EXPECT_TABLE_EQ_UNORDERED(table, expected);
+}
+
+TEST_F(SQLPipelineStatementTest, CacheQueryPlan) {
+  SQLPipelineStatement sql_pipeline{_select_query_a};
+  sql_pipeline.get_result_table();
+
+  const auto& cache = SQLQueryCache<SQLQueryPlan>::get();
+  EXPECT_EQ(cache.size(), 1u);
+  EXPECT_TRUE(cache.has(_select_query_a));
+}
+
+TEST_F(SQLPipelineStatementTest, RecreateSubselectFromCache) {
+  const std::string subselect_query = "SELECT * FROM table_int WHERE a = (SELECT MAX(b) FROM table_int)";
+
+  SQLPipelineStatement first_subselect_sql_pipeline{subselect_query};
+  const auto first_subselect_result = first_subselect_sql_pipeline.get_result_table();
+
+  auto expected_first_result = std::make_shared<Table>(_int_int_int_column_definitions, TableType::Data);
+  expected_first_result->append({10, 10, 10});
+
+  EXPECT_TABLE_EQ_UNORDERED(first_subselect_result, expected_first_result);
+
+  SQLPipelineStatement{"INSERT INTO table_int VALUES (11, 11, 11)"}.get_result_table();
+
+  SQLPipelineStatement second_subselect_sql_pipeline{subselect_query};
+  const auto second_subselect_result = second_subselect_sql_pipeline.get_result_table();
+
+  auto expected_second_result = std::make_shared<Table>(_int_int_int_column_definitions, TableType::Data);
+  expected_second_result->append({11, 10, 11});
+  expected_second_result->append({11, 11, 11});
+
+  EXPECT_TABLE_EQ_UNORDERED(second_subselect_result, expected_second_result);
 }
 
 }  // namespace opossum

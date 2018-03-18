@@ -15,14 +15,14 @@ class StorageManagerTest : public BaseTest {
  protected:
   void SetUp() override {
     auto& sm = StorageManager::get();
-    auto t1 = std::make_shared<Table>();
-    auto t2 = std::make_shared<Table>(4);
+    auto t1 = std::make_shared<Table>(TableColumnDefinitions{}, TableType::Data);
+    auto t2 = std::make_shared<Table>(TableColumnDefinitions{}, TableType::Data, 4);
 
     sm.add_table("first_table", t1);
     sm.add_table("second_table", t2);
 
-    auto v1 = std::make_shared<StoredTableNode>("first_table");
-    auto v2 = std::make_shared<StoredTableNode>("second_table");
+    auto v1 = StoredTableNode::make("first_table");
+    auto v2 = StoredTableNode::make("second_table");
 
     sm.add_view("first_view", std::move(v1));
     sm.add_view("second_view", std::move(v2));
@@ -31,8 +31,10 @@ class StorageManagerTest : public BaseTest {
 
 TEST_F(StorageManagerTest, AddTableTwice) {
   auto& sm = StorageManager::get();
-  EXPECT_THROW(sm.add_table("first_table", std::make_shared<Table>()), std::exception);
-  EXPECT_THROW(sm.add_table("first_view", std::make_shared<Table>()), std::exception);
+  EXPECT_THROW(sm.add_table("first_table", std::make_shared<Table>(TableColumnDefinitions{}, TableType::Data)),
+               std::exception);
+  EXPECT_THROW(sm.add_table("first_view", std::make_shared<Table>(TableColumnDefinitions{}, TableType::Data)),
+               std::exception);
 }
 
 TEST_F(StorageManagerTest, GetTable) {
@@ -63,8 +65,8 @@ TEST_F(StorageManagerTest, HasTable) {
 
 TEST_F(StorageManagerTest, AddViewTwice) {
   auto& sm = StorageManager::get();
-  EXPECT_THROW(sm.add_view("first_table", std::make_shared<StoredTableNode>("first_table")), std::exception);
-  EXPECT_THROW(sm.add_view("first_view", std::make_shared<StoredTableNode>("first_table")), std::exception);
+  EXPECT_THROW(sm.add_view("first_table", StoredTableNode::make("first_table")), std::exception);
+  EXPECT_THROW(sm.add_view("first_view", StoredTableNode::make("first_table")), std::exception);
 }
 
 TEST_F(StorageManagerTest, GetView) {

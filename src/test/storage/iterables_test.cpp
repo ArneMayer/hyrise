@@ -5,17 +5,17 @@
 #include <utility>
 #include <vector>
 
-#include "../base_test.hpp"
+#include "base_test.hpp"
 #include "gtest/gtest.h"
 
-#include "../lib/storage/dictionary_column.hpp"
-#include "../lib/storage/dictionary_compression.hpp"
-#include "../lib/storage/iterables/constant_value_iterable.hpp"
-#include "../lib/storage/iterables/dictionary_column_iterable.hpp"
-#include "../lib/storage/iterables/reference_column_iterable.hpp"
-#include "../lib/storage/iterables/value_column_iterable.hpp"
-#include "../lib/storage/table.hpp"
-#include "../lib/storage/value_column.hpp"
+#include "storage/chunk_encoder.hpp"
+#include "storage/column_iterables/constant_value_iterable.hpp"
+#include "storage/dictionary_column.hpp"
+#include "storage/dictionary_column/dictionary_column_iterable.hpp"
+#include "storage/reference_column/reference_column_iterable.hpp"
+#include "storage/table.hpp"
+#include "storage/value_column.hpp"
+#include "storage/value_column/value_column_iterable.hpp"
 
 namespace opossum {
 
@@ -117,7 +117,7 @@ TEST_F(IterablesTest, ValueColumnNullableReferencedIteratorWithIterators) {
 }
 
 TEST_F(IterablesTest, DictionaryColumnIteratorWithIterators) {
-  DictionaryCompression::compress_table(*table);
+  ChunkEncoder::encode_all_chunks(table, EncodingType::Dictionary);
 
   auto chunk = table->get_chunk(ChunkID{0u});
 
@@ -132,8 +132,8 @@ TEST_F(IterablesTest, DictionaryColumnIteratorWithIterators) {
   EXPECT_EQ(sum, 24'825u);
 }
 
-TEST_F(IterablesTest, DictionaryColumnDictReferencedIteratorWithIterators) {
-  DictionaryCompression::compress_table(*table);
+TEST_F(IterablesTest, DictionaryColumnReferencedIteratorWithIterators) {
+  ChunkEncoder::encode_all_chunks(table, EncodingType::Dictionary);
 
   auto chunk = table->get_chunk(ChunkID{0u});
 

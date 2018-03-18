@@ -10,11 +10,8 @@
 #include "abstract_read_only_operator.hpp"
 #include "import_export/binary.hpp"
 #include "storage/base_column.hpp"
-#include "storage/column_visitable.hpp"
 #include "storage/dictionary_column.hpp"
-#include "storage/reference_column.hpp"
 #include "storage/value_column.hpp"
-#include "utils/assert.hpp"
 
 namespace opossum {
 
@@ -41,6 +38,10 @@ class ImportBinary : public AbstractReadOnlyOperator {
    * ¹ Zero or more chunks
    */
   std::shared_ptr<const Table> _on_execute() final;
+
+  std::shared_ptr<AbstractOperator> _on_recreate(
+      const std::vector<AllParameterVariant>& args, const std::shared_ptr<AbstractOperator>& recreated_input_left,
+      const std::shared_ptr<AbstractOperator>& recreated_input_right) const override;
 
   // Returns the name of the operator
   const std::string name() const final;
@@ -77,7 +78,7 @@ class ImportBinary : public AbstractReadOnlyOperator {
    *
    * ¹Number of columns is provided in the binary header
    */
-  static std::shared_ptr<Chunk> _import_chunk(std::ifstream& file, std::shared_ptr<Table>& table);
+  static void _import_chunk(std::ifstream& file, std::shared_ptr<Table>& table);
 
   // Calls the right _import_column<ColumnDataType> depending on the given data_type.
   static std::shared_ptr<BaseColumn> _import_column(std::ifstream& file, ChunkOffset row_count, DataType data_type,
@@ -136,8 +137,8 @@ class ImportBinary : public AbstractReadOnlyOperator {
   static std::shared_ptr<DictionaryColumn<T>> _import_dictionary_column(std::ifstream& file, ChunkOffset row_count);
 
   // Calls the _import_attribute_vector<uintX_t> function that corresponds to the given attribute_vector_width.
-  static std::shared_ptr<BaseAttributeVector> _import_attribute_vector(std::ifstream& file, ChunkOffset row_count,
-                                                                       AttributeVectorWidth attribute_vector_width);
+  static std::shared_ptr<BaseCompressedVector> _import_attribute_vector(std::ifstream& file, ChunkOffset row_count,
+                                                                        AttributeVectorWidth attribute_vector_width);
 
   // Reads row_count many values from type T and returns them in a vector
   template <typename T>

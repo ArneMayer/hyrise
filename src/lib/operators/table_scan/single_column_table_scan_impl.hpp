@@ -13,8 +13,6 @@
 
 namespace opossum {
 
-class BaseDictionaryColumn;
-
 /**
  * @brief Compares one column to a constant value
  *
@@ -30,11 +28,15 @@ class SingleColumnTableScanImpl : public BaseSingleColumnTableScanImpl {
 
   PosList scan_chunk(ChunkID) override;
 
-  void handle_value_column(const BaseValueColumn& base_column,
-                           std::shared_ptr<ColumnVisitableContext> base_context) override;
+  void handle_column(const BaseValueColumn& base_column, std::shared_ptr<ColumnVisitableContext> base_context) override;
 
-  void handle_dictionary_column(const BaseDictionaryColumn& base_column,
-                                std::shared_ptr<ColumnVisitableContext> base_context) override;
+  void handle_column(const BaseDictionaryColumn& base_column,
+                     std::shared_ptr<ColumnVisitableContext> base_context) override;
+
+  void handle_column(const BaseEncodedColumn& base_column,
+                     std::shared_ptr<ColumnVisitableContext> base_context) override;
+
+  using BaseSingleColumnTableScanImpl::handle_column;
 
  private:
   /**
@@ -42,14 +44,14 @@ class SingleColumnTableScanImpl : public BaseSingleColumnTableScanImpl {
    * @{
    */
 
-  ValueID _get_search_value_id(const BaseDictionaryColumn& column);
+  ValueID _get_search_value_id(const BaseDictionaryColumn& column) const;
 
-  bool _right_value_matches_all(const BaseDictionaryColumn& column, const ValueID search_value_id);
+  bool _right_value_matches_all(const BaseDictionaryColumn& column, const ValueID search_value_id) const;
 
-  bool _right_value_matches_none(const BaseDictionaryColumn& column, const ValueID search_value_id);
+  bool _right_value_matches_none(const BaseDictionaryColumn& column, const ValueID search_value_id) const;
 
   template <typename Functor>
-  void _with_operator_for_dict_column_scan(const PredicateCondition predicate_condition, const Functor& func) {
+  void _with_operator_for_dict_column_scan(const PredicateCondition predicate_condition, const Functor& func) const {
     switch (predicate_condition) {
       case PredicateCondition::Equals:
         func(std::equal_to<void>{});
@@ -73,7 +75,6 @@ class SingleColumnTableScanImpl : public BaseSingleColumnTableScanImpl {
         Fail("Unsupported comparison type encountered");
     }
   }
-
   /**@}*/
 
  private:

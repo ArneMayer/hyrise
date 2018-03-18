@@ -6,8 +6,8 @@
 
 #include "base_table_scan_impl.hpp"
 
+#include "storage/column_iterables/chunk_offset_mapping.hpp"
 #include "storage/column_visitable.hpp"
-#include "storage/iterables/base_iterators.hpp"
 
 #include "types.hpp"
 
@@ -15,6 +15,7 @@ namespace opossum {
 
 class Table;
 class ReferenceColumn;
+class AttributeVectorIterable;
 
 /**
  * @brief The base class of table scan impls that scan a single column
@@ -25,12 +26,11 @@ class ReferenceColumn;
 class BaseSingleColumnTableScanImpl : public BaseTableScanImpl, public ColumnVisitable {
  public:
   BaseSingleColumnTableScanImpl(std::shared_ptr<const Table> in_table, const ColumnID left_column_id,
-                                const PredicateCondition predicate_condition, const bool skip_null_row_ids = true);
+                                const PredicateCondition predicate_condition);
 
   PosList scan_chunk(ChunkID chunk_id) override;
 
-  void handle_reference_column(const ReferenceColumn& left_column,
-                               std::shared_ptr<ColumnVisitableContext> base_context) override;
+  void handle_column(const ReferenceColumn& left_column, std::shared_ptr<ColumnVisitableContext> base_context) override;
 
  protected:
   /**
@@ -47,9 +47,6 @@ class BaseSingleColumnTableScanImpl : public BaseTableScanImpl, public ColumnVis
 
     std::unique_ptr<ChunkOffsetsList> _mapped_chunk_offsets;
   };
-
- private:
-  const bool _skip_null_row_ids;  // see chunk_offset_mapping.hpp for explanation
 };
 
 }  // namespace opossum
