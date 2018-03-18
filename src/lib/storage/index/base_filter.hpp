@@ -2,7 +2,7 @@
 
 #include "types.hpp"
 #include "storage/base_column.hpp"
-#include <string>
+
 
 namespace opossum {
 

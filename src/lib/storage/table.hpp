@@ -17,6 +17,7 @@
 #include "storage/table.hpp"
 #include "storage/index/b_tree/b_tree_index.hpp"
 #include "storage/index/b_tree/base_b_tree_index.hpp"
+#include "storage/index/interval_map/base_interval_map.hpp"
 
 namespace opossum {
 
@@ -178,5 +179,6 @@ class Table : private Noncopyable {
 
   std::vector<IndexInfo> _indexes;
   std::map<ColumnID, std::shared_ptr<BaseBTreeIndex>> _btree_indices;
+  std::map<ColumnID, std::shared_ptr<BaseIntervalMap>> _interval_maps;
 };
 }  // namespace opossum
