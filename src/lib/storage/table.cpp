@@ -192,7 +192,7 @@ size_t Table::estimate_memory_usage() const {
 
 std::vector<std::shared_ptr<AbstractTask>> Table::populate_quotient_filters(ColumnID column_id, uint8_t quotient_bits,
                                                                             uint8_t remainder_bits) {
-  auto type = column_type(column_id);
+  auto type = column_data_type(column_id);
   auto jobs = std::vector<std::shared_ptr<AbstractTask>>();
   for (auto chunk_id = ChunkID{0}; chunk_id < chunk_count(); ++chunk_id) {
     jobs.push_back(get_chunk(chunk_id)->populate_quotient_filter(column_id, type, quotient_bits, remainder_bits));
@@ -222,7 +222,7 @@ void Table::populate_btree_index(ColumnID column_id) {
   auto result = _btree_indices.find(column_id);
   if (result == _btree_indices.end() || result->second == nullptr) {
     //std::cout << "creating btree" << std::endl;
-    _btree_indices[column_id] = make_shared_by_data_type<BaseBTreeIndex, BTreeIndex>(column_type(column_id),
+    _btree_indices[column_id] = make_shared_by_data_type<BaseBTreeIndex, BTreeIndex>(column_data_type(column_id),
                                                                                      *this, column_id);
   }
 }

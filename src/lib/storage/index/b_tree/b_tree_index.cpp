@@ -1,13 +1,11 @@
 #include "b_tree_index.hpp"
 
-#include "storage/base_attribute_vector.hpp"
 #include "storage/base_column.hpp"
-#include "storage/base_dictionary_column.hpp"
 #include "storage/index/base_index.hpp"
 #include "types.hpp"
 #include "resolve_type.hpp"
 #include "utils/assert.hpp"
-#include "storage/iterables/create_iterable_from_column.hpp"
+#include "storage/create_iterable_from_column.hpp"
 
 namespace opossum {
 

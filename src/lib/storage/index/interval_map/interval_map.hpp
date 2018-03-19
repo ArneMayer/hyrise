@@ -3,7 +3,7 @@
 #include "base_interval_map.hpp"
 
 #include <list>
-#include <boost/icl/interval_map.hpp>
+//#include <boost/icl/interval_map.hpp>
 
 #include "types.hpp"
 #include "storage/base_column.hpp"
@@ -18,8 +18,8 @@ class IntervalMap : public BaseIntervalMap {
   virtual std::list<ChunkID> point_query_all_type(AllTypeVariant value) override;
   std::list<ChunkID> point_query(const T & value);
 
- private:
-   boost::icl::interval_map<T, ChunkID> _interval_map;
+ //private:
+   //boost::icl::interval_map<T, ChunkID> _interval_map;
 };
 
 } // namespace opossum

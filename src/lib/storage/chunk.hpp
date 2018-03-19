@@ -12,6 +12,7 @@
 #include <optional>
 #include <string>
 #include <vector>
+#include <map>
 
 #include "index/column_index_type.hpp"
 
@@ -22,6 +23,9 @@
 #include "types.hpp"
 #include "utils/copyable_atomic.hpp"
 #include "utils/scoped_locking_ptr.hpp"
+#include "scheduler/abstract_task.hpp"
+#include "storage/index/counting_quotient_filter/counting_quotient_filter.hpp"
+#include "storage/index/base_filter.hpp"
 
 namespace opossum {
 

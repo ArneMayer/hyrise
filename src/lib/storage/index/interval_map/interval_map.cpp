@@ -1,9 +1,9 @@
 #include "interval_map.hpp"
 
-#include <boost/icl/interval.hpp>
-#include <boost/icl/interval_map.hpp>
+//#include <boost/icl/interval.hpp>
+//#include <boost/icl/interval_map.hpp>
 
-#include "storage/iterables/create_iterable_from_column.hpp"
+#include "storage/create_iterable_from_column.hpp"
 #include "resolve_type.hpp"
 #include "types.hpp"
 
@@ -11,7 +11,7 @@ namespace opossum {
 
 template <typename T>
 void IntervalMap<T>::add_column_chunk(ChunkID chunk_id, std::shared_ptr<const BaseColumn> column) {
-  T min;
+  /*T min;
   T max;
   bool initialized = false;
   resolve_column_type<T>(*column, [&](const auto& typed_column) {
@@ -31,7 +31,7 @@ void IntervalMap<T>::add_column_chunk(ChunkID chunk_id, std::shared_ptr<const Ba
       }
     });
   });
-  _interval_map += make_pair(boost::icl::interval<T>::closed(min, max), chunk_id);
+  _interval_map += make_pair(boost::icl::interval<T>::closed(min, max), chunk_id);*/
 }
 
 template <typename T>

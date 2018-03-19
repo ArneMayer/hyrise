@@ -104,8 +104,10 @@ const ValueID DictionaryColumn<T>::null_value_id() const {
   return _null_value_id;
 }
 
+/*
 template <>
 uint64_t DictionaryColumn<std::string>::memory_consumption() const {
+
   uint64_t memory = 0;
   for (size_t i = 0; i < _dictionary->size(); i++) {
     memory += sizeof(std::string);
@@ -114,11 +116,14 @@ uint64_t DictionaryColumn<std::string>::memory_consumption() const {
   memory += _attribute_vector->size() * _attribute_vector->width();
 
   return memory;
+
 }
+*/
 
 template <typename T>
 uint64_t DictionaryColumn<T>::memory_consumption() const {
-  return _dictionary->size() * sizeof(T) + _attribute_vector->size() * _attribute_vector->width();
+  //return _dictionary->size() * sizeof(T) + _attribute_vector->size() * _attribute_vector->width();
+  return estimate_memory_usage();
 }
 
 EXPLICITLY_INSTANTIATE_DATA_TYPES(DictionaryColumn);

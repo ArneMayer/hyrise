@@ -53,9 +53,11 @@ void SingleColumnTableScanImpl::handle_column(const BaseValueColumn& base_column
   if (_predicate_condition == PredicateCondition::Equals) {
     auto cqf = _in_table->get_chunk(chunk_id)->get_filter(_left_column_id);
 
+    /*
     if (cqf != nullptr) {
-      //std::cout << "using value column cqf" << std::endl;
+      std::cout << "using value column cqf" << std::endl;
     }
+    */
 
     if (cqf != nullptr && cqf->count_all_type(_right_value) == 0) {
       //std::cout << "skip!" << std::endl;
@@ -111,9 +113,11 @@ void SingleColumnTableScanImpl::handle_column(const BaseEncodedColumn& base_colu
   if (_predicate_condition == PredicateCondition::Equals) {
     auto cqf = _in_table->get_chunk(chunk_id)->get_filter(_left_column_id);
 
+    /*
     if (cqf != nullptr) {
-      //std::cout << "using dict cqf" << std::endl;
+      std::cout << "using dict cqf" << std::endl;
     }
+    */
 
     if (cqf != nullptr && cqf->count_all_type(_right_value) == 0) {
       //std::cout << "skip!" << std::endl;

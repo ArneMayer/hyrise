@@ -82,15 +82,14 @@ std::shared_ptr<const Table> TableScan::_on_execute() {
 
   std::mutex output_mutex;
 
-  const auto excluded_chunk_set = std::unordered_set<ChunkID>{_excluded_chunk_ids.cbegin(), _excluded_chunk_ids.cend()};
-
-  auto jobs = std::vector<std::shared_ptr<AbstractTask>>{};
-  jobs.reserve(_in_table->chunk_count() - excluded_chunk_set.size());
-
+  // Btree Scan
   auto btree_index = _in_table->get_btree_index(_left_column_id);
   if (btree_index && is_variant(_right_parameter)) {
     //std::cout << "using btree" << std::endl;
-    auto chunk_out = std::make_shared<Chunk>();
+    const auto chunk_guard = _in_table->get_chunk_with_access_counting(ChunkID{0});
+    ChunkColumns out_columns;
+
+    // Index Lookup
     AllTypeVariant scan_value = boost::get<AllTypeVariant>(_right_parameter);
     auto matches_out = std::make_shared<PosList>();
     auto lower_bound = btree_index->lower_bound_all_type(scan_value);
@@ -98,18 +97,23 @@ std::shared_ptr<const Table> TableScan::_on_execute() {
     for (auto it = lower_bound; it != upper_bound; it++) {
       matches_out->push_back(*it);
     }
+
+    // Build Output
     for (ColumnID column_id{0u}; column_id < _in_table->column_count(); ++column_id) {
       auto ref_column_out = std::make_shared<ReferenceColumn>(_in_table, column_id, matches_out);
-      chunk_out->add_column(ref_column_out);
+      out_columns.push_back(ref_column_out);
     }
 
     std::lock_guard<std::mutex> lock(output_mutex);
-    if (chunk_out->size() > 0 || _output_table->get_chunk(ChunkID{0})->size() == 0) {
-      _output_table->emplace_chunk(std::move(chunk_out));
-    }
+    _output_table->append_chunk(out_columns, chunk_guard->get_allocator(), chunk_guard->access_counter());
 
     return _output_table;
   }
+
+  // Standard Scan
+  const auto excluded_chunk_set = std::unordered_set<ChunkID>{_excluded_chunk_ids.cbegin(), _excluded_chunk_ids.cend()};
+  auto jobs = std::vector<std::shared_ptr<AbstractTask>>{};
+  jobs.reserve(_in_table->chunk_count() - excluded_chunk_set.size());
 
   for (ChunkID chunk_id{0u}; chunk_id < _in_table->chunk_count(); ++chunk_id) {
     if (excluded_chunk_set.count(chunk_id)) continue;

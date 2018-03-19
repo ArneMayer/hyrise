@@ -4,7 +4,7 @@
 #include "resolve_type.hpp"
 #include "storage/storage_manager.hpp"
 #include "storage/table.hpp"
-#include "storage/iterables/create_iterable_from_column.hpp"
+#include "storage/create_iterable_from_column.hpp"
 
 #include <cmath>
 #include <iostream>
