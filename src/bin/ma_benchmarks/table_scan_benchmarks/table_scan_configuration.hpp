@@ -8,6 +8,7 @@ public:
   int quotient_size;
   bool use_btree;
   bool use_art;
+  bool use_interval_map;
   bool use_dictionary;
   double selectivity;
   double pruning_rate;

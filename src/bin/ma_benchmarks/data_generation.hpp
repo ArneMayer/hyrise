@@ -214,6 +214,10 @@ bool import_table(std::string table_name) {
 }
 
 void save_table(std::shared_ptr<const Table> table, std::string file_name) {
+  if (table == nullptr) {
+    throw std::logic_error("table is null");
+  }
+
   std::cout << " > Saving table " << file_name << " to disk" << "...";
   auto table_wrapper = std::make_shared<TableWrapper>(table);
   table_wrapper->execute();

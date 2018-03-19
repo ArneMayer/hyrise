@@ -563,7 +563,7 @@ std::shared_ptr<opossum::Table> TpccTableGenerator::generate_tpcc_table(
           const std::string& tablename, opossum::ChunkOffset chunk_size, const size_t warehouse_size, bool compress) {
   auto generators = TpccTableGenerator::tpcc_table_generator_functions(chunk_size, warehouse_size);
   if (generators.find(tablename) == generators.end()) {
-    return nullptr;
+    throw std::logic_error("no generator for table name " + tablename);
   }
   auto table = generators[tablename]();
   if (compress) {

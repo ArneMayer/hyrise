@@ -26,9 +26,9 @@ class TpccBenchmark : public TableScanBenchmark {
       warehouse_size = _config.row_count / 30'000;
     } else if (_config.table_name == "HISTORY") {
       warehouse_size = _config.row_count / 30'000;
-    } else if (_config.table_name == "NEW-ORDER") {
+    } else if (_config.table_name == "NEW_ORDER") {
       warehouse_size = _config.row_count / (30'000 * 0.3);
-    } else if (_config.table_name == "ORDER-LINE") {
+    } else if (_config.table_name == "ORDER_LINE") {
       warehouse_size = _config.row_count / 300'000;
     } else {
       throw std::logic_error("tpcc table not known: " + _config.table_name);

@@ -37,6 +37,7 @@ public:
   std::list<int> chunk_sizes = {};
   bool auto_quotient_size = false;
   int quotient_size = -1;
+  bool interval_map_run = true;
   bool dictionary_run = true;
   bool art_run = true;
   bool btree_run = true;
@@ -55,6 +56,7 @@ public:
       TableColumnDefinition("selectivity", DataType::Double, false),
       TableColumnDefinition("quotient_size", DataType::Int, false),
       TableColumnDefinition("remainder_size", DataType::Int, false),
+      TableColumnDEfinition("interval_map", DataType::Int, false),
       TableColumnDefinition("dictionary", DataType::Int, false),
       TableColumnDefinition("btree", DataType::Int, false),
       TableColumnDefinition("art", DataType::Int, false),
@@ -106,6 +108,8 @@ public:
               base_config.use_dictionary = false;
               base_config.use_btree = false;
               for (auto remainder_size : remainder_sizes) {
+
+                // Filter only run
                 TableScanConfiguration value_config = base_config;
                 value_config.remainder_size = remainder_size;
                 configurations.push_back(value_config);
@@ -115,6 +119,13 @@ public:
                   dict_config.remainder_size = remainder_size;
                   dict_config.use_dictionary = true;
                   configurations.push_back(dict_config);
+                }
+
+                if (interval_map_run) {
+                  TableScanConfiguration int_map_config = base_config;
+                  int_map_config.remainder_size = remainder_size;
+                  int_map_config.use_interval_map = true;
+                  configurations.push_back(int_map_config);
                 }
               }
 
@@ -158,7 +169,7 @@ public:
         auto actual_pruning_rate = benchmark.actual_pruning_rate();
         auto data_type = benchmark.data_type();
         _results_table->append({config.table_name, config.column_name, data_type, row_count, config.chunk_size,
-          config.pruning_rate, config.selectivity, config.quotient_size, config.remainder_size,
+          config.pruning_rate, config.selectivity, config.quotient_size, config.remainder_size, static_cast<int>(config.use_interval_map),
           static_cast<int>(config.use_dictionary), static_cast<int>(config.use_btree), static_cast<int>(config.use_art),
           size, actual_pruning_rate, time});
       }
@@ -167,6 +178,7 @@ public:
       std::cout << "row_count: " << config.row_count
                 << ", chunk_size: " << config.chunk_size
                 << ", remainder_size: " << config.remainder_size
+                << ", interval_map: " << config.use_interval_map
                 << ", dictionary: " << config.use_dictionary
                 << ", btree: " << config.use_btree
                 << ", art: " << config.use_art

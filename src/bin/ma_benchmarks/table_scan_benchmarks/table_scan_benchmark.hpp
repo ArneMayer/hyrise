@@ -35,6 +35,11 @@ class TableScanBenchmark {
     } else {
       _table->delete_art_index(_scan_column_id);
     }
+    if (_config.use_interval_map) {
+      _table->create_interval_map(_scan_column_id);
+    } else {
+      _table->delete_interval_map(_scan_column_id);
+    }
 
     auto table_wrapper = std::make_shared<TableWrapper>(_table);
     table_wrapper->execute();
