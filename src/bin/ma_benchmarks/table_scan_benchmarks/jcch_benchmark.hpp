@@ -25,7 +25,7 @@ class JcchBenchmark : public TableScanBenchmark {
   virtual AllTypeVariant get_scan_value() override {
     auto table = get_table();
     auto column_id = get_column_id();
-    auto data_type = table->column_type(column_id);
+    auto data_type = table->column_data_type(column_id);
     if (data_type == DataType::Int) {
       return 3000;
     } else if (data_type == DataType::String) {

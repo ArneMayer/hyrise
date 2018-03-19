@@ -3,16 +3,15 @@
 #include "utils.hpp"
 
 std::shared_ptr<Table> create_estimation_results_table() {
-  auto results_table = std::make_shared<Table>();
-  results_table->add_column("sample_size", DataType::Int, false);
-  results_table->add_column("row_count", DataType::Int, false);
-  results_table->add_column("distinct_values", DataType::Int, false);
-  results_table->add_column("data_name", DataType::String, false);
-  results_table->add_column("estimation_technique", DataType::String, false);
-  results_table->add_column("error", DataType::Int, false);
-  results_table->add_column("occurrences", DataType::Int, false);
-
-  return results_table;
+  auto column_definitions = TableColumnDefinitions();
+  column_definitions.push_back(TableColumnDefinition("sample_size", DataType::Int, false));
+  column_definitions.push_back(TableColumnDefinition("row_count", DataType::Int, false));
+  column_definitions.push_back(TableColumnDefinition("distinct_values", DataType::Int, false));
+  column_definitions.push_back(TableColumnDefinition("data_name", DataType::String, false));
+  column_definitions.push_back(TableColumnDefinition("estimation_technique", DataType::String, false));
+  column_definitions.push_back(TableColumnDefinition("error", DataType::Int, false));
+  column_definitions.push_back(TableColumnDefinition("occurrences", DataType::Int, false));
+  return std::make_shared<Table>(column_definitions, TableType::Data);
 }
 
 void filter_estimation_series(std::shared_ptr<Table> results_table, std::string data_name, int distinct_values) {
@@ -166,16 +165,15 @@ void postgres2_estimation_series(std::shared_ptr<Table> results_table, std::stri
 }
 
 std::shared_ptr<Table> create_estimation_examples_table() {
-  auto results_table = std::make_shared<Table>();
-  results_table->add_column("row_count", DataType::Int, false);
-  results_table->add_column("distinct_values", DataType::Int, false);
-  results_table->add_column("data_name", DataType::String, false);
-  results_table->add_column("estimation_technique", DataType::String, false);
-  results_table->add_column("value", DataType::Int, false);
-  results_table->add_column("actual_count", DataType::Int, false);
-  results_table->add_column("estimated_count", DataType::Int, false);
-
-  return results_table;
+  auto column_definitions = TableColumnDefinitions();
+  column_definitions.push_back(TableColumnDefinition("row_count", DataType::Int, false));
+  column_definitions.push_back(TableColumnDefinition("distinct_values", DataType::Int, false));
+  column_definitions.push_back(TableColumnDefinition("data_name", DataType::String, false));
+  column_definitions.push_back(TableColumnDefinition("estimation_technique", DataType::String, false));
+  column_definitions.push_back(TableColumnDefinition("value", DataType::Int, false));
+  column_definitions.push_back(TableColumnDefinition("actual_count", DataType::Int, false));
+  column_definitions.push_back(TableColumnDefinition("estimated_count", DataType::Int, false));
+  return std::make_shared<Table>(column_definitions, TableType::Data);
 }
 
 void postgres1_estimation_example(std::shared_ptr<Table> results_table, std::string data_name,

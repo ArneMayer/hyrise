@@ -9,7 +9,7 @@
 #include "storage/index/counting_quotient_filter/counting_quotient_filter.hpp"
 #include "import_export/csv_meta.hpp"
 #include "storage/table.hpp"
-#include "storage/dictionary_compression.hpp"
+#include "storage/chunk_encoder.hpp"
 #include "storage/storage_manager.hpp"
 #include "operators/import_binary.hpp"
 #include "operators/export_binary.hpp"
@@ -84,11 +84,12 @@ std::shared_ptr<Table> generate_table_string(int chunk_size, int row_count, int 
   const auto max_value = std::string("z_") + random_string(string_size - 2, "");;
 
   // Generate table header
-  auto table = std::make_shared<Table>(chunk_size);
-  table->add_column("column0", DataType::String, false);
+  auto column_definitions = TableColumnDefinitions();
+  column_definitions.push_back(TableColumnDefinition("column0", DataType::String, false));
   for (int i = 1; i < column_count; i++) {
-    table->add_column("column" + std::to_string(i), DataType::Int, false);
+    column_definitions.push_back(TableColumnDefinition("column" + std::to_string(i), DataType::Int, false));
   }
+  auto table = std::make_shared<Table>(column_definitions, TableType::Data, chunk_size);
 
   // Generate table data
   for (int row_number = 0; row_number < row_count; row_number++) {
@@ -126,11 +127,12 @@ std::shared_ptr<Table> generate_table_int(int chunk_size, int row_count, int pru
   }
 
   // Generate table header
-  auto table = std::make_shared<Table>(chunk_size);
-  table->add_column("column0", DataType::Int, false);
+  auto column_definitions = TableColumnDefinitions();
+  column_definitions.push_back(TableColumnDefinition("column0", DataType::Int, false));
   for (int i = 1; i < column_count; i++) {
-    table->add_column("column" + std::to_string(i), DataType::Int, false);
+    column_definitions.push_back(TableColumnDefinition("column" + std::to_string(i), DataType::Int, false));
   }
+  auto table = std::make_shared<Table>(column_definitions, TableType::Data, chunk_size);
 
   // Generate table data
   for (int row_number = 0; row_number < row_count; row_number++) {
@@ -253,7 +255,7 @@ std::string custom_load_or_generate(DataType type, int row_count, int chunk_size
 
   // Save compressed
   std::cout << " > Generating table " << compressed_name << "...";
-  DictionaryCompression::compress_table(*table);
+  ChunkEncoder::encode_all_chunks(table);
   std::cout << "OK!" << std::endl;
   save_table(table, compressed_name);
 
@@ -285,7 +287,7 @@ std::string tpcc_load_or_generate(std::string tpcc_table_name, int warehouse_siz
 
   // Save compressed
   std::cout << " > Generating table " << compressed_name << "..." << std::flush;
-  DictionaryCompression::compress_table(*table);
+  ChunkEncoder::encode_all_chunks(table);
   std::cout << "OK!" << std::endl;
   save_table(table, compressed_name);
 
@@ -319,7 +321,7 @@ std::string jcch_load_or_generate(std::string tpch_table_name, int row_count, in
 
   // Save compressed
   std::cout << " > Generating table " << compressed_name << "..." << std::flush;
-  DictionaryCompression::compress_table(*table);
+  ChunkEncoder::encode_all_chunks(table);
   std::cout << "OK!" << std::endl;
   save_table(table, compressed_name);
 
@@ -359,10 +361,11 @@ std::string acdoca_load_or_generate(std::string column_name, int row_count, int 
 
   // Save uncompressed
   std::cout << " > Generating table " << uncompressed_name << "..." << std::flush;
-  auto table = std::make_shared<Table>(chunk_size);
   auto column_id = complete_table->column_id_by_name(column_name);
-  auto column_type = complete_table->column_type(column_id);
-  table->add_column(column_name, column_type, false);
+  auto column_type = complete_table->column_data_type(column_id);
+  auto column_definitions = TableColumnDefinitions();
+  column_definitions.push_back(TableColumnDefinition(column_name, column_type, false));
+  auto table = std::make_shared<Table>(column_definitions, TableType::Data, chunk_size);
   auto actual_row_count = complete_table->row_count();
   std::cout << "Complete table row count: " << actual_row_count << std::endl;
   for (uint64_t row_number = 0; row_number < actual_row_count; row_number++) {
@@ -387,7 +390,7 @@ std::string acdoca_load_or_generate(std::string column_name, int row_count, int 
 
   // Save compressed
   std::cout << " > Generating table " << compressed_name << "..." << std::flush;
-  DictionaryCompression::compress_table(*table);
+  ChunkEncoder::encode_all_chunks(table);
   save_table(table, compressed_name);
   std::cout << "OK!" << std::endl;
 

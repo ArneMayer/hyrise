@@ -45,22 +45,24 @@ public:
   std::list<double> pruning_rates = {-1.0};
 
   TableScanBenchmarkSeries() {
-    _results_table = std::make_shared<Table>();
-    _results_table->add_column("table_name", DataType::String, false);
-    _results_table->add_column("column_name", DataType::String, false);
-    _results_table->add_column("data_type", DataType::String, false);
-    _results_table->add_column("row_count", DataType::Int, false);
-    _results_table->add_column("chunk_size", DataType::Int, false);
-    _results_table->add_column("pruning_rate", DataType::Double, false);
-    _results_table->add_column("selectivity", DataType::Double, false);
-    _results_table->add_column("quotient_size", DataType::Int, false);
-    _results_table->add_column("remainder_size", DataType::Int, false);
-    _results_table->add_column("dictionary", DataType::Int, false);
-    _results_table->add_column("btree", DataType::Int, false);
-    _results_table->add_column("art", DataType::Int, false);
-    _results_table->add_column("size", DataType::Int, false);
-    _results_table->add_column("actual_pruning_rate", DataType::Double, false);
-    _results_table->add_column("run_time", DataType::Int, false);
+    TableColumnDefinitions column_definitions = {
+      TableColumnDefinition("table_name", DataType::String, false),
+      TableColumnDefinition("column_name", DataType::String, false),
+      TableColumnDefinition("data_type", DataType::String, false),
+      TableColumnDefinition("row_count", DataType::Int, false),
+      TableColumnDefinition("chunk_size", DataType::Int, false),
+      TableColumnDefinition("pruning_rate", DataType::Double, false),
+      TableColumnDefinition("selectivity", DataType::Double, false),
+      TableColumnDefinition("quotient_size", DataType::Int, false),
+      TableColumnDefinition("remainder_size", DataType::Int, false),
+      TableColumnDefinition("dictionary", DataType::Int, false),
+      TableColumnDefinition("btree", DataType::Int, false),
+      TableColumnDefinition("art", DataType::Int, false),
+      TableColumnDefinition("size", DataType::Int, false),
+      TableColumnDefinition("actual_pruning_rate", DataType::Double, false),
+      TableColumnDefinition("run_time", DataType::Int, false)
+    };
+    _results_table = std::make_shared<Table>(column_definitions, TableType::Data);
   }
 
   void print_info() {

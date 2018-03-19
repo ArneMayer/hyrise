@@ -4,7 +4,7 @@
 #include "operators/export_csv.hpp"
 #include "operators/table_wrapper.hpp"
 #include "resolve_type.hpp"
-#include "storage/iterables/create_iterable_from_column.hpp"
+#include "storage/create_iterable_from_column.hpp"
 #include "storage/index/counting_quotient_filter/counting_quotient_filter.hpp"
 #include "storage/storage_manager.hpp"
 #include "scheduler/abstract_task.hpp"

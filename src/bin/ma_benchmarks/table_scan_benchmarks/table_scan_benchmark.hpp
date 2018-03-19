@@ -58,7 +58,7 @@ class TableScanBenchmark {
   }
 
   std::string data_type() {
-    return data_type_to_string(_table->column_type(_scan_column_id));
+    return data_type_to_string(_table->column_data_type(_scan_column_id));
   }
 
   double actual_pruning_rate() {
