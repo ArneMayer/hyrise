@@ -1,6 +1,6 @@
 #pragma once
 
-#include <list>
+#include <set>
 
 #include "storage/base_column.hpp"
 #include "types.hpp"
@@ -15,7 +15,7 @@ class BaseIntervalMap {
   BaseIntervalMap& operator=(BaseIntervalMap&&) = default;
 
   virtual void add_column_chunk(ChunkID chunk_id, std::shared_ptr<const BaseColumn> column) = 0;
-  virtual std::list<ChunkID> point_query_all_type(AllTypeVariant value) = 0;
+  virtual std::set<ChunkID> point_query_all_type(AllTypeVariant value) const = 0;
 };
 
 } // namespace opossum

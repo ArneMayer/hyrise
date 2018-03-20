@@ -167,6 +167,9 @@ class Table : private Noncopyable {
   std::shared_ptr<const BaseBTreeIndex> get_btree_index(ColumnID column_id) const;
   void populate_art_index(ColumnID column_id);
   void delete_art_index(ColumnID column_id);
+  void create_interval_map(ColumnID column_id);
+  void delete_interval_map(ColumnID column_id);
+  std::shared_ptr<const BaseIntervalMap> get_interval_map(ColumnID column_id) const;
 
   uint64_t ma_memory_consumption(ColumnID column_id) const;
 

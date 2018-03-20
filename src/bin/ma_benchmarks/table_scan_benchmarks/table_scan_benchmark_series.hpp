@@ -56,7 +56,7 @@ public:
       TableColumnDefinition("selectivity", DataType::Double, false),
       TableColumnDefinition("quotient_size", DataType::Int, false),
       TableColumnDefinition("remainder_size", DataType::Int, false),
-      TableColumnDEfinition("interval_map", DataType::Int, false),
+      TableColumnDefinition("interval_map", DataType::Int, false),
       TableColumnDefinition("dictionary", DataType::Int, false),
       TableColumnDefinition("btree", DataType::Int, false),
       TableColumnDefinition("art", DataType::Int, false),

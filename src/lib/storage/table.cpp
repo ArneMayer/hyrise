@@ -13,6 +13,8 @@
 #include "utils/assert.hpp"
 #include "value_column.hpp"
 #include "index/adaptive_radix_tree/adaptive_radix_tree_index.hpp"
+#include "index/interval_map/base_interval_map.hpp"
+#include "index/interval_map/interval_map.hpp"
 
 namespace opossum {
 
@@ -234,6 +236,32 @@ void Table::delete_btree_index(ColumnID column_id) {
 std::shared_ptr<const BaseBTreeIndex> Table::get_btree_index(ColumnID column_id) const {
   auto result = _btree_indices.find(column_id);
   if (result == _btree_indices.end()) {
+    return nullptr;
+  } else {
+    return result->second;
+  }
+}
+
+void Table::create_interval_map(ColumnID column_id) {
+  auto result = _interval_maps.find(column_id);
+  if (result == _interval_maps.end() || result->second == nullptr) {
+    //std::cout << "interval map" << std::endl;
+    auto interval_map = make_shared_by_data_type<BaseIntervalMap, IntervalMap>(column_data_type(column_id));
+    _interval_maps[column_id] = interval_map;
+    for (auto chunk_id = ChunkID{0}; chunk_id < chunk_count(); chunk_id++) {
+      auto column = get_chunk(chunk_id)->get_column(column_id);
+      interval_map->add_column_chunk(chunk_id, column);
+    }
+  }
+}
+
+void Table::delete_interval_map(ColumnID column_id) {
+  _interval_maps[column_id] = nullptr;
+}
+
+std::shared_ptr<const BaseIntervalMap> Table::get_interval_map(ColumnID column_id) const {
+  auto result = _interval_maps.find(column_id);
+  if (result == _interval_maps.end()) {
     return nullptr;
   } else {
     return result->second;

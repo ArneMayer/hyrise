@@ -48,6 +48,24 @@ void SingleColumnTableScanImpl::handle_column(const BaseValueColumn& base_column
 
   const auto left_column_type = _in_table->column_data_type(_left_column_id);
 
+  // Interval Map
+  if (_predicate_condition == PredicateCondition::Equals) {
+    auto interval_map = _in_table->get_interval_map(_left_column_id);
+
+    /*
+    if (interval_map != nullptr) {
+      std::cout << "using value column interval map" << std::endl;
+    }
+    */
+
+    if (interval_map != nullptr) {
+      auto chunk_ids = interval_map->point_query_all_type(_right_value);
+      if (std::find(chunk_ids.begin(), chunk_ids.end(), chunk_id) == chunk_ids.end())
+      //std::cout << "skip!" << std::endl;
+      return;
+    }
+  }
+
   // Check whether this chunk needs to be looked at by performing a filter query
   // CQF is only supported for ScanType::OpEquals
   if (_predicate_condition == PredicateCondition::Equals) {
@@ -104,6 +122,24 @@ void SingleColumnTableScanImpl::handle_column(const BaseEncodedColumn& base_colu
       for (auto iterator = lower_bound; iterator != upper_bound; iterator++) {
         matches_out.push_back(RowID{chunk_id, *iterator});
       }
+      return;
+    }
+  }
+
+  // Interval Map
+  if (_predicate_condition == PredicateCondition::Equals) {
+    auto interval_map = _in_table->get_interval_map(_left_column_id);
+
+    /*
+    if (interval_map != nullptr) {
+      std::cout << "using value column interval map" << std::endl;
+    }
+    */
+
+    if (interval_map != nullptr) {
+      auto chunk_ids = interval_map->point_query_all_type(_right_value);
+      if (std::find(chunk_ids.begin(), chunk_ids.end(), chunk_id) == chunk_ids.end())
+      //std::cout << "skip!" << std::endl;
       return;
     }
   }

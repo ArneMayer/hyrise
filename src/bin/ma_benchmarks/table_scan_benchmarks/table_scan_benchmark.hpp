@@ -71,7 +71,14 @@ class TableScanBenchmark {
     auto prunable_chunks = 0;
     for (auto chunk_id = ChunkID{0}; chunk_id < chunk_count; chunk_id++) {
       auto filter = _table->get_chunk(chunk_id)->get_filter(_scan_column_id);
-      if (filter != nullptr && filter->count_all_type(_scan_value) == 0) {
+      bool filter_prunable = filter != nullptr && filter->count_all_type(_scan_value) == 0;
+      auto interval_map = _table->get_interval_map(_scan_column_id);
+      bool interval_map_prunable = false;
+      if (interval_map != nullptr) {
+        auto chunk_ids = interval_map->point_query_all_type(_scan_value);
+        interval_map_prunable = std::find(chunk_ids.begin(), chunk_ids.end(), chunk_id) == chunk_ids.end();
+      }
+      if (filter_prunable || interval_map_prunable) {
         prunable_chunks++;
       }
     }

@@ -43,7 +43,7 @@ endif()
 add_definitions("-DSOURCE_PATH_SIZE=${SOURCE_PATH_SIZE}")
 
 # Global flags and include directories
-add_compile_options(-std=c++17 -pthread -Wall -Wextra -pedantic -Werror -Wno-unused-parameter -fno-strict-aliasing)
+add_compile_options(-std=c++17 -pthread -Wall -Wextra -pedantic -Werror -Wno-unused-parameter -fno-strict-aliasing -fno-new-ttp-matching)
 
 include_directories(
     ${PROJECT_SOURCE_DIR}/third_party/benchmark/include
