@@ -16,10 +16,11 @@ class IntervalMap : public BaseIntervalMap {
  public:
   virtual void add_column_chunk(ChunkID chunk_id, std::shared_ptr<const BaseColumn> column) override;
   virtual std::set<ChunkID> point_query_all_type(AllTypeVariant value) const override;
-  std::set<ChunkID> point_query(const T & value) const ;
+  std::set<ChunkID> point_query(const T & value) const;
+  virtual uint64_t memory_consumption() const override;
 
  private:
-   boost::icl::interval_map<T, ChunkID> _interval_map;
+   boost::icl::interval_map<T, std::set<ChunkID>> _interval_map;
 };
 
 } // namespace opossum

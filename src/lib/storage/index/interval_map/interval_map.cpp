@@ -31,7 +31,7 @@ void IntervalMap<T>::add_column_chunk(ChunkID chunk_id, std::shared_ptr<const Ba
       }
     });
   });
-  _interval_map += make_pair(boost::icl::interval<T>::closed(min, max), chunk_id);
+  _interval_map += make_pair(boost::icl::interval<T>::closed(min, max), std::set<ChunkID>{chunk_id});
 }
 
 template <typename T>
@@ -41,7 +41,20 @@ std::set<ChunkID> IntervalMap<T>::point_query_all_type(AllTypeVariant value) con
 
 template <typename T>
 std::set<ChunkID> IntervalMap<T>::point_query(const T & value) const {
-  return {}; //_interval_map[value];
+  return _interval_map.find(value)->second;
+}
+
+template <typename T>
+uint64_t IntervalMap<T>::memory_consumption() const {
+  auto memory_estimation = 0;
+
+  auto begin_it = _interval_map.begin();
+  for (auto it = begin_it; it != _interval_map.end(); it++) {
+    memory_estimation += 8; // Interval Bounds
+    memory_estimation += it->second.size() * 4; // Chunk Ids
+  }
+
+  return memory_estimation;
 }
 
 EXPLICITLY_INSTANTIATE_DATA_TYPES(IntervalMap);

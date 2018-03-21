@@ -27,9 +27,13 @@ class JcchBenchmark : public TableScanBenchmark {
     auto column_id = get_column_id();
     auto data_type = table->column_data_type(column_id);
     if (data_type == DataType::Int) {
-      return 3000;
+      //return 3000;
+      return table->get_value<int>(column_id, 1000);
     } else if (data_type == DataType::String) {
-      return std::string("1992-02-24");
+      //return std::string("1992-02-24");
+      return table->get_value<std::string>(column_id, 1000);
+    } else if (data_type == DataType::Double) {
+      return table->get_value<double>(column_id, 1000);
     } else {
       throw std::logic_error("jcch scan type not implemented: " + data_type_to_string(data_type));
     }

@@ -277,6 +277,12 @@ uint64_t Table::ma_memory_consumption(ColumnID column_id) const {
     memory_consumption += btree->memory_consumption();
   }
 
+  // Interval Map
+  auto interval_map = get_interval_map(column_id);
+  if (interval_map != nullptr) {
+    memory_consumption += interval_map->memory_consumption();
+  }
+
   for (auto chunk_id = ChunkID{0}; chunk_id < chunk_count(); chunk_id++) {
     auto chunk = get_chunk(chunk_id);
 
