@@ -62,7 +62,7 @@ int main() {
   auto tpcc_series = TableScanBenchmarkSeries<TpccBenchmark>();
   tpcc_series.benchmark_name = "tpcc";
   tpcc_series.sample_size = 10;
-  tpcc_series.table_name = "ORDER-LINE";
+  tpcc_series.table_name = "ORDER_LINE";
   tpcc_series.column_names = {"OL_I_ID", "OL_O_ID"};
   tpcc_series.row_counts = {1'000'000};
   tpcc_series.chunk_sizes = {100'000};
