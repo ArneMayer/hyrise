@@ -75,7 +75,7 @@ int main() {
   jcch_series.benchmark_name = "jcch";
   jcch_series.sample_size = 10;
   jcch_series.table_name = "LINEITEM";
-  jcch_series.column_names = {"L_PARTKEY", "L_SHIPDATE"};
+  jcch_series.column_names = {"L_PARTKEY", "L_SHIPDATE", "L_SHIPMODE"};
   jcch_series.row_counts = {6'000'000};
   jcch_series.chunk_sizes = {100'000};
   jcch_series.remainder_sizes = {0, 2, 4, 8};
