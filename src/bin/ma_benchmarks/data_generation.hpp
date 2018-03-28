@@ -204,7 +204,8 @@ bool import_table(std::string table_name) {
   bool file_exists = std::ifstream(table_name).good();
   if (file_exists) {
     std::cout << " > Loading table " << table_name << " from disk" << "...";
-    auto import = std::make_shared<ImportBinary>(table_name, table_name);
+    auto directory = std::string("mnt/data2/tmp_arne_ma/");
+    auto import = std::make_shared<ImportBinary>(table_name, directory + table_name);
     import->execute();
     std::cout << "OK!" << std::endl;
     return true;
@@ -219,9 +220,10 @@ void save_table(std::shared_ptr<const Table> table, std::string file_name) {
   }
 
   std::cout << " > Saving table " << file_name << " to disk" << "...";
+  auto directory = std::string("mnt/data2/tmp_arne_ma/");
   auto table_wrapper = std::make_shared<TableWrapper>(table);
   table_wrapper->execute();
-  auto export_operator = std::make_shared<ExportBinary>(table_wrapper, file_name);
+  auto export_operator = std::make_shared<ExportBinary>(table_wrapper, directory + file_name);
   export_operator->execute();
   std::cout << "OK!" << std::endl;
 }
@@ -318,7 +320,8 @@ std::string jcch_load_or_generate(std::string tpch_table_name, int row_count, in
 
   // Save uncompressed
   std::cout << " > Generating table " << uncompressed_name << "..." << std::flush;
-  auto file_name = "/home/" + getUserName() + "/data/jcch/lineitem.tbl";
+  //auto file_name = "/home/" + getUserName() + "/data/jcch/lineitem.tbl";
+  auto file_name = "/mnt/data2/tmp_arne_ma/data/jcch/lineitem.tbl";
   auto table = load_table(file_name, chunk_size);
   std::cout << "OK!" << std::endl;
   save_table(table, uncompressed_name);
@@ -351,11 +354,13 @@ std::string acdoca_load_or_generate(std::string column_name, int row_count, int 
   }
 
   // Parse csv
-  auto file = "/home/" + getUserName() + "/data/acdoca/acdoca" + std::to_string(row_count / 1'000'000) + "M.csv";
+  //auto file = "/home/" + getUserName() + "/data/acdoca/acdoca" + std::to_string(row_count / 1'000'000) + "M.csv";
+  auto file = "/mnt/data2/tmp_arne_ma/data/acdoca/acdoca" + std::to_string(row_count / 1'000'000) + "M.csv";
   std::cout << " > Importing " + file + "... " << std::flush;
   auto tmp_table_name = std::string("acdoca_tmp");
   //auto file = "/mnt/data2/acdoca/acdoca.csv";
-  auto meta_file = "/home/" + getUserName() + "/data/acdoca/acdoca.csv.json";
+  //auto meta_file = "/home/" + getUserName() + "/data/acdoca/acdoca.csv.json";
+  auto meta_file = "/mnt/data2/tmp_arne_ma/data/acdoca/acdoca.csv.json";
   auto csvMeta = process_csv_meta_file(meta_file);
   //csvMeta.chunk_size = chunk_size;
   auto import = std::make_shared<ImportCsv>(file, tmp_table_name, csvMeta);
