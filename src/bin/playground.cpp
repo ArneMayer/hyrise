@@ -1,44 +1,10 @@
-/*
-#include "ma_benchmarks/data_generation.hpp"
-#include "ma_benchmarks/cardinality_estimation.hpp"
-#include "ma_benchmarks/data_structure_query.hpp"
-#include "ma_benchmarks/table_scan_benchmarks.hpp"
-#include "ma_benchmarks/utils.hpp"
-#include "ma_benchmarks/analysis.hpp"
-*/
-
 #include "ma_benchmarks/table_scan_benchmarks/table_scan_benchmark_series.hpp"
 #include "ma_benchmarks/table_scan_benchmarks/custom_benchmark.hpp"
 #include "ma_benchmarks/table_scan_benchmarks/tpcc_benchmark.hpp"
 #include "ma_benchmarks/table_scan_benchmarks/jcch_benchmark.hpp"
 #include "ma_benchmarks/table_scan_benchmarks/acdoca_benchmark.hpp"
 
-#include "ma_benchmarks/cardinality_estimation.hpp"
-
-/*
-#include <iostream>
-#include <chrono>
-#include <fstream>
-#include <sstream>
-#include <string>
-#include <cstdlib>
-#include <cmath>
-
-#include "types.hpp"
-#include "operators/get_table.hpp"
-#include "operators/table_scan.hpp"
-#include "operators/print.hpp"
-
-#include "scheduler/abstract_task.hpp"
-#include "scheduler/current_scheduler.hpp"
-#include "resolve_type.hpp"
-#include "storage/iterables/create_iterable_from_column.hpp"
-
-#include <stdlib.h>
-#include <pwd.h>
-#include <stdio.h>
-
-*/
+#include "ma_benchmarks/selectivity_estimation.hpp"
 
 #include "storage/storage_manager.hpp"
 
@@ -150,8 +116,8 @@ int main() {
   dict_vs_filter_series_uncached();
   */
 
-  /*
-  // CARDINALITY ESTIMATION
+
+  // SELECTIVITY ESTIMATION
   auto estimation_results = create_estimation_results_table();
   auto example_results = create_estimation_examples_table();
   auto data_names = {"normal", "normal_shuffled", "uniform", "zipf", "zipf_shuffled"};
@@ -178,10 +144,27 @@ int main() {
       }
     }
   }
+  // Filters
+  filter_estimation_examples(example_results, "acdoca_LINETYPE", 0);
+  filter_estimation_series(estimation_results, "acdoca_LINETYPE", 0);
+
+  // Uniform estimation
+  uniform_estimation_example(example_results, "acdoca_LINETYPE", 0);
+  uniform_estimation_series(estimation_results, "acdoca_LINETYPE", 0);
+
+  for (auto granularity : postgres_granularities) {
+    // Postgres1
+    postgres1_estimation_example(example_results, "acdoca_LINETYPE", 0, granularity);
+    postgres1_estimation_series(estimation_results, "acdoca_LINETYPE", 0, granularity);
+
+    // Postgres2
+    postgres2_estimation_example(example_results, "acdoca_LINETYPE", 0, granularity);
+    postgres2_estimation_series(estimation_results, "acdoca_LINETYPE", 0, granularity);
+  }
 
   serialize_results_csv("estimation", estimation_results);
   serialize_results_csv("estimation_examples", example_results);
-  */
+
 
   //analyze_all_tpcc_tables();
   //analyze_jcch_lineitem();

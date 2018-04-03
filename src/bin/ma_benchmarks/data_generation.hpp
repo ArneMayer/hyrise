@@ -202,7 +202,7 @@ bool import_table(std::string table_name) {
     return true;
   }
   auto directory = std::string("/mnt/data2/tmp_arne_ma/");
-  auto file_name = directory + table_name
+  auto file_name = directory + table_name;
   bool file_exists = std::ifstream(file_name).good();
   if (file_exists) {
     std::cout << " > Loading table " << table_name << " from disk" << "...";
@@ -432,11 +432,11 @@ std::vector<uint> generate_zipfian_distribution(int value_count, int distinct_va
   return distribution;
 }
 
-std::vector<uint> generate_normal_distribution(int value_cont, int distinct_values, double variance) {
+std::vector<uint> generate_normal_distribution(int value_count, int distinct_values, double variance) {
   auto distribution = std::vector<uint>(distinct_values);
   double expectation = distinct_values / 2.0;
   for (int i = 0; i < distinct_values; i++) {
-    auto value = normal(expectation, variance, static_cast<double>(i)) * value_cont;
+    auto value = normal(expectation, variance, static_cast<double>(i)) * value_count;
     distribution[i] = static_cast<uint>(value);
   }
 
@@ -447,6 +447,25 @@ std::vector<uint> generate_uniform_distribution(int value_cont, int distinct_val
   auto distribution = std::vector<uint>(distinct_values);
   for (int i = 0; i < distinct_values; i++) {
     distribution[i] = static_cast<uint>(value_cont / distinct_values);
+  }
+
+  return distribution;
+}
+
+std::vector<uint> generate_acdoca_distribution(int row_count, std::string column_name) {
+  auto table_name = acdoca_load_or_generate(column_name, 1'000'000, row_count, true);
+  auto table = StorageManager::get().get_table(table_name);
+  auto column_id = table->column_id_by_name(column_name);
+  auto base_column = table->get_chunk(ChunkID{0})->get_column(column_id);
+  auto dictionary_column = ??;
+
+  auto distinct_count = dictionary_column->unique_values_count();
+  auto distribution = std::vector<uint>(distinct_count);
+
+  for (auto chunk_offset = ChunkOffset{0}; chunk_offset < base_column->size(); chunk_offset++) {
+    auto all_type_value = base_column[chunk_offset];
+    auto value_id = dictionary_column->lower_bound(all_type_value);
+    distribution[value_id]++;
   }
 
   return distribution;
@@ -473,7 +492,11 @@ std::vector<uint> generate_distribution(std::string data_name, uint row_count, u
     auto distribution = generate_zipfian_distribution(row_count, distinct_count);
     shuffle(distribution);
     return distribution;
-  }  else {
+  } else if (data_name.substr(0, 6) == "acdoca") {
+    auto column_name = data_name.substr(7, 100);
+    auto distribution = generate_acdoca_distribution(row_count, column_name);
+    return distribution;
+  } else {
     throw std::invalid_argument("data: " + data_name);
   }
 }
