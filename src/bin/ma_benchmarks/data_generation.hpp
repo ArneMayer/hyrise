@@ -22,6 +22,7 @@
 #include <sstream>
 #include <vector>
 #include <limits>
+#include <memory>
 
 using namespace opossum;
 
@@ -206,7 +207,7 @@ bool import_table(std::string table_name) {
   bool file_exists = std::ifstream(file_name).good();
   if (file_exists) {
     std::cout << " > Loading table " << table_name << " from disk" << "...";
-    auto import = std::make_shared<ImportBinary>(table_name, filename);
+    auto import = std::make_shared<ImportBinary>(table_name, file_name);
     import->execute();
     std::cout << "OK!" << std::endl;
     return true;
@@ -457,13 +458,13 @@ std::vector<uint> generate_acdoca_distribution(int row_count, std::string column
   auto table = StorageManager::get().get_table(table_name);
   auto column_id = table->column_id_by_name(column_name);
   auto base_column = table->get_chunk(ChunkID{0})->get_column(column_id);
-  auto dictionary_column = ??;
+  auto dictionary_column = std::dynamic_pointer_cast<BaseDictionaryColumn>(base_column);
 
   auto distinct_count = dictionary_column->unique_values_count();
   auto distribution = std::vector<uint>(distinct_count);
 
   for (auto chunk_offset = ChunkOffset{0}; chunk_offset < base_column->size(); chunk_offset++) {
-    auto all_type_value = base_column[chunk_offset];
+    auto all_type_value = (*base_column)[chunk_offset];
     auto value_id = dictionary_column->lower_bound(all_type_value);
     distribution[value_id]++;
   }
