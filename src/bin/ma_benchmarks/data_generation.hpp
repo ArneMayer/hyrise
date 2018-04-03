@@ -207,7 +207,7 @@ bool import_table(std::string table_name) {
   bool file_exists = std::ifstream(file_name).good();
   if (file_exists) {
     std::cout << " > Loading table " << table_name << " from disk" << "...";
-    auto import = std::make_shared<ImportBinary>(table_name, file_name);
+    auto import = std::make_shared<ImportBinary>(file_name, table_name);
     import->execute();
     std::cout << "OK!" << std::endl;
     return true;
