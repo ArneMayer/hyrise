@@ -212,7 +212,7 @@ void postgres1_estimation_example(std::shared_ptr<Table> results_table, std::str
     auto actual_count = static_cast<int>(distribution[i]);
     auto estimated_count = static_cast<int>(estimation[i]);
     auto estimation_tec = std::string("postgres1_") + std::to_string(granularity);
-    results_table->append({row_count,
+    results_table->append({static_cast<int>(row_count),
                            static_cast<int>(distribution.size()),
                            data_name,
                            estimation_tec,
@@ -234,7 +234,7 @@ void postgres2_estimation_example(std::shared_ptr<Table> results_table, std::str
     auto actual_count = static_cast<int>(distribution[i]);
     auto estimated_count = static_cast<int>(estimation[i]);
     auto estimation_tec = std::string("postgres2_") + std::to_string(granularity);
-    results_table->append({row_count,
+    results_table->append({static_cast<int>(row_count),
                            static_cast<int>(distribution.size()),
                            data_name,
                            estimation_tec,
@@ -253,7 +253,7 @@ void uniform_estimation_example(std::shared_ptr<Table> results_table, std::strin
     auto actual_count = static_cast<int>(distribution[i]);
     auto estimated_count = static_cast<int>(estimation[i]);
     auto estimation_tec = std::string("uniform");
-    results_table->append({row_count,
+    results_table->append({static_cast<int>(row_count),
                            static_cast<int>(distribution.size()),
                            data_name,
                            estimation_tec,
@@ -291,13 +291,13 @@ void filter_estimation_examples(std::shared_ptr<Table> results_table, std::strin
         auto actual_count = static_cast<int>(distribution[i]);
         auto filter_count = static_cast<int>(filter.count(i));
         auto estimation_tec = std::string("filter_") + std::to_string(quotient_size) + "_" + std::to_string(remainder_size);
-        results_table->append({row_count,
+        results_table->append({static_cast<int>(row_count),
                                static_cast<int>(distribution.size()),
                                data_name,
                                estimation_tec,
                                static_cast<int>(i),
                                actual_count,
-                               estimated_count});
+                               filter_count});
         if (filter_count > actual_count) {
           over_estimation += filter_count - actual_count;
         }
