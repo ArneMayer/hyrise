@@ -10,7 +10,7 @@
 
 int main() {
   //print_table_layout(acdoca_load_or_generate(100'000'000, 100'000, false));
-
+  /*
   auto custom_series = TableScanBenchmarkSeries<CustomBenchmark>();
   custom_series.benchmark_name = "custom";
   custom_series.table_name = "Custom";
@@ -94,7 +94,7 @@ int main() {
   jcch_chunk_sizes_series.art_run = false;
   jcch_chunk_sizes_series.btree_run = false;
   jcch_chunk_sizes_series.run();
-
+  */
 
   //custom_benchmark_series();
   //tpcc_benchmark_series();
@@ -123,6 +123,7 @@ int main() {
   auto data_names = {"normal", "normal_shuffled", "uniform", "zipf", "zipf_shuffled"};
   auto distinct_counts = {3'000, 10'000, 25'000, 50'000};
   auto postgres_granularities = {10, 50, 100, 200, 500, 1000};
+  /*
   for (auto data_name : data_names) {
     for (auto distinct_count : distinct_counts) {
       // Filters
@@ -144,6 +145,7 @@ int main() {
       }
     }
   }
+  */
   // Filters
   filter_estimation_examples(example_results, "acdoca_LINETYPE", 0);
   filter_estimation_series(estimation_results, "acdoca_LINETYPE", 0);
