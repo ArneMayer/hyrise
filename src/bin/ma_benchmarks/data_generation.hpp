@@ -201,11 +201,12 @@ bool import_table(std::string table_name) {
   if (StorageManager::get().has_table(table_name)) {
     return true;
   }
-  bool file_exists = std::ifstream(table_name).good();
+  auto directory = std::string("/mnt/data2/tmp_arne_ma/");
+  auto file_name = directory + table_name
+  bool file_exists = std::ifstream(file_name).good();
   if (file_exists) {
     std::cout << " > Loading table " << table_name << " from disk" << "...";
-    auto directory = std::string("mnt/data2/tmp_arne_ma/");
-    auto import = std::make_shared<ImportBinary>(table_name, directory + table_name);
+    auto import = std::make_shared<ImportBinary>(table_name, filename);
     import->execute();
     std::cout << "OK!" << std::endl;
     return true;
@@ -220,7 +221,7 @@ void save_table(std::shared_ptr<const Table> table, std::string file_name) {
   }
 
   std::cout << " > Saving table " << file_name << " to disk" << "...";
-  auto directory = std::string("mnt/data2/tmp_arne_ma/");
+  auto directory = std::string("/mnt/data2/tmp_arne_ma/");
   auto table_wrapper = std::make_shared<TableWrapper>(table);
   table_wrapper->execute();
   auto export_operator = std::make_shared<ExportBinary>(table_wrapper, directory + file_name);
