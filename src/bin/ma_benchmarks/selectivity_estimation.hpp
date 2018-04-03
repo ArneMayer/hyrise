@@ -14,10 +14,10 @@ std::shared_ptr<Table> create_estimation_results_table() {
   return std::make_shared<Table>(column_definitions, TableType::Data);
 }
 
-void filter_estimation_series(std::shared_ptr<Table> results_table, std::string data_name, int distinct_values) {
+void filter_estimation_series(std::shared_ptr<Table> results_table, std::string data_name, uint distinct_values) {
   //int sample_size = 300'000;
-  int sample_size = 3'000'000;
-  int row_count = 100'000;
+  uint sample_size = 3'000'000;
+  uint row_count = 100'000;
   auto quotient_sizes = {12, 13, 14, 15, 16, 17};
   auto remainder_sizes = {2, 4, 8, 16};
 
@@ -62,7 +62,13 @@ void filter_estimation_series(std::shared_ptr<Table> results_table, std::string 
 
       auto estimation_tec = std::string("filter_") + std::to_string(quotient_size) + "_" + std::to_string(remainder_size);
       for (auto pair : over_estimation) {
-        results_table->append({sample_size, row_count, static_cast<int>(distribution.size()), data_name, estimation_tec, pair.first, pair.second});
+        results_table->append({static_cast<int>(sample_size),
+                               static_cast<int>(row_count),
+                               static_cast<int>(distribution.size()),
+                               data_name,
+                               estimation_tec,
+                               pair.first,
+                               pair.second});
       }
 
       auto mean_error = sum_error / static_cast<double>(sample_size);
@@ -77,8 +83,8 @@ void filter_estimation_series(std::shared_ptr<Table> results_table, std::string 
   }
 }
 
-void uniform_estimation_series(std::shared_ptr<Table> results_table, std::string data_name, int distinct_values) {
-  auto row_count = 100'000;
+void uniform_estimation_series(std::shared_ptr<Table> results_table, std::string data_name, uint distinct_values) {
+  uint row_count = 100'000;
   auto distribution = generate_distribution(data_name, row_count, distinct_values);
   auto estimation = generate_uniform_estimation(distribution);
   auto errors = std::map<int, int>();
@@ -95,7 +101,13 @@ void uniform_estimation_series(std::shared_ptr<Table> results_table, std::string
 
   auto estimation_tec = std::string("uniform");
   for (auto pair : errors) {
-    results_table->append({static_cast<int>(distribution.size()), row_count, static_cast<int>(distribution.size()), data_name, estimation_tec, pair.first, pair.second});
+    results_table->append({static_cast<int>(distribution.size()),
+                           static_cast<int>(row_count),
+                           static_cast<int>(distribution.size()),
+                           data_name,
+                           estimation_tec,
+                           pair.first,
+                           pair.second});
   }
 
   auto mean_error = sum_error / static_cast<double>(distribution.size());
@@ -108,7 +120,7 @@ void uniform_estimation_series(std::shared_ptr<Table> results_table, std::string
 
 void postgres1_estimation_series(std::shared_ptr<Table> results_table, std::string data_name,
                                    int distinct_values, uint granularity) {
-  int row_count = 100'000;
+  uint row_count = 100'000;
   auto distribution = generate_distribution(data_name, row_count, distinct_values);
   auto estimation = generate_postgres1_estimation(distribution, granularity);
   auto errors = std::map<int, int>();
@@ -125,7 +137,13 @@ void postgres1_estimation_series(std::shared_ptr<Table> results_table, std::stri
 
   auto description = std::string("postgres1_") + std::to_string(granularity);
   for (auto pair : errors) {
-    results_table->append({static_cast<int>(distribution.size()), row_count, static_cast<int>(distribution.size()), data_name, description, pair.first, pair.second});
+    results_table->append({static_cast<int>(distribution.size()),
+                           static_cast<int>(row_count),
+                           static_cast<int>(distribution.size()),
+                           data_name,
+                           description,
+                           pair.first,
+                           pair.second});
   }
 
   auto mean_error = sum_error / static_cast<double>(distribution.size());
@@ -137,7 +155,7 @@ void postgres1_estimation_series(std::shared_ptr<Table> results_table, std::stri
 
 void postgres2_estimation_series(std::shared_ptr<Table> results_table, std::string data_name,
                                    int distinct_values, uint granularity) {
-  int row_count = 100'000;
+  uint row_count = 100'000;
   auto distribution = generate_distribution(data_name, row_count, distinct_values);
   auto estimation = generate_postgres2_estimation(distribution, granularity);
   auto errors = std::map<int, int>();
@@ -154,7 +172,13 @@ void postgres2_estimation_series(std::shared_ptr<Table> results_table, std::stri
 
   auto description = std::string("postgres2_") + std::to_string(granularity);
   for (auto pair : errors) {
-    results_table->append({static_cast<int>(distribution.size()), row_count, static_cast<int>(distribution.size()), data_name, description, pair.first, pair.second});
+    results_table->append({static_cast<int>(distribution.size()),
+                           static_cast<int>(row_count),
+                           static_cast<int>(distribution.size()),
+                           data_name,
+                           description,
+                           pair.first,
+                           pair.second});
   }
 
   auto mean_error = sum_error / static_cast<double>(distribution.size());
@@ -177,53 +201,71 @@ std::shared_ptr<Table> create_estimation_examples_table() {
 }
 
 void postgres1_estimation_example(std::shared_ptr<Table> results_table, std::string data_name,
-                                              int distinct_values, int granularity) {
+                                              uint distinct_values, int granularity) {
   std::cout << "postgres1 estimation example, "
             << "data: " << data_name << ", "
             << "granularity: " << granularity << std::endl;
-  int row_count = 100'000;
+  uint row_count = 100'000;
   auto distribution = generate_distribution(data_name, row_count, distinct_values);
   auto estimation = generate_postgres1_estimation(distribution, granularity);
   for (size_t i = 0; i < distribution.size(); i++) {
     auto actual_count = static_cast<int>(distribution[i]);
     auto estimated_count = static_cast<int>(estimation[i]);
     auto estimation_tec = std::string("postgres1_") + std::to_string(granularity);
-    results_table->append({row_count, static_cast<int>(distribution.size()), data_name, estimation_tec, static_cast<int>(i), actual_count, estimated_count});
+    results_table->append({row_count,
+                           static_cast<int>(distribution.size()),
+                           data_name,
+                           estimation_tec,
+                           static_cast<int>(i),
+                           actual_count,
+                           estimated_count});
   }
 }
 
 void postgres2_estimation_example(std::shared_ptr<Table> results_table, std::string data_name,
-                                  int distinct_values, int granularity) {
+                                  uint distinct_values, int granularity) {
   std::cout << "postgres2 estimation example, "
             << "data: " << data_name << ", "
             << "granularity: " << granularity << std::endl;
-  int row_count = 100'000;
+  uint row_count = 100'000;
   auto distribution = generate_distribution(data_name, row_count, distinct_values);
   auto estimation = generate_postgres2_estimation(distribution, granularity);
   for (size_t i = 0; i < distribution.size(); i++) {
     auto actual_count = static_cast<int>(distribution[i]);
     auto estimated_count = static_cast<int>(estimation[i]);
     auto estimation_tec = std::string("postgres2_") + std::to_string(granularity);
-    results_table->append({row_count, static_cast<int>(distribution.size()), data_name, estimation_tec, i, actual_count, estimated_count});
+    results_table->append({row_count,
+                           static_cast<int>(distribution.size()),
+                           data_name,
+                           estimation_tec,
+                           static_cast<int>(i),
+                           actual_count,
+                           estimated_count});
   }
 }
 
-void uniform_estimation_example(std::shared_ptr<Table> results_table, std::string data_name, int distinct_values) {
+void uniform_estimation_example(std::shared_ptr<Table> results_table, std::string data_name, uint distinct_values) {
   std::cout << "uniform estimation example, data: " << data_name << std::endl;
-  int row_count = 100'000;
+  uint row_count = 100'000;
   auto distribution = generate_distribution(data_name, row_count, distinct_values);
   auto estimation = generate_uniform_estimation(distribution);
   for (size_t i = 0; i < distribution.size(); i++) {
     auto actual_count = static_cast<int>(distribution[i]);
     auto estimated_count = static_cast<int>(estimation[i]);
     auto estimation_tec = std::string("uniform");
-    results_table->append({row_count, static_cast<int>(distribution.size()), data_name, estimation_tec, i, actual_count, estimated_count});
+    results_table->append({row_count,
+                           static_cast<int>(distribution.size()),
+                           data_name,
+                           estimation_tec,
+                           static_cast<int>(i),
+                           actual_count,
+                           estimated_count});
   }
 }
 
-void filter_estimation_examples(std::shared_ptr<Table> results_table, std::string data_name, int distinct_values) {
+void filter_estimation_examples(std::shared_ptr<Table> results_table, std::string data_name, uint distinct_values) {
   std::cout << "filter estimation examples, data: " << data_name << std::endl;
-  int row_count = 100'000;
+  uint row_count = 100'000;
   auto remainder_sizes = {2, 4, 8, 16};
   auto quotient_sizes = {12, 13, 14, 15, 16, 17};
   auto distribution = generate_distribution(data_name, row_count, distinct_values);
@@ -249,7 +291,13 @@ void filter_estimation_examples(std::shared_ptr<Table> results_table, std::strin
         auto actual_count = static_cast<int>(distribution[i]);
         auto filter_count = static_cast<int>(filter.count(i));
         auto estimation_tec = std::string("filter_") + std::to_string(quotient_size) + "_" + std::to_string(remainder_size);
-        results_table->append({row_count, static_cast<int>(distribution.size()), data_name, estimation_tec, i, actual_count, filter_count});
+        results_table->append({row_count,
+                               static_cast<int>(distribution.size()),
+                               data_name,
+                               estimation_tec,
+                               static_cast<int>(i),
+                               actual_count,
+                               estimated_count});
         if (filter_count > actual_count) {
           over_estimation += filter_count - actual_count;
         }
