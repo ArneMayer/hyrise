@@ -458,7 +458,7 @@ std::vector<uint> generate_acdoca_distribution(int row_count, std::string column
   auto table = StorageManager::get().get_table(table_name);
   auto column_id = table->column_id_by_name(column_name);
   auto base_column = table->get_chunk(ChunkID{0})->get_column(column_id);
-  auto dictionary_column = std::dynamic_pointer_cast<BaseDictionaryColumn>(base_column);
+  auto dictionary_column = std::dynamic_pointer_cast<const BaseDictionaryColumn>(base_column);
 
   auto distinct_count = dictionary_column->unique_values_count();
   auto distribution = std::vector<uint>(distinct_count);
