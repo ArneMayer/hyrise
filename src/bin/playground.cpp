@@ -120,10 +120,9 @@ int main() {
   // SELECTIVITY ESTIMATION
   auto estimation_results = create_estimation_results_table();
   auto example_results = create_estimation_examples_table();
-  //auto data_names = {"normal", "normal_shuffled", "uniform", "zipf", "zipf_shuffled"};
-  //auto distinct_counts = {3'000, 10'000, 25'000, 50'000};
+  auto data_names = {"normal", "normal_shuffled", "uniform", "zipf", "zipf_shuffled"};
+  auto distinct_counts = {3'000, 10'000, 25'000, 50'000};
   auto postgres_granularities = {10, 50, 100, 200, 500, 1000};
-  /*
   for (auto data_name : data_names) {
     for (auto distinct_count : distinct_counts) {
       // Filters
@@ -145,28 +144,31 @@ int main() {
       }
     }
   }
-  */
-  // Filters
-  filter_estimation_examples(example_results, "acdoca_BELNR", 0);
-  filter_estimation_series(estimation_results, "acdoca_BELNR", 0);
 
-  // Uniform estimation
-  uniform_estimation_example(example_results, "acdoca_BELNR", 0);
-  uniform_estimation_series(estimation_results, "acdoca_BELNR", 0);
+  auto acdoca_columns = {"BELNR", "RBUKRS", "KUNNR", "RYEAR", "EBELN", "BUZEI"};
+  for (auto column_name : acdoca_columns) {
+    auto data_name = std::string("acdoca_") + column_name;
+    // Filters
+    filter_estimation_examples(example_results, data_name, 0);
+    filter_estimation_series(estimation_results, data_name, 0);
 
-  for (auto granularity : postgres_granularities) {
-    // Postgres1
-    postgres1_estimation_example(example_results, "acdoca_BELNR", 0, granularity);
-    postgres1_estimation_series(estimation_results, "acdoca_BELNR", 0, granularity);
+    // Uniform estimation
+    uniform_estimation_example(example_results, data_name, 0);
+    uniform_estimation_series(estimation_results, data_name, 0);
 
-    // Postgres2
-    postgres2_estimation_example(example_results, "acdoca_BELNR", 0, granularity);
-    postgres2_estimation_series(estimation_results, "acdoca_BELNR", 0, granularity);
+    for (auto granularity : postgres_granularities) {
+      // Postgres1
+      postgres1_estimation_example(example_results, data_name, 0, granularity);
+      postgres1_estimation_series(estimation_results, data_name, 0, granularity);
+
+      // Postgres2
+      postgres2_estimation_example(example_results, data_name, 0, granularity);
+      postgres2_estimation_series(estimation_results, data_name, 0, granularity);
+    }
   }
 
   serialize_results_csv("estimation", estimation_results);
   serialize_results_csv("estimation_examples", example_results);
-
 
   //analyze_all_tpcc_tables();
   //analyze_jcch_lineitem();
