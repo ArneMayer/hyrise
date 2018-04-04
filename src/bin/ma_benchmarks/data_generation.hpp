@@ -16,6 +16,8 @@
 #include "operators/table_wrapper.hpp"
 #include "operators/import_csv.hpp"
 #include "tpcc/tpcc_table_generator.hpp"
+#include "base_column_analyzer.hpp"
+#include "column_analyzer.hpp"
 
 #include <string>
 #include <iostream>
@@ -457,6 +459,7 @@ std::vector<uint> generate_acdoca_distribution(int row_count, std::string column
   auto table_name = acdoca_load_or_generate(column_name, 1'000'000, row_count, true);
   auto table = StorageManager::get().get_table(table_name);
   auto column_id = table->column_id_by_name(column_name);
+  auto column_type = table->column_data_type(column_id);
   auto analyzer = make_shared_by_data_type<BaseColumnAnalyzer, ColumnAnalyzer>(column_type, table, column_id);
 
   return analyzer->get_chunk_distribution(ChunkID{0});
