@@ -34,7 +34,7 @@ class ColumnAnalyzer : public BaseColumnAnalyzer {
 
     // Determine Counts
     uint value_id = 0;
-    T current_value = materialization[0];
+    ColumnDataType current_value = materialization[0];
     uint count = 1;
     for (uint i = 1; i < materialization.size(); i++) {
       if (materialization[i] == current_value) {
