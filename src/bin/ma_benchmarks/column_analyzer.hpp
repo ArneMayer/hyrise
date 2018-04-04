@@ -9,13 +9,12 @@ using namespace opossum;
 template <typename ColumnDataType>
 class ColumnAnalyzer : public BaseColumnAnalyzer {
  public:
-  ColumnAnalyzer(std::shared_ptr<const Table> table, ColumnID column_id)
-    : BaseColumnAnalyzer(table, column_id);
+  ColumnAnalyzer(std::shared_ptr<const Table> table, ColumnID column_id) : BaseColumnAnalyzer(table, column_id) {}
   ColumnAnalyzer() = delete;
   virtual ~ColumnAnalyzer() = default;
 
   virtual std::vector<uint> get_chunk_distribution(ChunkID chunk_id) override {
-    auto base_column = _table->get_chunk(chunk_id)->get_column(column_id);
+    auto base_column = _table->get_chunk(chunk_id)->get_column(_column_id);
     auto base_dict_column = std::dynamic_pointer_cast<const BaseDictionaryColumn>(base_column);
     auto materialization = std::vector<ColumnDataType>();
     materialization.reserve(base_column->size());
