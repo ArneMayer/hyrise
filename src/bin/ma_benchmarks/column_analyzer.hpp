@@ -2,6 +2,8 @@
 
 #include <vector>
 
+#include "base_column_analyzer.hpp"
+
 using namespace opossum;
 
 template <typename ColumnDataType>
@@ -9,6 +11,7 @@ class ColumnAnalyzer : public BaseColumnAnalyzer {
  public:
   ColumnAnalyzer(std::shared_ptr<const Table> table, ColumnID column_id)
     : BaseColumnAnalyer(std::shared_ptr<const Table> table, ColumnID column_id);
+  ColumnAnalyzer() = delete;
   virtual ~ColumnAnalyzer() = default;
 
   virtual std::vector<uint> get_chunk_distribution(ChunkID chunk_id) override {
