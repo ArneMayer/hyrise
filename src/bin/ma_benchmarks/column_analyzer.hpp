@@ -10,7 +10,7 @@ template <typename ColumnDataType>
 class ColumnAnalyzer : public BaseColumnAnalyzer {
  public:
   ColumnAnalyzer(std::shared_ptr<const Table> table, ColumnID column_id)
-    : BaseColumnAnalyer(std::shared_ptr<const Table> table, ColumnID column_id);
+    : BaseColumnAnalyer(table, column_id);
   ColumnAnalyzer() = delete;
   virtual ~ColumnAnalyzer() = default;
 
