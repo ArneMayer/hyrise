@@ -20,7 +20,7 @@ class BaseColumnAnalyzer {
 
   virtual std::vector<uint> get_chunk_distribution(ChunkID chunk_id) = 0;
 
- private:
+ protected:
   std::shared_ptr<const Table> _table;
   ColumnID _column_id;
 };
