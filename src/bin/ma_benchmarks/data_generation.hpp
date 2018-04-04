@@ -457,19 +457,9 @@ std::vector<uint> generate_acdoca_distribution(int row_count, std::string column
   auto table_name = acdoca_load_or_generate(column_name, 1'000'000, row_count, true);
   auto table = StorageManager::get().get_table(table_name);
   auto column_id = table->column_id_by_name(column_name);
-  auto base_column = table->get_chunk(ChunkID{0})->get_column(column_id);
-  auto dictionary_column = std::dynamic_pointer_cast<const BaseDictionaryColumn>(base_column);
+  auto analyzer = make_shared_by_data_type<BaseColumnAnalyzer, ColumnAnalyzer>(column_type, table, column_id);
 
-  auto distinct_count = dictionary_column->unique_values_count();
-  auto distribution = std::vector<uint>(distinct_count);
-
-  for (auto chunk_offset = ChunkOffset{0}; chunk_offset < base_column->size(); chunk_offset++) {
-    auto all_type_value = (*base_column)[chunk_offset];
-    auto value_id = dictionary_column->lower_bound(all_type_value);
-    distribution[value_id]++;
-  }
-
-  return distribution;
+  return analyzer->get_chunk_distribution(ChunkID{0});
 }
 
 void shuffle(std::vector<uint>& distribution) {
