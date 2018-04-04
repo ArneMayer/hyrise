@@ -147,21 +147,21 @@ int main() {
   }
   */
   // Filters
-  filter_estimation_examples(example_results, "acdoca_LINETYPE", 0);
-  filter_estimation_series(estimation_results, "acdoca_LINETYPE", 0);
+  filter_estimation_examples(example_results, "acdoca_BELNR", 0);
+  filter_estimation_series(estimation_results, "acdoca_BELNR", 0);
 
   // Uniform estimation
-  uniform_estimation_example(example_results, "acdoca_LINETYPE", 0);
-  uniform_estimation_series(estimation_results, "acdoca_LINETYPE", 0);
+  uniform_estimation_example(example_results, "acdoca_BELNR", 0);
+  uniform_estimation_series(estimation_results, "acdoca_BELNR", 0);
 
   for (auto granularity : postgres_granularities) {
     // Postgres1
-    postgres1_estimation_example(example_results, "acdoca_LINETYPE", 0, granularity);
-    postgres1_estimation_series(estimation_results, "acdoca_LINETYPE", 0, granularity);
+    postgres1_estimation_example(example_results, "acdoca_BELNR", 0, granularity);
+    postgres1_estimation_series(estimation_results, "acdoca_BELNR", 0, granularity);
 
     // Postgres2
-    postgres2_estimation_example(example_results, "acdoca_LINETYPE", 0, granularity);
-    postgres2_estimation_series(estimation_results, "acdoca_LINETYPE", 0, granularity);
+    postgres2_estimation_example(example_results, "acdoca_BELNR", 0, granularity);
+    postgres2_estimation_series(estimation_results, "acdoca_BELNR", 0, granularity);
   }
 
   serialize_results_csv("estimation", estimation_results);
