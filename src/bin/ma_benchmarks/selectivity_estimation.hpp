@@ -119,7 +119,7 @@ void uniform_estimation_series(std::shared_ptr<Table> results_table, std::string
 
 
 void postgres1_estimation_series(std::shared_ptr<Table> results_table, std::string data_name,
-                                   int distinct_values, uint granularity) {
+                                   uint distinct_values, uint granularity) {
   uint row_count = 100'000;
   auto distribution = generate_distribution(data_name, row_count, distinct_values);
   auto estimation = generate_postgres1_estimation(distribution, granularity);
@@ -149,7 +149,7 @@ void postgres1_estimation_series(std::shared_ptr<Table> results_table, std::stri
   auto mean_error = sum_error / static_cast<double>(distribution.size());
   std::cout << "estimation: postgres1, "
             << "data: " << data_name << ", "
-            << "distinct values: " << distinct_values << ", "
+            << "distinct values: " << distribution.size() << ", "
             << "mean error: " << mean_error << std::endl;
 }
 
