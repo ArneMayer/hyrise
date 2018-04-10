@@ -3,7 +3,7 @@
 #include "ma_benchmarks/table_scan_benchmarks/tpcc_benchmark.hpp"
 #include "ma_benchmarks/table_scan_benchmarks/jcch_benchmark.hpp"
 #include "ma_benchmarks/table_scan_benchmarks/acdoca_benchmark.hpp"
-
+#include "ma_benchmarks/data_structure_query.hpp"
 #include "ma_benchmarks/selectivity_estimation.hpp"
 
 #include "storage/storage_manager.hpp"
