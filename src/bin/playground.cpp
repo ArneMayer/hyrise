@@ -54,7 +54,7 @@ int main() {
   acdoca_series.table_name = "Acdoca";
   acdoca_series.sample_size = 1000;
   acdoca_series.column_names = {"BELNR", "RBUKRS"};
-  acdoca_series.row_counts = {1'000'000};
+  acdoca_series.row_counts = {10'000'000};
   acdoca_series.chunk_sizes = {100'000};
   acdoca_series.remainder_sizes = {0, 2, 4, 8};
   acdoca_series.quotient_size = 17;
