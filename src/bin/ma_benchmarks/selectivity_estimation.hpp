@@ -16,7 +16,7 @@ std::shared_ptr<Table> create_estimation_results_table() {
 
 void filter_estimation_series(std::shared_ptr<Table> results_table, std::string data_name, uint distinct_values) {
   //int sample_size = 300'000;
-  uint sample_size = 3'000'000;
+  uint sample_size = 30'000'000;
   uint row_count = 100'000;
   auto quotient_sizes = {12, 13, 14, 15, 16, 17};
   auto remainder_sizes = {2, 4, 8, 16};
