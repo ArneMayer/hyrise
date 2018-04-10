@@ -128,12 +128,13 @@ void dict_vs_filter_series_uncached() {
 
   std::cout << " >> Dictionary Lookup vs. Filter Query Uncached Series" << std::endl;
 
-  auto results_table = std::make_shared<Table>();
-  results_table->add_column("data_type", DataType::String, false);
-  results_table->add_column("data_structure", DataType::String, false);
-  results_table->add_column("value_count", DataType::Int, false);
-  results_table->add_column("sample_size", DataType::Int, false);
-  results_table->add_column("run_time", DataType::Int, false);
+  auto column_definitions = TableColumnDefinitions();
+  column_definitions.push_back(TableColumnDefinition("data_type", DataType::String, false));
+  column_definitions.push_back(TableColumnDefinition("data_structure", DataType::String, false));
+  column_definitions.push_back(TableColumnDefinition("value_count", DataType::Int, false));
+  column_definitions.push_back(TableColumnDefinition("sample_size", DataType::Int, false));
+  column_definitions.push_back(TableColumnDefinition("run_time", DataType::Int, false));
+  auto results_table = std::make_shared<Table>(column_definitions, TableType::Data);
 
   std::vector<std::shared_ptr<CountingQuotientFilter<int>>> int_filters;
   std::vector<std::shared_ptr<CountingQuotientFilter<std::string>>> string_filters;
