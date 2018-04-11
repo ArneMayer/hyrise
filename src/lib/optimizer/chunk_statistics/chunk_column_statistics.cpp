@@ -82,6 +82,8 @@ bool ChunkColumnStatistics::can_prune(const AllTypeVariant& value, const Predica
       return true;
     }
   }
+
+  // TODO check cqf
   return false;
 }
 }  // namespace opossum

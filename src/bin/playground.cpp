@@ -10,6 +10,7 @@
 
 int main() {
   //print_table_layout(acdoca_load_or_generate(100'000'000, 100'000, false));
+  /*
   auto custom_series = TableScanBenchmarkSeries<CustomBenchmark>();
   custom_series.benchmark_name = "custom";
   custom_series.table_name = "Custom";
@@ -22,8 +23,9 @@ int main() {
   custom_series.pruning_rates = {1.0, 0.5};
   custom_series.selectivities = {1.0 / 3000.0};
   custom_series.run();
+*/
 
-
+/*
   auto tpcc_series = TableScanBenchmarkSeries<TpccBenchmark>();
   tpcc_series.benchmark_name = "tpcc";
   tpcc_series.sample_size = 100;
@@ -34,8 +36,9 @@ int main() {
   tpcc_series.remainder_sizes = {0, 2, 4, 8};
   tpcc_series.quotient_size = 17;
   tpcc_series.run();
+*/
 
-
+  /*
   auto jcch_series = TableScanBenchmarkSeries<JcchBenchmark>();
   jcch_series.benchmark_name = "jcch";
   jcch_series.sample_size = 100;
@@ -46,9 +49,9 @@ int main() {
   jcch_series.remainder_sizes = {0, 2, 4, 8};
   jcch_series.quotient_size = 17;
   jcch_series.run();
+  */
 
-
-
+  /*
   auto acdoca_series = TableScanBenchmarkSeries<AcdocaBenchmark>();
   acdoca_series.benchmark_name = "acdoca";
   acdoca_series.table_name = "Acdoca";
@@ -59,7 +62,7 @@ int main() {
   acdoca_series.remainder_sizes = {0, 2, 4, 8};
   acdoca_series.quotient_size = 17;
   acdoca_series.run();
-
+*/
 
 
   auto tpcc_chunk_sizes_series = TableScanBenchmarkSeries<TpccBenchmark>();
@@ -78,7 +81,7 @@ int main() {
   tpcc_chunk_sizes_series.run();
 
 
-
+/*
   auto jcch_chunk_sizes_series = TableScanBenchmarkSeries<JcchBenchmark>();
   jcch_chunk_sizes_series.benchmark_name = "jcch-chunk-sizes";
   jcch_chunk_sizes_series.sample_size = 100;
@@ -93,7 +96,7 @@ int main() {
   jcch_chunk_sizes_series.art_run = false;
   jcch_chunk_sizes_series.btree_run = false;
   jcch_chunk_sizes_series.run();
-
+*/
 
   /*
   auto table_name = jcch_load_or_generate("LINEITEM", 6000000, 100000, false);
@@ -107,7 +110,7 @@ int main() {
   */
   //acdoca_benchmark_series();
 
-
+/*
   dict_vs_filter_series_cached();
   dict_vs_filter_series_uncached();
 
@@ -164,6 +167,7 @@ int main() {
 
   serialize_results_csv("estimation", estimation_results);
   serialize_results_csv("estimation_examples", example_results);
+  */
 
   //analyze_all_tpcc_tables();
   //analyze_jcch_lineitem();
