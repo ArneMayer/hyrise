@@ -66,6 +66,22 @@ void SingleColumnTableScanImpl::handle_column(const BaseValueColumn& base_column
     }
   }
 
+  // ART scan
+  if (_predicate_condition == PredicateCondition::Equals) {
+    auto index = _in_table->get_chunk(chunk_id)->get_art_index(_left_column_id);
+    if (index != nullptr) {
+      //std::cout << "using ART" << std::endl;
+      std::vector<AllTypeVariant> value_vector;
+      value_vector.push_back(_right_value);
+      auto lower_bound = index->lower_bound(value_vector);
+      auto upper_bound = index->upper_bound(value_vector);
+      for (auto iterator = lower_bound; iterator != upper_bound; iterator++) {
+        matches_out.push_back(RowID{chunk_id, *iterator});
+      }
+      return;
+    }
+  }
+
   // Check whether this chunk needs to be looked at by performing a filter query
   // CQF is only supported for ScanType::OpEquals
   if (_predicate_condition == PredicateCondition::Equals) {
@@ -200,6 +216,57 @@ void SingleColumnTableScanImpl::handle_column(const BaseDictionaryColumn& left_c
    * value_id >  value  |  value_id >= dict.upper_bound(value)
    * value_id >= value  |  value_id >= dict.lower_bound(value)
    */
+
+  // ART scan
+  if (_predicate_condition == PredicateCondition::Equals) {
+    auto index = _in_table->get_chunk(chunk_id)->get_art_index(_left_column_id);
+    if (index != nullptr) {
+      //std::cout << "using ART" << std::endl;
+      std::vector<AllTypeVariant> value_vector;
+      value_vector.push_back(_right_value);
+      auto lower_bound = index->lower_bound(value_vector);
+      auto upper_bound = index->upper_bound(value_vector);
+      for (auto iterator = lower_bound; iterator != upper_bound; iterator++) {
+        matches_out.push_back(RowID{chunk_id, *iterator});
+      }
+      return;
+    }
+  }
+
+  // Interval Map
+  if (_predicate_condition == PredicateCondition::Equals) {
+    auto interval_map = _in_table->get_interval_map(_left_column_id);
+
+    /*
+    if (interval_map != nullptr) {
+      std::cout << "using value column interval map" << std::endl;
+    }
+    */
+
+    if (interval_map != nullptr) {
+      auto chunk_ids = interval_map->point_query_all_type(_right_value);
+      if (std::find(chunk_ids.begin(), chunk_ids.end(), chunk_id) == chunk_ids.end())
+      //std::cout << "skip!" << std::endl;
+      return;
+    }
+  }
+
+  // Check whether this chunk needs to be looked at by performing a filter query
+  // CQF is only supported for ScanType::OpEquals
+  if (_predicate_condition == PredicateCondition::Equals) {
+    auto cqf = _in_table->get_chunk(chunk_id)->get_filter(_left_column_id);
+
+    /*
+    if (cqf != nullptr) {
+      std::cout << "using dict cqf" << std::endl;
+    }
+    */
+
+    if (cqf != nullptr && cqf->count_all_type(_right_value) == 0) {
+      //std::cout << "skip!" << std::endl;
+      return;
+    }
+  }
 
   const auto search_value_id = _get_search_value_id(left_column);
 
