@@ -87,27 +87,8 @@ class TableScanBenchmark {
   }
 
   double optimal_pruning_rate() {
-    auto chunk_count = _table->chunk_count();
-    auto prunable_chunks = 0;
-
-    for (auto chunk_id = ChunkID{0}; chunk_id < _table->chunk_count(); chunk_id++) {
-      auto chunk = _table->get_chunk(chunk_id);
-      auto column = chunk->get_column(_scan_column_id);
-      bool skippable = true;
-      resolve_column_type<T>(*column, [&](const auto& typed_column) {
-        auto iterable_left = create_iterable_from_column<T>(typed_column);
-        iterable_left.for_each([&](const auto& value) {
-          if (!value.is_null() && value.value() == _scan_value) {
-            skippable = false;
-          }
-        });
-      });
-      if (skippable) {
-        prunable_chunks++;
-      }
-    }
-
-    return prunable_chunks / static_cast<double>(chunk_count);
+    auto column_analyzer = make_shared_by_data_type<ColumnAnalyzer, BaseColumnAnalyzer>(_table, _scan_column_id);
+    return column_analyzer->get_pruning_rate(_scan_value);
   }
 
   virtual std::shared_ptr<Table> get_table() = 0;

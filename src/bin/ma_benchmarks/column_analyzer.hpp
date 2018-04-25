@@ -50,4 +50,29 @@ class ColumnAnalyzer : public BaseColumnAnalyzer {
 
     return distribution;
   }
+
+  virtual double get_pruning_rate(AllTypeVariant scan_value_all_type) override {
+    auto scan_value = type_cast<ColumnDataType>(scan_value_all_type);
+    auto chunk_count = _table->chunk_count();
+    auto prunable_chunks = 0;
+
+    for (auto chunk_id = ChunkID{0}; chunk_id < _table->chunk_count(); chunk_id++) {
+      auto chunk = _table->get_chunk(chunk_id);
+      auto column = chunk->get_column(_column_id);
+      bool skippable = true;
+      resolve_column_type<T>(*column, [&](const auto& typed_column) {
+        auto iterable_left = create_iterable_from_column<T>(typed_column);
+        iterable_left.for_each([&](const auto& value) {
+          if (!value.is_null() && value.value() == scan_value) {
+            skippable = false;
+          }
+        });
+      });
+      if (skippable) {
+        prunable_chunks++;
+      }
+    }
+
+    return prunable_chunks / static_cast<double>(chunk_count);
+  }
 };

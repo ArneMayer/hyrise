@@ -19,6 +19,7 @@ class BaseColumnAnalyzer {
   BaseColumnAnalyzer& operator=(BaseColumnAnalyzer&&) = default;
 
   virtual std::vector<uint> get_chunk_distribution(ChunkID chunk_id) = 0;
+  virtual double get_pruning_rate(AllTypeVariant scan_value);
 
  protected:
   std::shared_ptr<const Table> _table;
