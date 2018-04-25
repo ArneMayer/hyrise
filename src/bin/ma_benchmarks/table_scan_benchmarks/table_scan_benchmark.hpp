@@ -89,7 +89,8 @@ class TableScanBenchmark {
   }
 
   double optimal_pruning_rate() {
-    auto column_analyzer = make_shared_by_data_type<BaseColumnAnalyzer, ColumnAnalyzer>(_table, _scan_column_id);
+    auto column_type = _table->column_data_type(_scan_column_id)
+    auto column_analyzer = make_shared_by_data_type<BaseColumnAnalyzer, ColumnAnalyzer>(column_type, _table, _scan_column_id);
     return column_analyzer->get_pruning_rate(_scan_value);
   }
 
