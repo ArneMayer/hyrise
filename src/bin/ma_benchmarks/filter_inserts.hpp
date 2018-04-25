@@ -4,7 +4,7 @@
 #include "data_generation.hpp"
 
 double inserts_per_second_string() {
-  const int n = 1'000'000;
+  const int n = 100'000;
   std::string values[n];
   uint8_t quotient_size = static_cast<uint8_t>(std::ceil(std::log2(n)));
   uint8_t remainder_size = 8;
@@ -26,7 +26,7 @@ double inserts_per_second_string() {
 }
 
 double inserts_per_second_int() {
-  const int n = 1'000'000;
+  const int n = 100'000;
   int values[n];
   uint8_t quotient_size = static_cast<uint8_t>(std::ceil(std::log2(n)));
   uint8_t remainder_size = 8;
