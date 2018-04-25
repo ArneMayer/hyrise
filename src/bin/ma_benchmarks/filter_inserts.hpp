@@ -1,6 +1,6 @@
 #pragma once
 
-#include "storage/index/counting_quotient_filter.hpp"
+#include "storage/index/counting_quotient_filter/counting_quotient_filter.hpp"
 #include "data_generation.hpp"
 
 double inserts_per_second_string() {
