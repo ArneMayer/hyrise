@@ -5,11 +5,15 @@
 #include "ma_benchmarks/table_scan_benchmarks/acdoca_benchmark.hpp"
 #include "ma_benchmarks/data_structure_query.hpp"
 #include "ma_benchmarks/selectivity_estimation.hpp"
+#include "ma_benchmarks/filter_inserts.hpp"
 
 #include "storage/storage_manager.hpp"
 
 int main() {
   //print_table_layout(acdoca_load_or_generate(100'000'000, 100'000, false));
+  inserts_per_second_int();
+  inserts_per_second_string();
+
 
   auto custom_series = TableScanBenchmarkSeries<CustomBenchmark>();
   custom_series.benchmark_name = "custom";
