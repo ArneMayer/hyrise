@@ -91,8 +91,8 @@ class TableScanBenchmark {
     auto prunable_chunks = 0;
 
     for (auto chunk_id = ChunkID{0}; chunk_id < _table->chunk_count(); chunk_id++) {
-      auto chunk = table->get_chunk(chunk_id);
-      auto column = chunk->get_column(_column_id);
+      auto chunk = _table->get_chunk(chunk_id);
+      auto column = chunk->get_column(_scan_column_id);
       bool skippable = true;
       resolve_column_type<T>(*column, [&](const auto& typed_column) {
         auto iterable_left = create_iterable_from_column<T>(typed_column);
