@@ -3,6 +3,7 @@
 #include <vector>
 
 #include "base_column_analyzer.hpp"
+#include "resolve_type"
 
 using namespace opossum;
 
