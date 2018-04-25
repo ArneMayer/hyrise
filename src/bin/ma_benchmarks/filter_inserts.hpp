@@ -6,12 +6,12 @@
 double inserts_per_second_string() {
   const int n = 10'000'000;
   std::string values[n];
-  int quotient_size = static_cast<int>(std::ceil(std::log2(n)));
-  int remainder_size = 8;
+  uint8_t quotient_size = static_cast<uint8_t>(std::ceil(std::log2(n)));
+  uint8_t remainder_size = 8;
   for (int i = 0; i < n; i++) {
     values[i] = random_string(16);
   }
-  auto filter = CountingQuotientFilter<std::string>();
+  auto filter = CountingQuotientFilter<std::string>(quotient_size, remainder_size);
 
   clear_cache();
   auto start = std::chrono::steady_clock::now();
@@ -28,12 +28,12 @@ double inserts_per_second_string() {
 double inserts_per_second_int() {
   const int n = 10'000'000;
   int values[n];
-  int quotient_size = static_cast<int>(std::ceil(std::log2(n)));
-  int remainder_size = 8;
+  uint8_t quotient_size = static_cast<uint8_t>(std::ceil(std::log2(n)));
+  uint8_t remainder_size = 8;
   for (int i = 0; i < n; i++) {
     values[i] = random_int(0, 1'000'000);
   }
-  auto filter = CountingQuotientFilter<int>();
+  auto filter = CountingQuotientFilter<int>(quotient_size, remainder_size);
 
   clear_cache();
   auto start = std::chrono::steady_clock::now();
