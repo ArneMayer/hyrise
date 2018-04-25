@@ -60,8 +60,8 @@ class ColumnAnalyzer : public BaseColumnAnalyzer {
       auto chunk = _table->get_chunk(chunk_id);
       auto column = chunk->get_column(_column_id);
       bool skippable = true;
-      resolve_column_type<T>(*column, [&](const auto& typed_column) {
-        auto iterable_left = create_iterable_from_column<T>(typed_column);
+      resolve_column_type<ColumnDataType>(*column, [&](const auto& typed_column) {
+        auto iterable_left = create_iterable_from_column<ColumnDataType>(typed_column);
         iterable_left.for_each([&](const auto& value) {
           if (!value.is_null() && value.value() == scan_value) {
             skippable = false;

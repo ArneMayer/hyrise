@@ -1,6 +1,8 @@
 #pragma once
 
 #include "../utils.hpp"
+#include "../column_analyzer.hpp"
+#include "../base_column_analyzer.hpp"
 #include "table_scan_configuration.hpp"
 
 #include "storage/table.hpp"
@@ -87,7 +89,7 @@ class TableScanBenchmark {
   }
 
   double optimal_pruning_rate() {
-    auto column_analyzer = make_shared_by_data_type<ColumnAnalyzer, BaseColumnAnalyzer>(_table, _scan_column_id);
+    auto column_analyzer = make_shared_by_data_type<BaseColumnAnalyzer, ColumnAnalyzer>(_table, _scan_column_id);
     return column_analyzer->get_pruning_rate(_scan_value);
   }
 
