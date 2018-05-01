@@ -548,7 +548,7 @@ std::vector<uint> generate_postgres2_estimation(std::vector<uint> distribution, 
 
   // Update all other values filter_cardinality_estimation_series
   for (uint i = 0; i < estimation.size(); i++) {
-    if (!estimated[value_id]) {
+    if (!estimated[i]) {
       estimation[i] = base_estimation;
     }
   }
