@@ -530,6 +530,7 @@ std::vector<uint> generate_postgres2_estimation(std::vector<uint> distribution, 
 
   // Initialize the estimations to zero
   auto estimation = std::vector<uint>(distribution.size());
+  auto estimated = std::vector<bool>(distribution.size());
 
   // Update the most common values estimations
   uint most_common_count_sum = 0;
@@ -537,6 +538,7 @@ std::vector<uint> generate_postgres2_estimation(std::vector<uint> distribution, 
     auto value_id = values_and_counts[i].first;
     auto value_count = values_and_counts[i].second;
     estimation[value_id] = value_count;
+    estimated[value_id] = true;
     most_common_count_sum += value_count;
   }
 
@@ -546,7 +548,7 @@ std::vector<uint> generate_postgres2_estimation(std::vector<uint> distribution, 
 
   // Update all other values filter_cardinality_estimation_series
   for (uint i = 0; i < estimation.size(); i++) {
-    if (estimation[i] == 0) {
+    if (!estimated[value_id]) {
       estimation[i] = base_estimation;
     }
   }
