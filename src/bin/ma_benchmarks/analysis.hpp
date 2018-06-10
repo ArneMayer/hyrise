@@ -33,18 +33,18 @@ void analyze_acdoca_pruning_rates() {
   csvMeta.chunk_size = chunk_size;
   auto import = std::make_shared<ImportCsv>(file, table_name, csvMeta);
   import->execute();
-  auto table = StorageManager::get().get_table(tmp_table_name);
+  auto table = StorageManager::get().get_table(table_name);
   std::cout << "OK!" << std::endl;
 
   std::cout << "Column Count: " << table->column_count() << std::endl;
 
-  for (auto column_id = ColumnID{0}; column_id < table->column_count()) {
+  for (auto column_id = ColumnID{0}; column_id < table->column_count(); column_id) {
     auto column_name = table->column_name(column_id);
     auto number_of_runs = 10;
     auto chunks_total = table->chunk_count() * number_of_runs;
     auto skippable_total = 0;
 
-    for (int i = 0; i < number_of_runs) {
+    for (int i = 0; i < number_of_runs; i++) {
       auto scan_value = ...;
       auto skippable_total += = analyze_skippable_chunks_actual(table_name, column_id, scan_value);
     }
