@@ -10,7 +10,18 @@
 #include "storage/storage_manager.hpp"
 
 int main() {
+  /*
+    auto table_name = jcch_load_or_generate("LINEITEM", 6000000, 100000, false);
+    auto table = StorageManager::get().get_table(table_name);
+    create_quotient_filters(table, table->column_id_by_name("L_SHIPDATE"), 17, 4);
+    auto prunable_actual = analyze_skippable_chunks_actual(table_name, "L_SHIPDATE", std::string("1992-02-24"));
+    auto prunable_filter = analyze_skippable_chunks_filter(table_name, "L_SHIPDATE", std::string("1992-02-24"));
+    std::cout << "prunable actual: " << prunable_actual << std::endl;
+    std::cout << "prunable filter: " << prunable_filter << std::endl;
+    std::cout << "total chunks: " << table->chunk_count() << std::endl;
+    */
   //print_table_layout(acdoca_load_or_generate(100'000'000, 100'000, false));
+  /*
   inserts_per_second_int();
   inserts_per_second_string();
 
@@ -101,17 +112,6 @@ int main() {
   jcch_chunk_sizes_series.btree_run = false;
   jcch_chunk_sizes_series.run();
 
-/*
-  auto table_name = jcch_load_or_generate("LINEITEM", 6000000, 100000, false);
-  auto table = StorageManager::get().get_table(table_name);
-  create_quotient_filters(table, table->column_id_by_name("L_SHIPDATE"), 17, 4);
-  auto prunable_actual = analyze_skippable_chunks_actual(table_name, "L_SHIPDATE", std::string("1992-02-24"));
-  auto prunable_filter = analyze_skippable_chunks_filter(table_name, "L_SHIPDATE", std::string("1992-02-24"));
-  std::cout << "prunable actual: " << prunable_actual << std::endl;
-  std::cout << "prunable filter: " << prunable_filter << std::endl;
-  std::cout << "total chunks: " << table->chunk_count() << std::endl;
-  */
-
   dict_vs_filter_series_cached();
   dict_vs_filter_series_uncached();
 
@@ -168,6 +168,8 @@ int main() {
 
   serialize_results_csv("estimation", estimation_results);
   serialize_results_csv("estimation_examples", example_results);
+  */
+  analyze_acdoca_pruning_rates();
 
 
   //analyze_all_tpcc_tables();

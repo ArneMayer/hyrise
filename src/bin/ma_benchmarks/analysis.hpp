@@ -21,6 +21,39 @@ int analyze_skippable_chunks_filter(std::string table_name, std::string column_n
   return skippable_count;
 }
 
+void analyze_acdoca_pruning_rates() {
+  // Import table
+  auto row_count = 1'000'000;
+  auto chunk_size = 100'000;
+  auto file = "/mnt/data/tmp_arne_ma/data/acdoca/acdoca" + std::to_string(row_count / 1'000'000) + "M.csv";
+  std::cout << " > Importing " + file + "... " << std::flush;
+  auto table_name = std::string("acdoca");
+  auto meta_file = "/mnt/data/tmp_arne_ma/data/acdoca/acdoca.csv.json";
+  auto csvMeta = process_csv_meta_file(meta_file);
+  csvMeta.chunk_size = chunk_size;
+  auto import = std::make_shared<ImportCsv>(file, table_name, csvMeta);
+  import->execute();
+  auto table = StorageManager::get().get_table(tmp_table_name);
+  std::cout << "OK!" << std::endl;
+
+  std::cout << "Column Count: " << table->column_count() << std::endl;
+
+  for (auto column_id = ColumnID{0}; column_id < table->column_count()) {
+    auto column_name = table->column_name(column_id);
+    auto number_of_runs = 10;
+    auto chunks_total = table->chunk_count() * number_of_runs;
+    auto skippable_total = 0;
+
+    for (int i = 0; i < number_of_runs) {
+      auto scan_value = ...;
+      auto skippable_total += = analyze_skippable_chunks_actual(table_name, column_id, scan_value);
+    }
+
+    auto pruning_rate = skippable_total / static_cast<double>(chunks_total);
+    std::cout << column_name << "," << pruning_rate << std::endl;
+  }
+}
+
 template <typename T>
 int analyze_skippable_chunks_actual(std::string table_name, std::string column_name, T scan_value) {
   auto table = StorageManager::get().get_table(table_name);
@@ -44,6 +77,22 @@ int analyze_skippable_chunks_actual(std::string table_name, std::string column_n
     }
   }
   return skippable_count;
+}
+
+int analyze_skippable_chunks_actual(std::string table_name, ColumnID column_id, AllTypeVariant value_all_type) {
+  auto table = opossum::StorageManager::get().get_table(table_name);
+  auto column_type = table->column_type(column_id);
+  auto column_name = table->column_name(column_id);
+
+  if (column_type == DataType::Int) {
+    return analyze_skippable_chunks_actual<int>(table_name, column_id, type_cast<int>(value_all_type));
+  } else if (column_type == DataType::Double) {
+    return analyze_skippable_chunks_actual<double>(table_name, column_id, type_cast<double>(value_all_type));
+  } else if (column_type == DataType::String) {
+    return analyze_skippable_chunks_actual<std::string>(table_name, column_id, type_cast<std::string>(value_all_type));
+  } else {
+    throw std::logic_error("Unknown column type!");
+  }
 }
 
 template <typename T>
