@@ -81,7 +81,7 @@ int analyze_skippable_chunks_actual(std::string table_name, std::string column_n
 
 int analyze_skippable_chunks_actual(std::string table_name, ColumnID column_id, AllTypeVariant value_all_type) {
   auto table = opossum::StorageManager::get().get_table(table_name);
-  auto column_type = table->column_type(column_id);
+  auto column_type = table->column_data_type(column_id);
   auto column_name = table->column_name(column_id);
 
   if (column_type == DataType::Int) {
@@ -130,7 +130,7 @@ std::pair<T, T> analyze_value_interval(std::string table_name, ColumnID column_i
 void analyze_value_interval(std::string table_name, ColumnID column_id) {
   //std::cout << " > Analyzing " << table_name << "::" << column_name << std::endl;
   auto table = opossum::StorageManager::get().get_table(table_name);
-  auto column_type = table->column_type(column_id);
+  auto column_type = table->column_data_type(column_id);
 
   for (auto chunk_id = opossum::ChunkID{0}; chunk_id < table->chunk_count(); chunk_id++) {
     if (column_type == DataType::Int) {
@@ -161,7 +161,7 @@ void print_table_layout(std::string table_name) {
   std::cout << "columns: " << table->column_count() << std::endl;
   for (auto column_id = ColumnID{0}; column_id < table->column_count(); column_id++) {
     auto column_name = table->column_name(column_id);
-    auto column_type = table->column_type(column_id);
+    auto column_type = table->column_data_type(column_id);
     std::cout << "(" << data_type_to_string(column_type) << ") " << column_name << ": ";
     analyze_value_interval(table_name, column_name);
   }
