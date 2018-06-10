@@ -6,6 +6,7 @@
 #include "ma_benchmarks/data_structure_query.hpp"
 #include "ma_benchmarks/selectivity_estimation.hpp"
 #include "ma_benchmarks/filter_inserts.hpp"
+#include "ma_benchmarks/analysis.hpp"
 
 #include "storage/storage_manager.hpp"
 
