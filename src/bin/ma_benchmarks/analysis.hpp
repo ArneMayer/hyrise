@@ -45,8 +45,7 @@ void analyze_acdoca_pruning_rates() {
     auto skippable_total = 0;
 
     for (int i = 0; i < number_of_runs; i++) {
-      auto scan_value = ...;
-      auto skippable_total += = analyze_skippable_chunks_actual(table_name, column_id, scan_value);
+      auto skippable_total += analyze_skippable_chunks_actual(table_name, column_id);
     }
 
     auto pruning_rate = skippable_total / static_cast<double>(chunks_total);
@@ -79,17 +78,20 @@ int analyze_skippable_chunks_actual(std::string table_name, std::string column_n
   return skippable_count;
 }
 
-int analyze_skippable_chunks_actual(std::string table_name, ColumnID column_id, AllTypeVariant value_all_type) {
+int analyze_skippable_chunks_actual(std::string table_name, ColumnID column_id) {
   auto table = opossum::StorageManager::get().get_table(table_name);
   auto column_type = table->column_data_type(column_id);
   auto column_name = table->column_name(column_id);
-
+  auto row_number = random_int(0, table->row_count() - 1);
   if (column_type == DataType::Int) {
-    return analyze_skippable_chunks_actual<int>(table_name, column_id, type_cast<int>(value_all_type));
+    auto scan_value = table->get_value<int>(column_id, row_number);
+    return analyze_skippable_chunks_actual<int>(table_name, column_id, scan_value);
   } else if (column_type == DataType::Double) {
-    return analyze_skippable_chunks_actual<double>(table_name, column_id, type_cast<double>(value_all_type));
+    auto scan_value = table->get_value<double>(column_id, row_number);
+    return analyze_skippable_chunks_actual<double>(table_name, column_id, scan_value);
   } else if (column_type == DataType::String) {
-    return analyze_skippable_chunks_actual<std::string>(table_name, column_id, type_cast<std::string>(value_all_type));
+    auto scan_value = table->get_value<std::string>(column_id, row_number);
+    return analyze_skippable_chunks_actual<std::string>(table_name, column_id, scan_value);
   } else {
     throw std::logic_error("Unknown column type!");
   }
