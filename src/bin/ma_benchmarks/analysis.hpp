@@ -38,7 +38,7 @@ void analyze_acdoca_pruning_rates() {
 
   std::cout << "Column Count: " << table->column_count() << std::endl;
 
-  for (auto column_id = ColumnID{0}; column_id < table->column_count(); column_id) {
+  for (auto column_id = ColumnID{0}; column_id < table->column_count(); column_id++) {
     auto column_name = table->column_name(column_id);
     auto number_of_runs = 10;
     auto chunks_total = table->chunk_count() * number_of_runs;
