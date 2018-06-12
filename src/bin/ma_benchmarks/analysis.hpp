@@ -68,7 +68,7 @@ int analyze_skippable_chunks_actual(std::string table_name, ColumnID column_id) 
 void analyze_acdoca_pruning_rates() {
   // Import table
   auto row_count = 10'000'000;
-  auto chunk_size = 1'000'000;
+  auto chunk_size = 100'000;
   auto file = "/mnt/data/tmp_arne_ma/data/acdoca/acdoca" + std::to_string(row_count / 1'000'000) + "M.csv";
   std::cout << " > Importing " + file + "... " << std::flush;
   auto table_name = std::string("acdoca");
