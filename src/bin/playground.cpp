@@ -81,7 +81,7 @@ int main() {
   acdoca_series.run();
 
 
-
+  /*
   auto tpcc_chunk_sizes_series = TableScanBenchmarkSeries<TpccBenchmark>();
   tpcc_chunk_sizes_series.benchmark_name = "tpcc-chunk-sizes";
   tpcc_chunk_sizes_series.sample_size = 100;
@@ -113,6 +113,7 @@ int main() {
   jcch_chunk_sizes_series.art_run = false;
   jcch_chunk_sizes_series.btree_run = false;
   jcch_chunk_sizes_series.run();
+  */
 
   dict_vs_filter_series_cached();
   dict_vs_filter_series_uncached();
