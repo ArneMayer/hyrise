@@ -160,7 +160,7 @@ template <>
 uint64_t ValueColumn<std::string>::memory_consumption() const {
   uint64_t memory = 0;
   for (size_t i = 0; i < _values.size(); i++) {
-    memory += sizeof(std::string);
+    //memory += sizeof(std::string);
     memory += _values[i].size();
   }
   return memory;

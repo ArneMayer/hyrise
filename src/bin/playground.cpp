@@ -22,9 +22,10 @@ int main() {
     std::cout << "total chunks: " << table->chunk_count() << std::endl;
     */
   //print_table_layout(acdoca_load_or_generate(100'000'000, 100'000, false));
-  /*
+
   inserts_per_second_int();
   inserts_per_second_string();
+
 
 
   auto custom_series = TableScanBenchmarkSeries<CustomBenchmark>();
@@ -169,8 +170,8 @@ int main() {
 
   serialize_results_csv("estimation", estimation_results);
   serialize_results_csv("estimation_examples", example_results);
-  */
-  analyze_acdoca_pruning_rates();
+
+  //analyze_acdoca_pruning_rates();
 
 
   //analyze_all_tpcc_tables();
