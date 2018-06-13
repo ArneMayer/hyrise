@@ -118,6 +118,7 @@ int main() {
   dict_vs_filter_series_uncached();
 
 
+/*
   // SELECTIVITY ESTIMATION
   auto estimation_results = create_estimation_results_table();
   auto example_results = create_estimation_examples_table();
@@ -168,8 +169,10 @@ int main() {
     }
   }
 
+
   serialize_results_csv("estimation", estimation_results);
   serialize_results_csv("estimation_examples", example_results);
+  */
 
   //analyze_acdoca_pruning_rates();
 
