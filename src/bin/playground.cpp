@@ -31,7 +31,7 @@ int main() {
   auto custom_series = TableScanBenchmarkSeries<CustomBenchmark>();
   custom_series.benchmark_name = "custom";
   custom_series.table_name = "Custom";
-  custom_series.sample_size = 100;
+  custom_series.sample_size = 50;
   custom_series.column_names = {std::string("columnInt"), std::string("columnString")};
   custom_series.row_counts = {10'000'000};
   custom_series.chunk_sizes = {100'000};
@@ -45,7 +45,7 @@ int main() {
 
   auto tpcc_series = TableScanBenchmarkSeries<TpccBenchmark>();
   tpcc_series.benchmark_name = "tpcc";
-  tpcc_series.sample_size = 100;
+  tpcc_series.sample_size = 50;
   tpcc_series.table_name = "ORDER_LINE";
   tpcc_series.column_names = {"OL_I_ID", "OL_O_ID"};
   tpcc_series.row_counts = {10'000'000};
@@ -58,7 +58,7 @@ int main() {
 
   auto jcch_series = TableScanBenchmarkSeries<JcchBenchmark>();
   jcch_series.benchmark_name = "jcch";
-  jcch_series.sample_size = 100;
+  jcch_series.sample_size = 50;
   jcch_series.table_name = "LINEITEM";
   jcch_series.column_names = {"L_PARTKEY", "L_SHIPDATE", "L_SHIPMODE"};
   jcch_series.row_counts = {6'000'000};
@@ -72,7 +72,7 @@ int main() {
   auto acdoca_series = TableScanBenchmarkSeries<AcdocaBenchmark>();
   acdoca_series.benchmark_name = "acdoca";
   acdoca_series.table_name = "Acdoca";
-  acdoca_series.sample_size = 100;
+  acdoca_series.sample_size = 50;
   acdoca_series.column_names = {"BELNR", "RBUKRS"};
   acdoca_series.row_counts = {10'000'000};
   acdoca_series.chunk_sizes = {100'000};
