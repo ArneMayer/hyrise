@@ -1,0 +1,24 @@
+[submodule "third_party/googletest"]
+	path = third_party/googletest
+	url = https://github.com/google/googletest.git
+[submodule "third_party/benchmark"]
+	path = third_party/benchmark
+	url = https://github.com/google/benchmark.git
+[submodule "third_party/sql-parser"]
+	path = third_party/sql-parser
+	url = https://github.com/hyrise/sql-parser
+[submodule "third_party/pgasus"]
+	path = third_party/pgasus
+	url = https://github.com/hyrise/pgasus.git
+[submodule "third_party/cxxopts"]
+	path = third_party/cxxopts
+	url = https://github.com/jarro2783/cxxopts.git
+<<<<<<< HEAD
+[submodulee "third_party/cpp-btree"]
+  path = third_party/cpp-btree
+  url = https://github.com/algorithm-ninja/cpp-btree
+=======
+[submodule "third_party/libpqxx"]
+	path = third_party/libpqxx
+	url = https://github.com/jtv/libpqxx.git
+>>>>>>> upstream/master
