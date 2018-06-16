@@ -546,7 +546,7 @@ std::shared_ptr<Table> TpccTableGenerator::generate_table(const std::string& tab
   } else if (tablename == "WAREHOUSE") {
     return generate_warehouse_table();
   } else if (tablename == "STOCK") {
-    return generate_stock_table()
+    return generate_stock_table();
   } else if (tablename == "DISTRICT") {
     return generate_district_table();
   } else if (tablename == "CUSTOMER") {
@@ -561,6 +561,8 @@ std::shared_ptr<Table> TpccTableGenerator::generate_table(const std::string& tab
   } else if (tablename == "ORDER_LINE") {
     auto order_line_counts = generate_order_line_counts();
     return generate_order_line_table(order_line_counts);
+  } else {
+    return nullptr;
   }
 }
 
