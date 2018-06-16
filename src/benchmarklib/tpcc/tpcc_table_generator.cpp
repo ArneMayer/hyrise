@@ -25,8 +25,8 @@ namespace opossum {
 TpccTableGenerator::TpccTableGenerator(const ChunkOffset chunk_size, const size_t warehouse_size,
    const bool encode_chunks)
     : AbstractBenchmarkTableGenerator(chunk_size),
-      _encode_chunks(encode_chunks),
       _warehouse_size(warehouse_size),
+      _encode_chunks(encode_chunks),
       _random_gen(TpccRandomGenerator()) {}
 
 std::shared_ptr<Table> TpccTableGenerator::generate_items_table() {
@@ -521,30 +521,47 @@ std::map<std::string, std::shared_ptr<Table>> TpccTableGenerator::generate_all_t
  */
 TpccTableGeneratorFunctions TpccTableGenerator::table_generator_functions() {
   TpccTableGeneratorFunctions generators{
-      {"ITEM", []() { return generate_items_table(); }},
-      {"WAREHOUSE", []() { return generate_warehouse_table(); }},
-      {"STOCK", []() { return generate_stock_table(); }},
-      {"DISTRICT", []() { return generate_district_table(); }},
-      {"CUSTOMER", []() { return generate_customer_table(); }},
-      {"HISTORY", []() { return generate_history_table(); }},
-      {"ORDER", []() { return generate_new_order_table(); }},
+      {"ITEM", []() { return TpccTableGenerator().generate_items_table(); }},
+      {"WAREHOUSE", []() { return TpccTableGenerator().generate_warehouse_table(); }},
+      {"STOCK", []() { return TpccTableGenerator().generate_stock_table(); }},
+      {"DISTRICT", []() { return TpccTableGenerator().generate_district_table(); }},
+      {"CUSTOMER", []() { return TpccTableGenerator().generate_customer_table(); }},
+      {"HISTORY", []() { return TpccTableGenerator().generate_history_table(); }},
+      {"ORDER", []() { return TpccTableGenerator().generate_new_order_table(); }},
       {"NEW_ORDER",
        []() {
-         auto order_line_counts = generate_order_line_counts();
-         return generate_order_table(order_line_counts);
+         auto order_line_counts = TpccTableGenerator().generate_order_line_counts();
+         return TpccTableGenerator().generate_order_table(order_line_counts);
        }},
       {"ORDER_LINE", []() {
-         auto order_line_counts = generate_order_line_counts();
-         return generate_order_line_table(order_line_counts);
+         auto order_line_counts = TpccTableGenerator().generate_order_line_counts();
+         return TpccTableGenerator().generate_order_line_table(order_line_counts);
        }}};
   return generators;
 }
 
 std::shared_ptr<Table> TpccTableGenerator::generate_table(const std::string& tablename) {
-  auto generators = table_generator_functions();
-  if (generators.find(tablename) == generators.end()) {
-    return nullptr;
+  if (tablename == "ITEM") {
+    return generate_items_table();
+  } else if (tablename == "WAREHOUSE") {
+    return generate_warehouse_table();
+  } else if (tablename == "STOCK") {
+    return generate_stock_table()
+  } else if (tablename == "DISTRICT") {
+    return generate_district_table();
+  } else if (tablename == "CUSTOMER") {
+    return generate_customer_table();
+  } else if (tablename == "HISTORY") {
+    return generate_history_table();
+  } else if (tablename == "ORDER") {
+    return generate_new_order_table();
+  } else if (tablename == "NEW_ORDER") {
+    auto order_line_counts = generate_order_line_counts();
+    return generate_order_table(order_line_counts);
+  } else if (tablename == "ORDER_LINE") {
+    auto order_line_counts = generate_order_line_counts();
+    return generate_order_line_table(order_line_counts);
   }
-  return generators[tablename]();
 }
+
 }  // namespace opossum
