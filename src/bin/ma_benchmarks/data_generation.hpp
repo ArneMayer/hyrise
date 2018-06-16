@@ -291,7 +291,8 @@ std::string tpcc_load_or_generate(std::string tpcc_table_name, int warehouse_siz
 
   // Save uncompressed
   std::cout << " > Generating table " << uncompressed_name << "..." << std::flush;
-  auto table = tpcc::TpccTableGenerator::generate_tpcc_table(tpcc_table_name, chunk_size, warehouse_size, false);
+  auto generator = TpccTableGenerator(chunk_size, warehouse_size, false);
+  auto table = generator.generate_table(tpcc_table_name);
   std::cout << "OK!" << std::endl;
   save_table(table, uncompressed_name);
 
@@ -324,7 +325,6 @@ std::string jcch_load_or_generate(std::string tpch_table_name, int row_count, in
 
   // Save uncompressed
   std::cout << " > Generating table " << uncompressed_name << "..." << std::flush;
-  //auto file_name = "/home/" + getUserName() + "/data/jcch/lineitem.tbl";
   auto file_name = "/mnt/data/tmp_arne_ma/data/jcch/lineitem.tbl";
   auto table = load_table(file_name, chunk_size);
   std::cout << "OK!" << std::endl;
@@ -358,12 +358,9 @@ std::string acdoca_load_or_generate(std::string column_name, int row_count, int 
   }
 
   // Parse csv
-  //auto file = "/home/" + getUserName() + "/data/acdoca/acdoca" + std::to_string(row_count / 1'000'000) + "M.csv";
   auto file = "/mnt/data/tmp_arne_ma/data/acdoca/acdoca" + std::to_string(row_count / 1'000'000) + "M.csv";
   std::cout << " > Importing " + file + "... " << std::flush;
   auto tmp_table_name = std::string("acdoca_tmp");
-  //auto file = "/mnt/data/acdoca/acdoca.csv";
-  //auto meta_file = "/home/" + getUserName() + "/data/acdoca/acdoca.csv.json";
   auto meta_file = "/mnt/data/tmp_arne_ma/data/acdoca/acdoca.csv.json";
   auto csvMeta = process_csv_meta_file(meta_file);
   //csvMeta.chunk_size = chunk_size;

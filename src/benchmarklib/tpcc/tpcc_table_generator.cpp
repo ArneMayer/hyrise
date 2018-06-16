@@ -541,7 +541,7 @@ TpccTableGeneratorFunctions TpccTableGenerator::table_generator_functions() {
 }
 
 std::shared_ptr<Table> TpccTableGenerator::generate_table(const std::string& tablename) {
-  auto generators = tpcc_table_generator_functions();
+  auto generators = table_generator_functions();
   if (generators.find(tablename) == generators.end()) {
     return nullptr;
   }
